@@ -44,7 +44,6 @@ import json, sys
 print(json.dumps({
     'chat_id': sys.argv[1],
     'text': sys.argv[2],
-    'parse_mode': 'Markdown',
     'disable_web_page_preview': True,
 }))
 " "$TELEGRAM_CHAT_ID" "$msg")"
