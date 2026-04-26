@@ -2,5 +2,5 @@
 .env.*
 *.log
 .DS_Store
-DAILY-SUMMARY.md
+/DAILY-SUMMARY.md
 tests/.tmp/
