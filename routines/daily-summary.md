@@ -11,15 +11,15 @@ DATE=$(date +%Y-%m-%d)
 
 - Required process env vars:
   `ALPACA_API_KEY`, `ALPACA_SECRET_KEY`, `ALPACA_ENDPOINT`, `ALPACA_DATA_ENDPOINT`,
-  `SLACK_WEBHOOK_URL`, `TRADING_ENABLED`. (Perplexity is not used by this routine.)
+  `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TRADING_ENABLED`. (Perplexity is not used by this routine.)
 - There is NO `.env` file in this repo and you MUST NOT create, write, or source one.
-- If a wrapper prints `"KEY not set in environment"` → STOP, send one Slack alert
-  naming the missing var via `bash scripts/slack.sh "<msg>"`, then exit. Do NOT
+- If a wrapper prints `"KEY not set in environment"` → STOP, send one Telegram alert
+  naming the missing var via `bash scripts/telegram.sh "<msg>"`, then exit. Do NOT
   create a `.env` as a workaround.
 - Verify env vars BEFORE any wrapper call:
 ```
 for v in ALPACA_API_KEY ALPACA_SECRET_KEY ALPACA_ENDPOINT ALPACA_DATA_ENDPOINT \
-         SLACK_WEBHOOK_URL TRADING_ENABLED; do
+         TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID TRADING_ENABLED; do
     [[ -n "${!v:-}" ]] && echo "$v: set" || echo "$v: MISSING"
 done
 ```
@@ -44,7 +44,7 @@ done
   **yesterday's equity** (this is needed for Day P&L). On Day 1, the source is the
   Day 0 baseline ($10,000.00).
 - Today's entry in `memory/RESEARCH-LOG.md` (if present) — used for the
-  one-line "pre-market plan today" in the Slack message.
+  one-line "pre-market plan today" in the Telegram message.
 
 ## STEP 2 — Pull final state of the day
 
@@ -76,12 +76,12 @@ Match the schema at the top of `TRADE-LOG.md` exactly:
 In v1 the positions table will be empty (or just a "No positions" row). Notes should
 mention what the morning's research said and whether anything notable happened.
 
-## STEP 5 — Send ONE Slack message (always)
+## STEP 5 — Send ONE Telegram message (always)
 
 ≤ 15 lines. Always include the `(paper)` suffix in v1.
 
 ```
-bash scripts/slack.sh "*EOD <MMM DD>* (paper)
+bash scripts/telegram.sh "*EOD <MMM DD>* (paper)
 Equity: \$<X> (<±X%> day, <±X%> phase)
 Cash: \$<X>
 Trades today: none (v1 research only)
@@ -90,9 +90,9 @@ Pre-market plan today: <decision from today's research log>
 Tomorrow: pre-market checks at 6:00 CT"
 ```
 
-If `SLACK_WEBHOOK_URL` is unset, the wrapper falls back to `DAILY-SUMMARY.md`
-(gitignored). That fallback should never trigger in cloud — if it does, the env var
-is missing; treat it as a routine failure and stop.
+If `TELEGRAM_BOT_TOKEN` or `TELEGRAM_CHAT_ID` is unset, the wrapper falls back to
+`DAILY-SUMMARY.md` (gitignored). That fallback should never trigger in cloud — if it
+does, an env var is missing; treat it as a routine failure and stop.
 
 ## STEP 6 — COMMIT AND PUSH (mandatory)
 

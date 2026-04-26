@@ -42,7 +42,7 @@ Use the entry schema documented at the top of `RESEARCH-LOG.md`. Include:
 - Sources section with Perplexity citations and any WebSearch fallback flags
 
 ## Step 5 — No notification by default
-Local mode is interactive — you'll see the result in the chat. No Slack call needed unless you want to test the path.
+Local mode is interactive — you'll see the result in the chat. No Telegram call needed unless you want to test the path.
 
 ## Step 6 — Skip commit
 Local mode does not auto-commit. Review the appended entry in `memory/RESEARCH-LOG.md` and commit by hand if it's worth keeping.

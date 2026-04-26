@@ -21,7 +21,8 @@ In Claude Code cloud → Routines → New Routine:
    - `ALPACA_DATA_ENDPOINT` = `https://data.alpaca.markets/v2`
    - `PERPLEXITY_API_KEY`
    - `PERPLEXITY_MODEL` = `sonar` (optional)
-   - `SLACK_WEBHOOK_URL`
+   - `TELEGRAM_BOT_TOKEN` (from @BotFather, looks like `123456789:ABC...`)
+   - `TELEGRAM_CHAT_ID` (your numeric chat ID — visit `https://api.telegram.org/bot<TOKEN>/getUpdates` after sending `/start` to your bot)
    - `TRADING_ENABLED` = `false`
 5. **"Allow unrestricted branch pushes":** ON
 6. **Cron schedule + timezone** — both routines run in `America/Chicago`:

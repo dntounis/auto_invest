@@ -34,10 +34,10 @@ Use the schema at the top of `TRADE-LOG.md`:
 **Notes:** one-paragraph plain-english summary (e.g. "Quiet session, no trades fired, equity unchanged from market drift").
 ```
 
-## Step 5 — Send ONE Slack message via `slack.sh`
+## Step 5 — Send ONE Telegram message via `telegram.sh`
 ≤ 15 lines. Always include the `(paper)` suffix. Sample:
 ```
-bash scripts/slack.sh "*EOD MMM DD* (paper)
+bash scripts/telegram.sh "*EOD MMM DD* (paper)
 Equity: \$X (±X% day, ±X% phase)
 Cash: \$X
 Trades today: none (v1 research only)
@@ -46,7 +46,7 @@ Pre-market plan today: <decision from research log>
 Tomorrow: pre-market checks at 6:00 CT"
 ```
 
-(Locally, if `SLACK_WEBHOOK_URL` is unset in `.env`, the wrapper appends to `DAILY-SUMMARY.md` and exits 0 — that's expected behavior for local testing.)
+(Locally, if `TELEGRAM_BOT_TOKEN` or `TELEGRAM_CHAT_ID` is unset in `.env`, the wrapper appends to `DAILY-SUMMARY.md` and exits 0 — that's expected behavior for local testing.)
 
 ## Step 6 — Skip commit
 Local mode does not auto-commit. Review the appended snapshot and commit by hand if it's worth keeping.

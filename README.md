@@ -11,8 +11,8 @@ Two cloud routines fire on a cron in Anthropic's Claude Code cloud:
 
 | Routine | Cron (America/Chicago) | What it does |
 |---|---|---|
-| `pre-market` | `0 6 * * 1-5` | Reads memory, pulls paper-account state, researches via Perplexity, writes a dated entry to `memory/RESEARCH-LOG.md`, commits, pushes. Silent on Slack unless macro-urgent. |
-| `daily-summary` | `0 15 * * 1-5` | Reads memory, pulls final state, appends EOD snapshot to `memory/TRADE-LOG.md`, commits, pushes, sends one Slack message (always, ≤15 lines). |
+| `pre-market` | `0 6 * * 1-5` | Reads memory, pulls paper-account state, researches via Perplexity, writes a dated entry to `memory/RESEARCH-LOG.md`, commits, pushes. Silent on Telegram unless macro-urgent. |
+| `daily-summary` | `0 15 * * 1-5` | Reads memory, pulls final state, appends EOD snapshot to `memory/TRADE-LOG.md`, commits, pushes, sends one Telegram message (always, ≤15 lines). |
 
 Each cron firing spins up a fresh Claude Code container that clones this repo at `main`, runs the routine prompt, writes memory back, and pushes. Git is the only durable state.
 
@@ -35,7 +35,7 @@ docs/superpowers/plans/   # implementation plans
 
 ## Bootstrap (do this once)
 
-You'll need three external accounts: Alpaca **paper** (free), Perplexity Sonar (paid), Slack (workspace + incoming webhook).
+You'll need three external accounts: Alpaca **paper** (free), Perplexity Sonar (paid — $50 minimum API deposit but ≈$0.55/month at v1 usage), Telegram (free — bot token from @BotFather + your chat ID).
 
 ### 1. Local setup
 
@@ -79,7 +79,7 @@ git log -- .env
 
 ## Operational discipline
 
-- **Never** `curl` Alpaca/Perplexity/Slack directly. Always go through `scripts/*.sh`.
+- **Never** `curl` Alpaca/Perplexity/Telegram directly. Always go through `scripts/*.sh`.
 - **Never** create a `.env` file in cloud routines. Credentials come from process env vars set in the routine UI.
 - **Never** `git push --force`. The routine prompts use `git pull --rebase` on conflict.
 - **Never** flip `TRADING_ENABLED=true` until v1 exit criteria are met (5 clean weekdays of cron firings, no missed commits, no `.env` leaks). See spec § 11.
@@ -90,7 +90,7 @@ git log -- .env
 bash tests/run_all.sh
 ```
 
-Tests cover the safety-critical paths (env-var requirements, `TRADING_ENABLED` kill-switch, Slack fallback, JSON escaping). Real-API paths (Alpaca account fetch, Perplexity query, Slack POST) are covered by the local smoke test in step 2 above.
+Tests cover the safety-critical paths (env-var requirements, `TRADING_ENABLED` kill-switch, Telegram fallback, JSON escaping). Real-API paths (Alpaca account fetch, Perplexity query, Telegram POST) are covered by the local smoke test in step 2 above.
 
 ## License
 

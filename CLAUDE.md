@@ -17,7 +17,7 @@ Open these in order before doing anything else:
 ## Daily Workflows
 Local mirrors live in `.claude/commands/`. Cloud production prompts live in `routines/`. v1 active routines:
 - `pre-market` — research only, writes `RESEARCH-LOG.md`, silent unless macro-urgent
-- `daily-summary` — EOD snapshot, writes `TRADE-LOG.md`, sends ONE Slack message
+- `daily-summary` — EOD snapshot, writes `TRADE-LOG.md`, sends ONE Telegram message
 
 v2 will add `market-open`, `midday`, `weekly-review`.
 
@@ -34,14 +34,14 @@ v2 will add `market-open`, `midday`, `weekly-review`.
 - Patience > activity
 
 ## API Wrappers
-**Always** use these. Never `curl` Alpaca / Perplexity / Slack APIs directly.
+**Always** use these. Never `curl` Alpaca / Perplexity / Telegram APIs directly.
 - `bash scripts/alpaca.sh <subcommand>` — paper account state and (gated) orders
 - `bash scripts/perplexity.sh "<query>"` — research; exits 3 if key unset → fall back to native `WebSearch` and flag in research log
-- `bash scripts/slack.sh "<message>"` — webhook notification; falls back to `DAILY-SUMMARY.md` if webhook unset
+- `bash scripts/telegram.sh "<message>"` — Telegram bot notification; falls back to `DAILY-SUMMARY.md` if `TELEGRAM_BOT_TOKEN` or `TELEGRAM_CHAT_ID` unset
 
 ## Secrets Discipline
 - **Never create, write, or source a `.env` file** in cloud routines. Credentials come from process env vars set in the routine UI.
-- If a wrapper prints `KEY not set in environment` in cloud, **stop and notify via Slack**. Do NOT create a `.env` as a workaround.
+- If a wrapper prints `KEY not set in environment` in cloud, **stop and notify via Telegram**. Do NOT create a `.env` as a workaround.
 - Never log secrets. Never print API keys.
 
 ## Communication Style
