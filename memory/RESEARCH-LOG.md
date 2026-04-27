@@ -130,3 +130,52 @@ Buy-side gate (forward check): all three pass position count (0/6), trades-this-
 ### Sources
 - Perplexity citations: oilprice.com, tradingeconomics.com (Brent), markets.businessinsider.com (oil), eia.gov (spot), markets.businessinsider.com (premarket), robinhood.com prediction markets (SPX), polymarket.com (SPX open dir), barchart.com (ESM26), investing.com (VIX hist), tradingview.com (VIX futures), kiplinger.com (econ cal week of 4/27), bls.gov (BLS sched), whitehouse.gov (PFEI sched), calendarx.com (CPI Apr), marketbeat.com (LKFN), capyfin.com (earnings 4/27), investing.com earnings (VZ), earningswhispers.com, ftportfolios.com (sector YTD 3/6), investing.com (sector rotation), novelinvestor.com (sector returns), schwab.com (sector outlook), longtermtrends.com (sector RS), timesofindia.indiatimes.com (Iran-US headlines).
 - WebSearch fallback used: no
+
+---
+
+## 2026-04-27 — Pre-market Research (third pass / re-run)
+
+*Same date re-run. Material corrections vs. earlier 2026-04-27 entries flagged inline. Prior entries retained above; this entry is append-only.*
+
+### Account
+- Equity: $10,000.00
+- Cash: $10,000.00
+- Buying power: $20,000.00
+- Daytrade count: 0
+- Positions: none | Open orders: none
+- balance_asof: 2026-04-24 (account created 2026-04-26; baseline intact, no fills)
+- options_trading_level=3 on the account is irrelevant — hard rule "NO OPTIONS" + wrapper kill-switch + buy-side gate (stocks only) make options unreachable.
+
+### Market Context
+- **CORRECTION (vs. prior 2026-04-27 entries):** SPX cash closed at a record **7,165.08 on Apr 24, 2026** (intellectia.ai), +0.80% on the session and +8.70% MTD; the "6,824.66" figure used in the two prior 2026-04-27 entries was stale/incorrect. Q1 2026 was -4.33%, with April recovery driving the index to new highs.
+- ES (E-mini S&P 500, ESM26): **~7,189.25** last (CME, -0.08% / -5.50), prior settle ~7,178.25 Apr 26; intraday high 7,200.75 Apr 27 (investing.com). Premarket flat-to-slightly-down on Iran-Hormuz headlines; Dow futures edged lower per thestreet.com.
+- WTI: **~$95.27/bbl**, broken above descending trend (fxdailyreport); prediction markets imply ~68% close above $95, ~53% above $96. Apr 24 close $94.87, Apr 23 $96.99 (twelvedata).
+- Brent: not directly quoted in fresh feed today; recent context ~$106.
+- VIX: **19.06** (Apr 27 last available, +1.87% d/d); range 18.92–19.26; calm regime <20 holds.
+- Today's catalysts: **Iran reportedly proposed reopening Strait of Hormuz via Pakistani mediators**, with nuclear talks deferred (thestreet.com); Trump canceled related peace talks. Oil bid, equities mixed. Dallas Fed Manufacturing 10:30 AM ET (light data day).
+- Earnings BMO: **VZ (Verizon)** is the sole marquee BMO confirmed by tipranks for Mon Apr 27.
+- This-week event risk: **CONFLICT —** prior 2026-04-27 entries had FOMC + Powell Wed Apr 29; today's investech-sourced calendar shows Wed Apr 29 as Case-Shiller HPI / Consumer Confidence and **FOMC + PCE on Thu Apr 30**, citing residual delays from the 2025 government shutdown. Treat the FOMC date as **Wed Apr 29 OR Thu Apr 30 — confirm at v2 market-open**; in either case the pre-FOMC posture is the same. Big Tech: MSFT/GOOG Wed AMC; META/AMZN/AAPL later in week. ECI Q1 expected this week. GDP Q1 advance + ISM Mfg Fri May 1.
+- Sector momentum YTD (refreshed): **Energy still leader (~+38.3% YTD)** (novelinvestor / sector tracker), reinforced by today's Hormuz / Iran headlines bidding crude. Tech regaining leadership intra-month on AI capex (DELL +$64B AI server backlog raised by Barclays to $168 PT; NVDA, TSMC, TSLA momentum). Industrials and Consumer Staples remain in middle-of-pack with positive earnings momentum (FactSet 18.6% CY2026 EPS growth, 8 of 11 sectors growing y/y).
+
+### Trade Ideas
+*(v1 paper — kill-switch active, documentation only. Pre-FOMC posture: do NOT initiate fresh entries before the policy decision + presser. Three-pass consensus across today's entries is the same idea queue, with sector logic re-validated below.)*
+
+1. **XLE** — Energy +38.3% YTD; oil firm $95+ on stalled US–Iran talks + Hormuz reopen-proposal headline-bid. ETF avoids single-name event risk. Indicative entry ~$95, stop ~$85.50 (-10%), target ~$114 (+20%), R:R ~2:1. Buy-side gate: 0/6 positions, 0/3 trades, ≤20% cap (~$950 = 9.5% on a $10K equity at 10 sh), sector-momentum aligned, stock — passes.
+2. **XLI** — Industrials in middle-of-pack with positive EPS surprises; defense + AI-infra / power-grid tailwind, no direct MSFT/GOOG print exposure. Indicative entry ~$160, stop ~$144 (-10%), target ~$192 (+20%), R:R ~2:1. Passes gate.
+3. **XLP** — Consumer Staples defensive bid into FOMC + heavy earnings week; cleaner pre-event tilt than semis. Indicative entry ~$80, stop ~$72 (-10%), target ~$96 (+20%), R:R ~2:1. Passes gate.
+
+### Risk Factors
+- **Macro / event:** FOMC + Powell presser this week (Wed OR Thu — confirm date). Statement consensus unchanged at 3.50–3.75%; Powell tone is the swing. Hawkish surprise compresses multiples broadly.
+- **Earnings concentration:** ~40% of S&P 500 mkt cap reports this week; MSFT/GOOG Wed AMC sets tape for tech/semis.
+- **Geopolitical:** Iran-Hormuz reopen proposal is two-sided — could deflate crude (XLE down) on de-escalation, or spike if talks collapse. Trump-cancels-peace-talks headline today is the risk-off catalyst.
+- **Sector:** Energy stretched on YTD basis; fade risk on any oil reversal. Tech/semis multi-quarter overshoot fragile into prints (forward P/E 20.9, above 5y avg per FactSet).
+- **Idiosyncratic:** AI mega-caps (NVDA, AVGO, etc.) breach 20% cap on $10K — sector ETFs are the right structural fit. PDT room intact (3/5 daytrades available).
+- **Liquidity:** Mon–Tue chop pre-FOMC standard; low-conviction trades underperform.
+- **Data quality:** Material correction this run on SPX cash level (7,165 vs. prior 6,824) and FOMC date (Thu Apr 30 vs. Wed Apr 29). Verify both at v2 market-open before any execution.
+
+### Decision
+**HOLD** — Day 1 (Mon), v1 paper, kill-switch active. Even setting the kill-switch aside, rational stance is wait through FOMC + Big Tech prints. Patience > activity. XLE / XLI / XLP carried as the v2 market-open queue.
+
+### Sources
+- Perplexity citations: fxdailyreport.com (WTI technicals), twelvedata.com (WTI hist), robinhood.com prediction markets (WTI/SPX), polymarket.com (WTI/SPX), cmegroup.com (ESM6), investing.com (ESM6 hist), barchart.com (ESH27), tradingview.com (VIX futures), investing.com (VIX hist), wallstreetzen.com (stocks to watch 4/27), thestreet.com (Hormuz / Dow futures Apr 27), zacks.com (strong sells 4/27), tipranks.com (earnings 4/27 wk), investech.com (econ cal 2026 PDF), bls.gov (May sched), us.econoday.com, yelza.com (econ cal 4/27–5/1), guggenheiminvestments.com (US econ cal), intellectia.ai (SPX record 7,165.08 Apr 24), insight.factset.com (CY2026 EPS 18.6%), novelinvestor.com (sector returns), cmegroup.com (Apr 2026 equity recap), spglobal.com (S&P 500 Momentum Index), ssga.com (sector tracker).
+- WebSearch fallback used: no (Perplexity 503 hit on first call, recovered on retry — no native fallback used)
