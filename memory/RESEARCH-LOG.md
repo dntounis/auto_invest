@@ -85,3 +85,48 @@ Buy-side gate (forward check): all three pass position count (0/6), trades-this-
 ### Sources
 - Perplexity citations: robinhood.com prediction markets (WTI), polymarket.com, twelvedata.com (WTI hist), alfred.stlouisfed.org (WTISPLC), capis.com (SPX premarket Apr 10 note), tradingview.com (VIX), investing.com (VIX hist), tipranks.com (earnings week), capyfin.com (earnings cal), kiplinger.com (econ cal), bls.gov (BLS schedule), newyorkfed.org (econ cal), guggenheiminvestments.com (US cal), ftportfolios.com (sector YTD), morningstar.com (rotation), schwab.com (sector outlook), thestreet.com (EPS prospects).
 - WebSearch fallback used: no
+
+---
+
+## 2026-04-27 — Pre-market Research (second pass / re-run)
+
+*Same date re-run of pre-market routine. No material change vs. earlier 2026-04-27 refreshed entry; deltas noted inline. Original retained above.*
+
+### Account
+- Equity: $10,000.00
+- Cash: $10,000.00
+- Buying power: $20,000.00
+- Daytrade count: 0
+- Positions: none | Open orders: none
+- balance_asof: 2026-04-24 (account created 2026-04-26; Day 0 baseline still intact, no fills)
+
+### Market Context
+- WTI: ~$95.32/bbl (Apr 26 late). Brent: ~$106.44/bbl (Apr 26 late), tradingeconomics quotes 106.92 Apr 27 (+1.51% d/d). Crude firmer than yesterday's read on stalled US–Iran talks.
+- S&P 500 futures: ESM26 quoted ~6,657 in one premarket source today, but inconsistent with Friday SPX cash 6,824.66 + ESM26 +0.72% close — treat as data noise; bias is flat-to-slightly-up. Polymarket prediction market: ~67% probability SPX opens up vs. Friday close.
+- VIX: 19.31 (Apr 23 close, last available); regime still calm <20. No Apr 24/27 print yet in feeds.
+- Today's catalysts: light US data day. Dallas Fed Manufacturing Survey 10:30 AM ET. Geopolitical: stalled US–Iran negotiations + reported Iran proposal supporting oil bid.
+- Earnings BMO today: VZ (Verizon — marquee), LKFN (Lakeland Financial), plus smaller (SSYS, BH, GWRS, UFI, EARN). Big tech (MSFT, GOOG) Wed AMC; META/AMZN/AAPL later in week.
+- Economic calendar this week: **FOMC statement + Powell presser Wed Apr 29 (2:00 / 2:30 PM ET — fed funds expected unchanged 3.50–3.75%)**; Tue Apr 28 Case-Shiller HPI + Consumer Confidence; Thu Apr 30 PCE / Core PCE + ECI Q1. No CPI / PPI / NFP this week (those release mid-May).
+- Sector momentum YTD (refreshed read): **Energy ~+38% YTD** (firmer than prior +26% read); Consumer Staples +10–11%; Industrials +9–16%. Tech / Comm / Cons. Disc. / Financials in lagging quadrant per momentum screens; 6-mo Tech –7.8%, Financials –7.5%. Rotation from 2025 tech leadership into defensives + cyclicals continues.
+
+### Trade Ideas
+*(v1 paper — kill-switch active. Documentation only. Pre-FOMC posture: do NOT initiate fresh entries before Wed Powell presser; ideas tracked for v2 hand-off.)*
+
+1. **XLE** — Energy sector leader (+38% YTD); oil firm low-$90s WTI / mid-$100s Brent on Iran-talks stall. ETF sidesteps single-name event risk. Indicative entry ~$95, stop ~$85.50 (-10%), target ~$114 (+20%), R:R ~2:1. Pass buy-side gate (0/6 positions, 0/3 trades, ≤20% cap, sector-momentum aligned, stock).
+2. **XLI** — Industrials #2/#3 YTD; defense + AI-infra / power-grid tailwind, no direct MSFT/GOOG print exposure. Indicative entry ~$160, stop ~$144 (-10%), target ~$192 (+20%), R:R ~2:1. Passes gate.
+3. **XLP** — Consumer Staples #2 YTD (+10–11%), defensive bid into FOMC + heavy earnings week. Indicative entry ~$80, stop ~$72 (-10%), target ~$96 (+20%), R:R ~2:1. Passes gate. (Replaces SMH from prior entry — semis carry indirect MSFT/GOOG print exposure Wed AMC; staples is a cleaner pre-FOMC tilt.)
+
+### Risk Factors
+- **Macro / event:** FOMC Wed dominates. Statement likely unchanged at 3.50–3.75%; Powell tone is the swing factor. Hawkish surprise compresses multiples broadly.
+- **Earnings concentration:** ~40% of S&P 500 mkt cap reports this week; MSFT/GOOG Wed AMC sets tape for tech/semis Thu.
+- **Geopolitical:** Stalled US–Iran talks keeping crude bid; sudden de-escalation = oil-down / energy-down risk to XLE thesis. Iran proposal headlines moving Asia/EM today.
+- **Sector:** Energy stretched on YTD basis; fade risk on any oil reversal. Tech/semis multi-quarter overshoot fragile into prints.
+- **Idiosyncratic:** Single-name AI mega-caps (AVGO, NVDA, etc.) breach 20% cap on $10K equity — favor sector ETFs. PDT room intact (3/5 daytrades available).
+- **Liquidity:** Mon–Tue chop pre-FOMC standard; low-conviction trades typically underperform.
+
+### Decision
+**HOLD** — Day 1 (Mon), v1 paper, kill-switch active. Even ignoring the kill-switch, rational stance is wait through FOMC (Wed) + MSFT/GOOG (Wed AMC) before deploying. Patience > activity. Ideas above carried into v2 market-open queue.
+
+### Sources
+- Perplexity citations: oilprice.com, tradingeconomics.com (Brent), markets.businessinsider.com (oil), eia.gov (spot), markets.businessinsider.com (premarket), robinhood.com prediction markets (SPX), polymarket.com (SPX open dir), barchart.com (ESM26), investing.com (VIX hist), tradingview.com (VIX futures), kiplinger.com (econ cal week of 4/27), bls.gov (BLS sched), whitehouse.gov (PFEI sched), calendarx.com (CPI Apr), marketbeat.com (LKFN), capyfin.com (earnings 4/27), investing.com earnings (VZ), earningswhispers.com, ftportfolios.com (sector YTD 3/6), investing.com (sector rotation), novelinvestor.com (sector returns), schwab.com (sector outlook), longtermtrends.com (sector RS), timesofindia.indiatimes.com (Iran-US headlines).
+- WebSearch fallback used: no
