@@ -42,3 +42,13 @@ These get added once v1 has run cleanly for 5 consecutive weekdays. See `docs/su
 ## Why "no `.env` file in cloud"
 
 The wrapper scripts read `.env` at startup if present. In the cloud, `.env` should never exist. If a routine prompt is paraphrased and loses the explicit "DO NOT create a .env file" block, Claude has been observed to "helpfully" create one to fix a missing-key error — which would commit credentials to GitHub. Every routine prompt has the prohibition stated loudly.
+
+## Branch policy override (load-bearing)
+
+Anthropic's Routines runtime injects a hidden system-prompt directive instructing the agent to push to a `claude/<random>-<id>` feature branch instead of `main`. Our v1 architecture requires direct-to-`main` pushes (each routine's commit must be visible to the next routine's clone). Each prompt file in this directory has an explicit **`## OVERRIDE — Branch Policy`** block near the top instructing the agent to ignore the runtime's branch directive. Do not remove or paraphrase that block.
+
+If a routine push ever lands on a `claude/...` branch instead of `main`, the override was lost — re-paste the prompt verbatim from this directory.
+
+## Environment variables — exact names matter
+
+The Anthropic Routines runtime does no fuzzy matching of env-var names. A typo like `ALPACA_API_SECRET` vs `ALPACA_SECRET_KEY` causes silent absence (`KEY not set in environment`) instead of the intended value. The 9 names above must match the wrapper scripts and routine prompts letter-for-letter, case-sensitive, no leading/trailing whitespace, no spaces around `=`. The setup script at the environment level pre-validates these and fails fast on any missing or misspelled name.
