@@ -53,3 +53,12 @@ No positions yet. v1 launches on the next weekday's `pre-market` routine. The `d
 | —      | —      | —     | —     | —       | —              | —    |
 
 **Notes:** Day 2 v1 paper, kill-switch active — no orders, no positions, no fills. Equity flat at $10,000.00 (`balance_asof` 2026-04-27); reconciles cleanly to the Day 1 EOD snapshot. No new pre-market research entry was written for 2026-04-28, so the carrying stance is the third-pass 2026-04-27 read: **HOLD into FOMC + MSFT/GOOG**, with XLE / XLI / XLP queued for v2 market-open. Today's calendar per Mon's research: Case-Shiller HPI + Consumer Confidence (Tue Apr 28); FOMC + Powell presser tentatively Wed Apr 29 (date conflict between Wed Apr 29 and Thu Apr 30 flagged in Mon's third pass — confirm at v2). Trades this week: 0/3. Patience > activity.
+
+## Apr 29 — EOD Snapshot (Day 3, Wednesday)
+**Portfolio:** $10,000.00 | **Cash:** $10,000.00 (100%) | **Day P&L:** $0.00 (0.00%) | **Phase P&L:** $0.00 (0.00%)
+
+| Ticker | Shares | Entry | Close | Day Chg | Unrealized P&L | Stop |
+| ------ | ------ | ----- | ----- | ------- | -------------- | ---- |
+| —      | —      | —     | —     | —       | —              | —    |
+
+**Notes:** Day 3 v1 paper, kill-switch active — no orders, no positions, no fills. Equity flat at $10,000.00 (`balance_asof` 2026-04-28); reconciles cleanly to the Day 2 EOD snapshot. No new pre-market research entry was written for 2026-04-29, so the carrying stance remains the third-pass 2026-04-27 read: **HOLD into FOMC + MSFT/GOOG**, XLE / XLI / XLP still queued for v2 market-open. Today is the tentative FOMC + Powell presser date (Wed Apr 29, date conflict with Thu Apr 30 flagged in Mon's third pass — unresolved in v1, will reconcile at v2); MSFT/GOOG earnings AMC dominate the after-hours tape. Trades this week: 0/3. Patience > activity.
