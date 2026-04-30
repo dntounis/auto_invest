@@ -236,3 +236,61 @@ Buy-side gate (forward check): all three pass position count (0/6), trades-this-
 ### Sources
 - Perplexity citations: twelvedata.com (WTI hist Apr 30), robinhood.com prediction markets (WTI/Brent/SPX), eia.gov (Q1 oil note + military action context), barchart.com (ESM26, CLJ26, QAJ26), markets.businessinsider.com (premarket — flagged as stale), investing.com (S&P futures), tradingeconomics.com (VIX), fred.stlouisfed.org (VIX Apr 28/29), investing.com (VIX hist), federalreserve.gov (FOMC statement Apr 29 + Mar 18), propfirmscan.com (Powell Apr 29 analysis), bea.gov (release schedule Apr 30 GDP/PCE), thomsoninvestmentgroup.com (econ cal Apr 30), us.econoday.com, marketbeat.com (MSFT/GOOG Q3 results), microsoft.com investor (FY26 Q2/Q3), economictimes.com (MSFT Azure guide + $190B capex), businessinsider.com (MSFT headcount), moomoo.com (Big Tech split commentary), morningstar.com (tech earnings preview), ftportfolios.com (sector YTD), novelinvestor.com (sector returns), schwab.com (sector outlook), spglobal.com (S&P 500 Momentum Index), ssga.com (sector tracker), cmegroup.com (Apr 2026 equity recap), octagonai.co (Brent), statista.com (Brent Apr 7), fortune.com (oil Mar 30).
 - WebSearch fallback used: no
+
+---
+
+## 2026-04-30 — Pre-market Research (second pass / re-run)
+
+*Same date re-run. Material corrections vs. earlier 2026-04-30 entry flagged inline. Prior entry retained above; this entry is append-only.*
+
+### Account
+- Equity: $10,000.00
+- Cash: $10,000.00
+- Buying power: $20,000.00
+- Daytrade count: 0
+- Positions: none | Open orders: none
+- balance_asof: 2026-04-29 (refreshed +1d vs. morning entry; baseline intact, no fills)
+- options_trading_level=3 on the account is irrelevant — hard rule "NO OPTIONS" + wrapper kill-switch + buy-side gate (stocks only) make options unreachable.
+
+### Market Context
+- **CORRECTION (earnings calendar) vs. morning entry:** **META + AMZN both reported Wed Apr 29 AMC**, alongside MSFT/GOOG — not tonight as morning entry stated. **AAPL is the lone marquee AMC tonight (Thu Apr 30, 5:00 PM ET conference call)** — Q2 FY2026 results. Tape today digests four-name Big Tech print + AAPL into the close.
+- **Wed AMC additional results:**
+  - **AMZN:** Q1 results released Apr 29 AMC. Q1 net income includes **$16.8B pre-tax gains from Anthropic investments** (non-operating income). Pre-print consensus was EPS $1.63 / rev $177.28B / AWS ~$36.6B (+25% y/y). AMZN +30% in the prior month into the print on AWS strength + Meta-AI Graviton partnership + up to $25B Anthropic investments. Detailed beat/miss not yet in feeds.
+  - **META:** Q1 results released Apr 29 AMC. Susquehanna reiterated Positive rating "amid capex increase" (per Investing.com Apr 30) — i.e., META joined the Big Tech AI-capex hike alongside MSFT $190B.
+  - Headline framing: AI capex arms race intact; "no leaderboard but companies competing like there is one" (BI). MSFT $190B capex remains the standout single number.
+- **WTI:** **~$108.34 close Apr 30** (investing.com, +1.37% d/d) — softer than morning entry's $111 read, still elevated vs. Mon's ~$95. WTI sequence: Apr 28 $99.93 → Apr 29 $106.88 (+6.95%) → Apr 30 $108.34. Prediction markets imply 67¢ WTI ≥$108, 60¢ ≥$109, 54¢ ≥$100. Three-week highs hold; supply-shock narrative intact.
+- **Brent:** no fresh spot today; recent context $96–$107 range. Indirect proxy via WTI.
+- **ES (ESM26):** ~**7,171** last (CME quote) — premarket **+0.14% to flat** per barchart Apr 30 morning. Underlying SPX cash 7,137.90 close Apr 29 (just below Apr 22 ATH 7,147). NQM26 +0.27% premarket.
+- **VIX:** **17.83 close Apr 28** (FRED — next release today after market close). Apr 27 close 18.02; Apr 29 open 18.81. Calm regime <20 holds despite oil + earnings + macro stack.
+- **Today's catalysts (8:30 AM ET print stack — unchanged from morning entry):**
+  - Q1 GDP advance estimate (BEA) — consensus **+2.2 to +2.6% annualized** (vs. Q4 2025 0.5% revised). Philly Fed SPF: +2.6%.
+  - March Personal Income & Outlays + **Core PCE** — recent core PCE 3.0% y/y (Feb), still elevated vs. 2% target. Powell flagged 3.5% headline as "elevated" Wed.
+  - Q1 Employment Cost Index
+  - Weekly Jobless Claims
+  - Construction Spending + ISM Mfg later
+  - FOMC Minutes 1:00 PM ET (per Thomson cal)
+  - **AMC: AAPL only** (5:00 PM ET call)
+- **Sector momentum YTD (refined / corrected):** **S&P 500 Energy YTD +26.27% as of Apr 27 (S&P Global, price return; index level 867.90)** — meaningfully lower than the +38–40% read in earlier 2026-04-27/30 entries (those numbers conflated longer-window or different-methodology sources). Energy still clear leader, but the magnitude is more like high-20s%, not high-30s%. Real Estate #2 ~+2.8%; Tech regaining intra-month leadership on AI capex (XLK ~+2.2% one-session). FactSet CY2026 EPS growth 18.6%, 8 of 11 sectors growing y/y. S&P 500 Momentum Index +17.26% YTD.
+
+### Trade Ideas
+*(v1 paper — kill-switch active, documentation only. Posture: pre-print 8:30 macro stack + AAPL AMC = HOLD into Friday open at minimum. Same three-name queue from morning entry, sector logic re-validated against revised Energy YTD.)*
+
+1. **XLE** — Energy +26%+ YTD (revised from 38%+); oil $108 still firm, Iran/Hormuz overhang intact. Sector ETF avoids single-name event risk. Indicative entry ~$100, stop ~$90 (-10%), target ~$120 (+20%), R:R ~2:1. Buy-side gate: 0/6 positions, 0/3 trades, ≤20% cap (10 sh ≈ $1,000 = 10% equity), sector-momentum aligned, stock — passes. Caveat: less stretched than prior 38% read implied; entry into weakness still preferred over chase.
+2. **XLI** — Industrials middle-of-pack with positive earnings momentum; defense + AI-infra/power-grid tailwind, no direct AAPL print exposure. Indicative entry ~$160, stop ~$144 (-10%), target ~$192 (+20%), R:R ~2:1. Passes gate.
+3. **XLP** — Consumer Staples defensive bid sensible into Core PCE + GDP print + AAPL AMC. Indicative entry ~$80, stop ~$72 (-10%), target ~$96 (+20%), R:R ~2:1. Passes gate.
+
+### Risk Factors
+- **Macro / event:** 8:30 stack dense (GDP advance + Core PCE + ECI Q1 + Claims). Core PCE highest-impact given Powell's "elevated 3.5%" framing Wed; upside surprise reignites no-cut narrative. FOMC Minutes 1:00 PM secondary.
+- **Earnings:** Big Tech four-name (MSFT/GOOG/META/AMZN) all printed Wed AMC — split tape (MSFT mixed on capex, GOOG strong cloud, META capex hike priced as positive by sell-side, AMZN Anthropic gain skewed result). AAPL AMC tonight is the last marquee mega-cap; Services and China data are the swing.
+- **Geopolitical / energy:** WTI $108 still driven by Middle East military action; supply shock = inflation tailwind = hawkish-Fed risk. Two-sided — sudden de-escalation = oil-down / XLE down.
+- **Sector:** Revised Energy +26% YTD less stretched than prior 38% read — but still leader and dependent on oil bid. Tech AI-capex narrative now externally validated by all four mega-cap prints; semis/AI-infra read-through positive on net.
+- **Idiosyncratic:** AI mega-caps (NVDA, AVGO, MSFT, GOOG, META, AMZN, AAPL) all breach 20% cap on $10K — sector ETFs (XLE/XLI/XLP/SMH) remain the structural fit. PDT room intact (3/5).
+- **Liquidity:** Post-FOMC + pre-PCE chop; thin conviction trades underperform.
+- **Data quality:** Energy YTD corrected from ~+38% (earlier entries) to +26.27% (S&P Global Apr 27). Account `balance_asof` refreshed to 2026-04-29 (was 2026-04-28 morning).
+
+### Decision
+**HOLD** — Day 4 (Thu), v1 paper, kill-switch active. Even setting the kill-switch aside, rational stance is wait through 8:30 macro stack (esp. Core PCE) + AAPL AMC + Friday GDP/ISM digestion before any deployment. XLE / XLI / XLP carried as the v2 market-open queue. Trades this week: 0/3. Patience > activity.
+
+### Sources
+- Perplexity citations: investing.com (WTI hist Apr 30 — close $108.34), robinhood.com prediction markets (WTI/SPX), barchart.com (ESM26, CLJ26 Apr 30), cmegroup.com (ESM26 7,171), fred.stlouisfed.org (VIX Apr 28 17.83), investing.com (VIX hist), tradingeconomics.com (VIX monthly Apr), bea.gov (release schedule Apr 30), philadelphiafed.org (SPF Q1 +2.6%), biggo.com / kraken blog (GDP Q1 forecast), tradingeconomics.com (Core PCE Feb 3.0%), marketbeat.com (AMZN Q1 4/29, META Q1 4/29), ir.aboutamazon.com (AMZN $16.8B Anthropic gain), investor.atmeta.com (META 4/29 AMC confirmed), wallstreethorizon.com (META 4/29, AAPL 4/30 confirmed), investor.apple.com (AAPL 4/30 5:00 PM ET call), businessinsider.com (Big Tech earnings recap), ca.investing.com (Susquehanna META capex), spglobal.com (Energy YTD 26.27% Apr 27), novelinvestor.com (sector returns), ycharts.com (Energy YTD).
+- WebSearch fallback used: no
