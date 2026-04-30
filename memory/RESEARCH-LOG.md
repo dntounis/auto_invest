@@ -179,3 +179,60 @@ Buy-side gate (forward check): all three pass position count (0/6), trades-this-
 ### Sources
 - Perplexity citations: fxdailyreport.com (WTI technicals), twelvedata.com (WTI hist), robinhood.com prediction markets (WTI/SPX), polymarket.com (WTI/SPX), cmegroup.com (ESM6), investing.com (ESM6 hist), barchart.com (ESH27), tradingview.com (VIX futures), investing.com (VIX hist), wallstreetzen.com (stocks to watch 4/27), thestreet.com (Hormuz / Dow futures Apr 27), zacks.com (strong sells 4/27), tipranks.com (earnings 4/27 wk), investech.com (econ cal 2026 PDF), bls.gov (May sched), us.econoday.com, yelza.com (econ cal 4/27–5/1), guggenheiminvestments.com (US econ cal), intellectia.ai (SPX record 7,165.08 Apr 24), insight.factset.com (CY2026 EPS 18.6%), novelinvestor.com (sector returns), cmegroup.com (Apr 2026 equity recap), spglobal.com (S&P 500 Momentum Index), ssga.com (sector tracker).
 - WebSearch fallback used: no (Perplexity 503 hit on first call, recovered on retry — no native fallback used)
+
+---
+
+## 2026-04-30 — Pre-market Research
+
+### Account
+- Equity: $10,000.00
+- Cash: $10,000.00
+- Buying power: $20,000.00
+- Daytrade count: 0
+- Positions: none | Open orders: none
+- balance_asof: 2026-04-28 (account snapshot lags by 2d — no fills, no reconciliation event; baseline intact)
+- options_trading_level=3 on the account is irrelevant — hard rule "NO OPTIONS" + wrapper kill-switch + buy-side gate (stocks only) make options unreachable.
+
+### Market Context
+- **WTI: ~$111/bbl** (sharp escalation vs. Mon's ~$95 read; twelvedata Apr 30 print 111.25). Driver: Middle East military action (per EIA Q1 note) + unresolved peace talks; WTI up in 5 of last 6 sessions, 3-week highs. Prediction markets imply ~40% chance close >$110 today.
+- **Brent:** no clean spot quote in feeds today; recent context $107 (Apr 7 Statista) and $111 (Mar 30 Fortune); intraday dipped <$100 on talks then rebid. Implied $100–$115.
+- **S&P 500 cash: 7,137.90 close Apr 29** (just below ATH 7,147 from Apr 22). Q1 -4.3%; April recovered +8%+ MTD.
+- **ES (ESM26) premarket:** data conflict — markets.businessinsider quotes 6,657 area (treat as stale/wrong; inconsistent with cash 7,138 + ESM26 +0.14–0.21% Apr 29 close per barchart). Better read: ES roughly flat-to-slightly-up around 7,150 area on a normalized basis.
+- **VIX: 17.81 close Apr 29** (range 17.84–18.13, +1.63% d/d); calm regime <20 holds despite oil spike + heavy event tape. Markets shrugging — AI/earnings complacency.
+- **FOMC Apr 29 outcome:** **HELD at 3.50–3.75%** (1 dissenter, Miran, favored ¼ pt cut). Powell: PCE ~3.5% "elevated"; energy/Middle East cited as inflation driver; policy stance "appropriate"; data-dependent on next move. Slightly hawkish vs. dovish setup; SPX still closed near ATH so market took it well.
+- **Today's catalysts (8:30 AM ET print stack):**
+  - Q1 GDP advance estimate (BEA)
+  - Personal Income & Outlays + **Core PCE** (March)
+  - Employment Cost Index Q1
+  - Weekly Jobless Claims
+  - Construction Spending + ISM Mfg later (10:00)
+  - FOMC Minutes 1:00 PM ET (per Thomson cal)
+  - **AMC: META + AMZN earnings** (after MSFT/GOOG Wed AMC)
+- **Wed AMC results (key for tape today):**
+  - **MSFT:** rev $82.9B (beat $81.3B); Azure guide 39–40% (beat 36.7%); **$190B 2026 capex** (vs $150B est — massive AI infra spend); EPS $4.27 vs $4.05; gross margin 68% (down y/y on AI capex); shares -2% AH then flat. Capex shock + headcount-down guide = mixed.
+  - **GOOG:** **Cloud +63%** (vs 50.1% est) — clean beat. AH positive.
+  - Headline framing: "Big Tech Split: Google/Amazon surge, Microsoft/Meta lag" — META not yet reported (tonight); treat that headline as forward-looking commentary.
+- **Sector momentum YTD (refreshed):** **Energy still leader ~+38–40%+ YTD** (likely higher post-WTI $111 spike); Real Estate #2 +2.8%; Tech rotation back leading April (+2.2% one-session XLK); 6-mo: Energy +40.4%, Materials +11.0%, Staples +7.7%, IT -7.8%. S&P 500 Momentum Index +17.26% QTD/YTD as of 4/24.
+
+### Trade Ideas
+*(v1 paper — kill-switch active, documentation only. Posture: pre-event 8:30 macro stack + META/AMZN AMC = HOLD into Friday open at minimum. Three-day-running queue continues.)*
+
+1. **XLE** — Energy +38–40%+ YTD, oil $111 spike reinforces leadership; sector ETF avoids single-name event risk. Indicative entry ~$100, stop ~$90 (-10%), target ~$120 (+20%), R:R ~2:1. Buy-side gate: 0/6 positions, 0/3 trades, ≤20% cap (10 sh ≈ $1,000 = 10% equity), sector-momentum aligned, stock — passes. Caveat: stretched on YTD basis; entry into weakness preferred over chase.
+2. **XLI** — Industrials middle-of-pack with positive earnings momentum; defense + AI-infra/power-grid tailwind, no direct META/AMZN print exposure. Indicative entry ~$160, stop ~$144 (-10%), target ~$192 (+20%), R:R ~2:1. Passes gate.
+3. **XLP** — Consumer Staples +7.7% trailing 6-mo, defensive bid sensible into Core PCE + GDP print + META/AMZN AMC. Indicative entry ~$80, stop ~$72 (-10%), target ~$96 (+20%), R:R ~2:1. Passes gate.
+
+### Risk Factors
+- **Macro / event:** Today's 8:30 stack is dense — GDP advance + Core PCE + ECI Q1 + Claims all at once. PCE is the highest-impact print given Powell's "elevated 3.5%" framing yesterday; an upside surprise reignites no-cut/hike-on-table narrative. FOMC Minutes 1:00 PM secondary.
+- **Earnings concentration:** META + AMZN AMC tonight set tape for tech/discretionary Friday open. MSFT $190B capex + headcount-down already priced AH — watch for read-through to AI infra (NVDA/AVGO/SMH) Thursday session.
+- **Geopolitical / energy:** WTI $111 driven by Middle East military action; oil supply shock = inflation tailwind = hawkish-Fed risk. Two-sided — sudden de-escalation = oil-down / XLE down. No Hormuz closure to-date.
+- **Sector:** Energy stretched on YTD; fade risk on any oil reversal. Tech earnings binary (MSFT mixed, GOOG good — META/AMZN tonight); semis still fragile into AI-capex commentary.
+- **Idiosyncratic:** AI mega-caps (NVDA, AVGO, MSFT, GOOG) all breach 20% cap on $10K — sector ETFs (XLE/XLI/XLP/SMH) remain the structural fit. PDT room intact (3/5 daytrades available).
+- **Liquidity:** Post-FOMC + pre-PCE chop; thin conviction trades underperform.
+- **Data quality:** ESM26 quote 6,657 from one source clearly stale vs. cash 7,138 — treat with skepticism. Account `balance_asof` lags 2d (no fills, no reconciliation event); baseline intact.
+
+### Decision
+**HOLD** — Day 4 (Thu), v1 paper, kill-switch active. Even setting the kill-switch aside, rational stance is wait through 8:30 macro stack (esp. Core PCE) + META/AMZN AMC before any deployment. Friday's GDP/ISM Mfg + post-print digestion sets cleaner entry. XLE / XLI / XLP carried as the v2 market-open queue. Trades this week: 0/3. Patience > activity.
+
+### Sources
+- Perplexity citations: twelvedata.com (WTI hist Apr 30), robinhood.com prediction markets (WTI/Brent/SPX), eia.gov (Q1 oil note + military action context), barchart.com (ESM26, CLJ26, QAJ26), markets.businessinsider.com (premarket — flagged as stale), investing.com (S&P futures), tradingeconomics.com (VIX), fred.stlouisfed.org (VIX Apr 28/29), investing.com (VIX hist), federalreserve.gov (FOMC statement Apr 29 + Mar 18), propfirmscan.com (Powell Apr 29 analysis), bea.gov (release schedule Apr 30 GDP/PCE), thomsoninvestmentgroup.com (econ cal Apr 30), us.econoday.com, marketbeat.com (MSFT/GOOG Q3 results), microsoft.com investor (FY26 Q2/Q3), economictimes.com (MSFT Azure guide + $190B capex), businessinsider.com (MSFT headcount), moomoo.com (Big Tech split commentary), morningstar.com (tech earnings preview), ftportfolios.com (sector YTD), novelinvestor.com (sector returns), schwab.com (sector outlook), spglobal.com (S&P 500 Momentum Index), ssga.com (sector tracker), cmegroup.com (Apr 2026 equity recap), octagonai.co (Brent), statista.com (Brent Apr 7), fortune.com (oil Mar 30).
+- WebSearch fallback used: no
