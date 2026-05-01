@@ -51,4 +51,41 @@ If a routine push ever lands on a `claude/...` branch instead of `main`, the ove
 
 ## Environment variables — exact names matter
 
-The Anthropic Routines runtime does no fuzzy matching of env-var names. A typo like `ALPACA_API_SECRET` vs `ALPACA_SECRET_KEY` causes silent absence (`KEY not set in environment`) instead of the intended value. The 9 names above must match the wrapper scripts and routine prompts letter-for-letter, case-sensitive, no leading/trailing whitespace, no spaces around `=`. The setup script at the environment level pre-validates these and fails fast on any missing or misspelled name.
+The Anthropic Routines runtime does no fuzzy matching of env-var names. A typo like `ALPACA_API_SECRET` vs `ALPACA_SECRET_KEY` causes silent absence (`KEY not set in environment`) instead of the intended value. The 9 names above must match the wrapper scripts and routine prompts letter-for-letter, case-sensitive, no leading/trailing whitespace, no spaces around `=`.
+
+Validation happens **inside the routine prompt** (where Claude runs), not in the setup script — see next section for why.
+
+## Setup script — keep it trivial (load-bearing discovery)
+
+In the Anthropic Routines product, the per-environment **Setup script** runs in a phase *before* Claude Code launches. The env vars you configure in the same form are **scoped to Claude's process, not to the setup script's process**. Anything the setup script tries to read from env will appear empty regardless of what's in the env-vars textbox. This caused multiple days of silent cron failures during initial setup until we figured it out.
+
+**Use this exact setup script** in the Anthropic Routines UI (paste verbatim into the Setup script textbox):
+
+```bash
+#!/bin/bash
+echo "Setup script: passing through. Env validation deferred to routine prompt (where env vars are visible)."
+exit 0
+```
+
+That's the entire script. No env checks, no polling, no validation. Just exits 0 so the runtime moves on to launching Claude.
+
+### Why this works
+
+Three layers of validation already run **inside Claude's process** (where env vars are visible):
+
+1. **Routine prompt env-var loop** — the `IMPORTANT — ENVIRONMENT VARIABLES` block in each `routines/*.md` file runs `for v in ALPACA_API_KEY ...; do [[ -n "${!v:-}" ]] && echo "$v: set" || echo "$v: MISSING"; done` and instructs Claude to STOP + Telegram-alert if any var is missing.
+2. **Wrapper script env guards** — every `scripts/*.sh` wrapper has `: "${ALPACA_API_KEY:?ALPACA_API_KEY not set in environment}"`-style guards that exit 1 with a clear message if a required var is unset.
+3. **Sanity-check on `ALPACA_ENDPOINT`** — both routine prompts include an explicit check that the endpoint contains `paper-api.alpaca.markets` to prevent accidental live-mode runs in v1.
+
+### What NOT to put in the setup script
+
+Avoid all of these. They will cause failures:
+
+- ❌ Anything that reads env vars (they aren't there)
+- ❌ Comments containing em-dashes (`—`) or other non-ASCII chars (the textbox can mangle them, breaking comment parsing)
+- ❌ Backslash line continuations (`\` followed by newline) — the textbox sometimes adds trailing whitespace that breaks bash continuation parsing
+- ❌ Polling loops trying to wait for env vars — they will never appear in this phase
+
+### How this differs from the original PDF guide
+
+The PDF (`docs/source/Opus 4.7 Trading Bot — Setup Guide.pdf`) was written for an earlier Claude Code cloud routines product that had a single shell context: env vars were injected before Claude launched, so a setup script could see them. The current Anthropic Routines UI splits these into two phases. The PDF's Part 7 description ("It injects the environment variables you configured on the routine into the shell. It starts Claude with the prompt") no longer matches the runtime — env injection is now Claude-process-scoped.
