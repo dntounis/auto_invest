@@ -345,3 +345,64 @@ Buy-side gate (forward check): all three pass position count (0/6), trades-this-
 ### Sources
 - Perplexity citations: oilprice.com (WTI/Brent charts), robinhood.com prediction markets (WTI May 1 / Brent May 1 / SPX), polymarket.com (WTI Apr 30 high $110.90), barchart.com (CLK26, CBK26, B1K26, ESM6, VI*0), fred.stlouisfed.org (DCOILWTICO Apr 27 99.89, Apr 24 98.42), cmegroup.com (ESM6 7,259.25 +0.21%), investing.com (S&P futures 7,255.25, VIX hist), gurufocus.com (VIX 16.89 Apr 30), spglobal.com (S&P 500 Momentum Index YTD 12.09% / 1-yr 41.36%), ftportfolios.com (sector YTD thru 3/6: Energy +26.47%, Staples +10.66%, Industrials +9.61%), schwab.com (sector outlook 6-mo: Energy +40.4%, Materials +11.0%, Staples +7.7%, IT -7.8%, Financials -7.5%), investing.com sector rotation (XLB cup-handle), slickcharts.com (S&P YTD), digrin.com (earnings cal May 1: XOM/CVX BMO), earningswhispers.com (May 1), investing.com (Manufacturing PMI + ISM headline), tradingeconomics.com (ISM Mfg Mar 52.7), bls.gov (NFP June 5 schedule), apple.com newsroom (AAPL Q2 FY26 press release), 9to5mac.com (AAPL Q2 +17%), macrumors.com (AAPL $29.6B net income), marketbeat.com (AAPL beats, Q2 FY26), investor.apple.com (Q2 FY26 conference call confirmed), thomsoninvestmentgroup.com (econ cal carry-over).
 - WebSearch fallback used: no
+
+---
+
+## 2026-05-04 — Pre-market Research
+
+### Account
+- Equity: $10,000.00
+- Cash: $10,000.00
+- Buying power: $20,000.00
+- Daytrade count: 0
+- Positions: none | Open orders: none
+- balance_asof: 2026-05-01 (refreshed +1d vs. Fri PM; baseline intact, no fills, no reconciliation event)
+- options_trading_level=3 on the account is irrelevant — hard rule "NO OPTIONS" + wrapper kill-switch + buy-side gate (stocks only) make options unreachable.
+
+### Market Context
+- **WTI: ~$101.50/bbl** (fxdailyreport May 4; symmetrical-triangle setup bounded $90 (lower) / $110 (upper)). Sequence: Apr 28 $99.93 → Apr 29 $106.88 → Apr 30 $108–111 intraday spike (Polymarket-noted high $110.90) → May 1 close $102.50 → May 4 ~$101.50. **Off the Apr 30 spike, holding low-$100s.** Robinhood prediction markets imply 69¢ ≥$101, 59¢ ≥$102, 39¢ ≥$103. Economic Times notes "crude dips below $110 for second session" — Gulf de-escalation proposals are easing the supply-shock premium.
+- **Brent: ~$116.10/bbl** (Fortune, May 1 reference — no fresh May 4 spot in feeds; ~$53/bbl higher YoY). Brent–WTI spread unusually wide (~$14) vs. typical $5–7 — likely stale Brent print or genuine geopolitical premium dispersion; treat with skepticism, prefer WTI as the cleaner read today.
+- **SPX cash: 7,137.90 close Apr 29** remains the last crisp print in feeds; Apr 30 / May 1 cash closes still not in feeds. **ESM26 ~+0.23% premarket** per BBH/Investing.com. **Goldman Sachs flagged SPX > 7,100 as unsustainable "froth"** (Investing.com analyst note carried through May reports) — first explicit sell-side push-back vs. the ATH run. AI/Nasdaq momentum noted as still leading the tape into May (Investors Underground May 4 scan).
+- **VIX: 16.89** last clean print (April monthly read; Apr 30 close confirmed in prior entries). No fresh May 4 spot in feeds; calm regime <20 holds. May VIX futures 20.25 area — typical contango.
+- **FOMC carry-over (Apr 29):** held 3.50–3.75% (1 dissenter Miran), Powell flagged Core PCE 3.5% as "elevated", policy "appropriate", data-dependent. Fed funds futures imply steady rates through year-end with potential for one 25bps cut (BBH).
+- **This week — economic calendar (BBH):**
+  - **Mon May 4:** light US data day, no major releases.
+  - **Tue May 5:** **March JOLTS** (labor market stabilization read); RBA policy decision (consensus +25bp to 4.35%); ADP Employment Change (consensus +62K) and Initial Jobless Claims (~205K) flagged by tradingeconomics for the week.
+  - **Wed May 6:** National Bank of Poland (hold 3.75%); Norges Bank to hike, Riksbank on hold.
+  - **Thu May 7:** **Q1 nonfarm productivity** (consensus +1.0% SAAR vs. Q4 +1.8%) — relevant for unit-labor-cost / inflation read given 3.4% wage growth.
+  - **Fri May 8:** **April nonfarm payrolls — consensus +62K vs. March +178K, unemployment 4.3% unchanged.** Highest-impact print of the week. Soft-jobs path of consensus = dovish setup; upside surprise reignites no-cut narrative.
+  - **No CPI/PPI/FOMC this week** (CPI/PPI mid-May; next FOMC June).
+- **Today's catalysts:**
+  - **AMC: PLTR (Palantir, ~$345B mkt cap) reports** — biggest single-name AI catalyst this week; sets tape for AI/data-analytics names Tue. Pre-print AI/Nasdaq momentum noted still constructive.
+  - **BMO: small regional banks** (CCBG, MCB, CATY, HBCP) — no marquee tape-mover BMO.
+  - News-driven: GME on potential EBAY-bid headlines (Investors Underground May 4 scan); KTB / GILD / AMRX flagged in WallStreetZen weekly-watch.
+- **Sector momentum YTD / 6-mo (refreshed May 4):**
+  - **Energy still leader** — 6-mo trailing **+30.3%** (Schwab May 1 sector outlook); YTD +26.47% thru 3/6 (FT Portfolios). All five Energy subsectors top-15. Energy and Consumer Staples both noted at all-time highs.
+  - **Materials 6-mo +17.2%** (Schwab) — breakout in progress; carrying XLB cup-handle setup.
+  - **Industrials 6-mo +11.4%**, YTD +9.61%.
+  - **Consumer Staples** YTD +10.66%, 6-mo +7.7% — defensive bid intact.
+  - **Lagging quadrant:** Tech, Communications, Consumer Discretionary, Financials. Tech 12-mo +52.7% but recent momentum weak (XLK 6-mo -7.8%). Healthcare weakening; Real Estate and Utilities improving.
+  - **Index composition:** IT 32.95%, Financials 12.54%, Comm 10.53% — tech weight still dominates the index even as momentum rotates underneath.
+
+### Trade Ideas
+*(v1 paper — kill-switch active, documentation only. Posture: Day 6 / Week 2 Day 1, light data Mon, no positions held, three-day-running queue continues. Defer to NFP Fri before any deployment given Goldman "froth" call + soft-jobs consensus + PLTR AMC tonight.)*
+
+1. **XLE** — Energy +26%+ YTD / +30.3% 6-mo, clear leader; sector ETF avoids single-name binary risk (XOM/CVX prints already in rear-view from Fri). Indicative entry ~$100, stop ~$90 (-10%), target ~$120 (+20%), R:R ~2:1. Buy-side gate: 0/6 positions, 0/3 trades this new week, ≤20% cap (10 sh ≈ $1,000 = 10% equity), sector-momentum aligned, stock — passes. Caveat: WTI rolling off Apr 30 $111 spike toward triangle midpoint ($101) — entry into post-de-escalation weakness preferred over chase.
+2. **XLI** — Industrials +9.6% YTD / +11.4% 6-mo; defense + AI-infra/power-grid tailwind, no direct PLTR-print read-through. Indicative entry ~$160, stop ~$144 (-10%), target ~$192 (+20%), R:R ~2:1. Passes gate.
+3. **XLB** — *(NEW — replaces XLP rotation)* Materials 6-mo **+17.2%** (Schwab #2 ranked), breakout setup (cup-handle to $56.8 per investing.com sector rotation). Sector-leading momentum behind only Energy on a 6-mo basis; cleaner cyclical/inflation-beneficiary tilt vs. defensive XLP given soft-jobs / dovish-setup tape. Indicative entry ~$54, stop ~$48.60 (-10%), target ~$64.80 (+20%), R:R ~2:1. Passes buy-side gate (0/6, 0/3, ≤20% cap at 18 sh ≈ $972 = 9.7% equity, sector-momentum aligned, stock). XLP retained as the defensive alternate if NFP surprises hot or VIX breaks 20.
+
+### Risk Factors
+- **Macro / event:** **Friday April NFP is the dominant risk this week.** +62K consensus vs. +178K prior is a sharp deceleration; in-line print = soft-landing/dovish-setup positive for cyclicals (XLE/XLI/XLB) and tech; downside surprise = growth-scare / risk-off; upside surprise = no-cut narrative reignites and hits multiples. JOLTS (Tue) + Q1 productivity (Thu) provide directional setup.
+- **Sentiment / positioning:** **Goldman "froth" call** above SPX 7,100 is the first major sell-side push-back at ATH — sentiment risk. AI/Nasdaq momentum-extended; PLTR AMC tonight ($345B mkt cap) sets tape for AI/data-analytics Tue.
+- **Geopolitical / energy:** Gulf de-escalation proposals taking the Middle East supply-shock premium out of crude (WTI off $111 toward triangle midpoint $101). Two-sided as always — fresh escalation = oil-up / XLE-up; further de-escalation = oil-down / XLE-down. WTI < $100 is the technical break level for the symmetrical triangle thesis.
+- **Sector:** Energy YTD-stretched even at +26%; XOM/CVX prints already digested last week, so today's risk is oil-spot-driven. Tech AI-capex narrative externally validated by all five mega-cap prints (MSFT/GOOG/META/AMZN/AAPL) — but Goldman froth call + recent 6-mo XLK -7.8% says momentum has rotated. Energy + Consumer Staples both at ATH = late-cycle leadership signature.
+- **Idiosyncratic:** AI mega-caps (NVDA, AVGO, MSFT, GOOG, META, AMZN, AAPL, PLTR) all breach the 20% cap on $10K equity — sector ETFs (XLE/XLI/XLB/XLP/SMH) remain the structural fit. PDT room intact (3/5 daytrades available).
+- **Liquidity:** Mon Day 1 Week 2, light data, post-AAPL/post-XOM/CVX digestion — chop risk; thin-conviction trades typically underperform pre-NFP weeks.
+- **Data quality:** Apr 30 / May 1 SPX cash closes still not in fresh feeds (extrapolating from Apr 29 7,137.90 + ESM26 ~+0.23% premarket). VIX May 4 spot also missing from feeds — relying on Apr 30 16.89 close. Brent $116 spot (Fortune May 1 ref) appears stale or anomalous vs. WTI $101 — unusually wide $14 spread; treat with skepticism. Account `balance_asof` refreshed to 2026-05-01.
+
+### Decision
+**HOLD** — Day 6 (Mon, Week 2 Day 1), v1 paper, kill-switch active. Even setting the kill-switch aside, rational stance is wait through the Tue–Thu setup data (JOLTS, productivity) and **Fri NFP** before any deployment; PLTR AMC tonight is single-name binary (not in queue) but sets AI tape for Tue. New 3-trade week budget intact (0/3). Goldman "froth" call introduces material sentiment risk at ATH; XLE / XLI / XLB carried as the v2 market-open queue (XLB rotates in vs. last week's XLP based on +17.2% 6-mo Materials breakout vs. defensive Staples). Patience > activity.
+
+### Sources
+- Perplexity citations: fxdailyreport.com (WTI May 4 analysis $101.50, symmetrical triangle), fortune.com (Brent $116.10 May 1), economictimes.com (WTI < $110 second session), robinhood.com prediction markets (WTI May 4), polymarket.com (WTI May 4 thresholds), twelvedata.com (WTI hist May 1 close $102.65, Apr 30 $111.25, Apr 29 $102.21), eia.gov (Q1 oil + military action), fedprimerate.com (May 1 close $102.50), markets.businessinsider.com (premarket — flagged as stale Apr 7 data), barchart.com (B4K26 VIX, ESM6, VI*0), cmegroup.com (CSXJ6/CSXK6/CSXM6 swap futures), investing.com (S&P futures hist + Goldman "froth" call), tradingeconomics.com (VIX 16.89 Apr 2026), cboe.com (VIX hist), bbh.com (Drivers Week of May 4: NFP +62K, JOLTS, productivity, RBA, no FOMC), us.econoday.com, mortgageelements.com (May 2026 econ cal), whitehouse.gov (PFEI cal 2026), bls.gov (NFP June 5 schedule, May 4 last update), guggenheiminvestments.com (econ cal), capyfin.com (earnings May 4 BMO: CCBG/BBT/MCB/CATY/HBCP), earningswhispers.com (May 4 confirmed BMO), ainvest.com (May 4 earnings), investing.com earnings (PLTR May 4 AMC, $345B mkt cap), nasdaq.com (earnings), marketchameleon.com (earnings cal), investorsunderground.com (May 4 scan: AI/Nasdaq momentum, INTC/AMSC/BE/GME/TEAM/CAR), wallstreetzen.com (5 stocks May 4: KTB/GILD), youtube/Adam Taggart (overbought-pullback warning), zacks.com (May value picks), stocktitan.net (May gainers), ftportfolios.com (sector YTD thru 3/6: Energy +26.47%, Staples +10.66%, Industrials +9.61%), investing.com analysis (sector rotation: leading Staples/Industrials/Materials/Energy, lagging Tech/Comm/Disc/Financials, XLB cup-handle), schwab.com sector outlook May 1 (6-mo: Energy +30.3%, Materials +17.2%, Industrials +11.4%, Staples +7.7%; Tech 12-mo +52.7%), spglobal.com (Momentum Index), macromicro.me (5-yr cumulative Energy +138%, Tech weight), lazyportfolioetf.com (sector returns thru Apr 30), slickcharts.com (S&P YTD), fidelity.com (sector research), digital.fidelity.com.
+- WebSearch fallback used: no
