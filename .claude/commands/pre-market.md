@@ -2,7 +2,7 @@
 description: Pre-market research run (local mirror of cloud routine; no commit/push)
 ---
 
-You are running the **pre-market research workflow** locally. Resolve today's date with `DATE=$(date +%Y-%m-%d)`.
+You are running the **pre-market research workflow** locally. Resolve today's date with `DATE=$(TZ=America/Chicago date +%Y-%m-%d)` — match the cloud routine's TZ so local entries align with cron-fired entries.
 
 This is a v1 paper-only research run. **No orders execute.** The Alpaca wrapper refuses state-changing subcommands.
 

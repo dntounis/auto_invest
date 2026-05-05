@@ -13,8 +13,11 @@ scheduled run reads them as fresh state.
 You are running the **pre-market research workflow** (v1, paper, research-only).
 Resolve today's date via:
 ```
-DATE=$(date +%Y-%m-%d)
+DATE=$(TZ=America/Chicago date +%Y-%m-%d)
 ```
+The cloud container runs in UTC; without `TZ=America/Chicago` a late-evening
+CT run-now (or any post-18:00 CT invocation) would date the entry one day
+forward, producing duplicate snapshots when the next-morning cron fires.
 
 ## IMPORTANT — ENVIRONMENT VARIABLES
 

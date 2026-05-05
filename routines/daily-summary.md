@@ -14,8 +14,11 @@ Day P&L computation breaks.
 You are running the **daily-summary workflow** (v1, paper, EOD snapshot only).
 Resolve today's date via:
 ```
-DATE=$(date +%Y-%m-%d)
+DATE=$(TZ=America/Chicago date +%Y-%m-%d)
 ```
+The cloud container runs in UTC; without `TZ=America/Chicago` a late-evening
+CT run-now (or any post-18:00 CT invocation) would date the snapshot one day
+forward, producing duplicate EOD entries when the next-afternoon cron fires.
 
 ## IMPORTANT — ENVIRONMENT VARIABLES
 
