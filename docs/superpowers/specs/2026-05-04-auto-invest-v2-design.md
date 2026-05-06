@@ -1,10 +1,12 @@
-# auto_invest v2 — Execution Layer Design (DRAFT)
+# auto_invest v2 — Execution Layer Design (LOCKED)
 
-**Status:** DRAFT — not yet brainstormed with user. Contains `OPEN DECISION` markers where dialogue is required before implementation. Do not start the writing-plans phase until every `OPEN DECISION` block is resolved.
+**Status:** LOCKED 2026-05-05 after brainstorming dialogue. All decisions DECIDED. Visa-aware safety rules added (Rules 13–15 in `TRADING-STRATEGY.md`). Ready for writing-plans.
 
-**Author:** Claude (drafted 2026-05-04 while v1 criterion #1 still pending — 3/5 clean cron weekdays).
+**Author:** Claude (drafted 2026-05-04 while v1 criterion #1 still pending — 3/5 clean cron weekdays; locked 2026-05-05 after brainstorming).
 
 **Predecessor:** `docs/superpowers/specs/2026-04-25-auto-invest-design.md` (v1 spec; v1 § 11 is the v2 baseline).
+
+**Critical user constraint:** International student visa. PDT designation (4+ day trades in 5 rolling business days) creates visa risk. The design avoids day trades by construction (stop placement timing + same-day gating on hard-closes) plus a runtime pre-flight on `daytrade_count`.
 
 ---
 
@@ -44,173 +46,147 @@ Still paper. Still no options. Still ≤$10K. The kill-switch flips OFF (`TRADIN
 
 ```
 06:00 CT  pre-market        reads strategy + memory, runs Perplexity, writes RESEARCH-LOG entry with 2-3 trade ideas (or HOLD)
-08:30 CT  market-open       reads today's RESEARCH-LOG, applies buy-side gate, places limit orders + GTC trailing stops; Telegram on each fill or reject
-12:00 CT  midday            reads positions, checks unrealized P&L vs hard rules; tightens stops at +15%/+20%; closes losers at -7%; Telegram if action taken
-15:00 CT  daily-summary     EOD snapshot with realized + unrealized P&L, fills, position table; Telegram once
+08:30 CT  market-open       reads today's RESEARCH-LOG, applies buy-side gate, places limit-with-slippage entry orders; NO stop placed today (visa-aware)
+12:00 CT  midday            reads positions, checks unrealized P&L vs hard rules; tightens stops at +15%/+20%; closes losers at -7%; sector-kill on 2 failures
+                            ALL same-day-skip gated (positions opened today are not eligible for any close action)
+                            ALL sells gated by daytrade_count pre-flight (abort + URGENT Telegram if >= 2)
+15:00 CT  daily-summary     EOD snapshot with realized + unrealized P&L; PLACES trailing-stop GTC for any positions opened today (post-close, can't fire same-day)
+                            Sends one EOD Telegram message per day; fires the 48h-silence heartbeat if applicable
 ```
 
 ### Friday extension
 
 ```
-06:00 CT  pre-market        same as above (still produces ideas; market-open may consume them or skip into Friday close)
+06:00 CT  pre-market        same as above
 08:30 CT  market-open       same
 12:00 CT  midday            same
 15:00 CT  daily-summary     same
-16:00 CT  weekly-review     reads week's RESEARCH-LOGs + TRADE-LOGs, grades the bot, optionally proposes TRADING-STRATEGY edits
+16:00 CT  weekly-review     reads week's RESEARCH-LOGs + TRADE-LOGs, grades the bot, proposes TRADING-STRATEGY edits to Telegram (never auto-applies)
 ```
 
 ### Trade lifecycle (one position)
 
 ```
-1. pre-market T:    idea written to RESEARCH-LOG (TICKER, entry, stop, target, R:R, catalyst)
-2. market-open T:   buy-side gate validates → limit order placed @ ask + slippage budget → Alpaca trailing-stop GTC stop placed once filled
-3. midday T..T+N:   position health checked daily; stop tightened on gains; closed on -7% loss or thesis break
-4. exit:            stop fires automatically OR midday closes manually; exit row appended to TRADE-LOG
-5. weekly-review F: trade graded (win/loss, hit ratio, R:R realized, rule adherence)
+1. pre-market T:    idea written to RESEARCH-LOG (id pm-T-TICKER; TICKER, entry, stop, target, R:R, catalyst)
+2. market-open T:   buy-side gate validates → limit order @ ask × (1 + MAX_ENTRY_SLIPPAGE_PCT) → wait for fill (poll up to 60s)
+3. (intraday T):    position is stop-less; bounded by Rule 3 (20% cap) + risk-parity sizing (2% of equity = ~$200 expected loss)
+4. daily-summary T: trailing-stop GTC placed at 15:00 CT (= 16:00 ET = market close); cannot fire same-day, queues for T+1
+5. midday T+1..N:   position health checked daily; stop tightened on +15%/+20% gains via cancel + re-place trailing stop; closed on -7% loss or thesis break
+6. exit:            stop fires (T+1+ only) OR midday closes manually (T+1+ only) → exit row appended to TRADE-LOG with realized P&L
+7. weekly-review F: trade graded (win/loss, hit ratio, R:R realized, rule adherence, day-trade count delta)
 ```
 
-### State boundaries
+### State boundaries (unchanged from v1)
 
-- **Source of truth for positions:** Alpaca account (`bash scripts/alpaca.sh positions`).
-- **Source of truth for orders:** Alpaca account (`bash scripts/alpaca.sh orders`).
-- **Source of truth for narrative + decisions:** `memory/TRADE-LOG.md`, `memory/RESEARCH-LOG.md`, `memory/WEEKLY-REVIEW.md` — all append-only, all on `main`.
-- **No local state files.** Every routine starts from a fresh clone + a fresh Alpaca state pull.
+- Source of truth for positions: Alpaca (`bash scripts/alpaca.sh positions`)
+- Source of truth for orders: Alpaca (`bash scripts/alpaca.sh orders`)
+- Source of truth for `daytrade_count`: Alpaca (`bash scripts/alpaca.sh account` — the field is in the JSON response)
+- Source of truth for narrative: append-only memory files on `main`
 
 ---
 
-## 4. Open decisions (REQUIRES BRAINSTORMING)
+## 4. Locked decisions (DECIDED 2026-05-05)
 
-These are the design questions the brainstorming dialogue must answer before writing-plans can run. Each block has my recommendation + the alternatives I considered. Treat my recommendation as a starting position to either confirm or push back on.
+All decisions resolved during brainstorming. Each block records the chosen option + rationale.
 
-### OPEN DECISION A — Stop-loss implementation
+### DECIDED A — Stop-loss implementation: server-side trailing stops, placed at daily-summary on T
 
-**Strategy says:** "Every position gets a 10% trailing stop placed as a real GTC Alpaca order. Never mental." (`TRADING-STRATEGY.md` rule 6)
+**Choice:** Pure server-side `trailing_stop` GTC orders. Placed by the `daily-summary` routine at 15:00 CT (= market close on T) for any positions opened today. Positions opened on prior days have their stops already in place from their own daily-summary run.
 
-Three options:
+**Why:** Matches strategy Rule 6 literally ("real GTC Alpaca order, never mental"). Placement at market close ensures the stop cannot fire same-day (regular session is over; stop orders don't run in extended hours), eliminating the day-trade vector while still giving overnight protection. Tightening on +15%/+20% gains is a `cancel` + re-place at narrower trail, run by midday on T+1 onward.
 
-1. **Pure server-side trailing stops.** Place a `trailing_stop` GTC order with Alpaca right after entry fills. Alpaca tracks the high-water mark and fires automatically. Tightening on +15%/+20% gains requires `cancel` + new `trailing_stop` order at narrower trail.
-2. **Computed each midday.** Read current price + entry, compute stop level, place a fixed `stop` GTC order, replace daily.
-3. **Hybrid.** Server-side `trailing_stop` for the safety net; midday recomputes and adjusts only when crossing tightening thresholds.
+**Action items:**
+- Add `trailing-stop <ticker> <qty> <trail_percent>` subcommand to `scripts/alpaca.sh` (POST `/v2/orders` with `type=trailing_stop`, `trail_percent=N`, `time_in_force=gtc`, `extended_hours=false`).
+- Add `replace-stop <order_id> <new_trail_percent>` helper (`cancel` + `trailing-stop`).
 
-**Recommendation:** Option 1 (pure server-side trailing stops). Rationale: matches strategy text literally ("real GTC Alpaca order"), survives between routine fires, doesn't depend on midday running successfully. Tightening at +15%/+20% becomes a `cancel` + `re-place` operation in midday — straightforward.
+### DECIDED B — Order type for entries: limit @ ask + 0.10% slippage budget
 
-**Action item if Option 1 chosen:** add `trailing-stop` subcommand to `scripts/alpaca.sh` (Alpaca API supports `type=trailing_stop` with `trail_percent` field).
+**Choice:** Limit orders priced at `ask × (1 + MAX_ENTRY_SLIPPAGE_PCT)`. Default `MAX_ENTRY_SLIPPAGE_PCT=0.10%`, settable via env var.
 
-### OPEN DECISION B — Order type for entries
+**Why:** Same code path as v3 (live) will use safely. Bounds slippage to a known cap; refuses to fill on a fast-moving stock that's run away from the idea's entry price. Avoids accidentally blowing past the 20% position cap.
 
-Three options:
+### DECIDED C — Idea selection: up to N respecting weekly cap, ranked by R:R
 
-1. **Market orders.** Guarantee fill; accept slippage.
-2. **Limit at the ask.** No slippage; might miss fast-moving stocks.
-3. **Limit at ask + small slippage budget** (e.g., +0.10% above current ask). Compromise.
+**Choice:** At market-open, rank passing ideas by R:R (descending), tie-breaker alphabetical ticker. Place the top `min(passing_ideas, weekly_cap_remaining)` orders.
 
-**Recommendation:** Option 3 with a `MAX_ENTRY_SLIPPAGE_PCT` env var (default 0.10%). Rationale: paper-trading slippage is fictional anyway, but Option 3 keeps the same code path that v3 (live) will use safely, and avoids accidentally blowing past the 20%-per-position cap if a market order fills at a much higher price than expected.
+**Why:** Respects the existing 3/week cap. Highest-conviction-first is approximately R:R-first.
 
-### OPEN DECISION C — How many of pre-market's ideas to execute
+**Visa-aware addition:** market-open never closes a position (entries only). Therefore market-open cannot itself create a day trade. The `daytrade_count` pre-flight (Rule 14) gates only sells.
 
-Pre-market produces 2–3 ideas (or HOLD). At market-open, when ideas exist:
+### DECIDED D — Position sizing: risk-parity (2% risk per trade, 20% cap)
 
-1. **All ideas that pass the buy-side gate.** Could be 2–3 buys in one morning; bumps against "max 3/week" cap fast.
-2. **Top-conviction only.** Pre-market would need to rank ideas; pick #1.
-3. **Up to N where N respects the weekly trade budget.** E.g., if 2 trades already this week, place at most 1 more today even if 3 ideas pass the gate.
+**Choice:** Size each position so that `(entry_price - stop_price) × shares = RISK_PER_TRADE_PCT × equity`. Default `RISK_PER_TRADE_PCT=2.0` (= $200 risk on $10K equity). Hard-capped at 20% of equity per position (Rule 3).
 
-**Recommendation:** Option 3. Rationale: respects the existing weekly cap as a hard constraint, doesn't require pre-market to do conviction ranking (it currently doesn't). Selection rule when N < ideas-passing-gate: take the highest-R:R idea first. Tie-breaker: alphabetical ticker.
+**Why:** Textbook fixed-risk variable-size sizing. Stop distance becomes economically meaningful: a tight-stop trade gets more shares, a wide-stop trade gets fewer, both risk the same dollars on stop-out.
 
-### OPEN DECISION D — Position sizing
+**Stop_price for sizing:** the entry-day risk uses the trail percent target (default 10% trail = stop at entry × 0.90). Once midday tightens the trail, position size is unchanged; only the dollar-risk profile narrows.
 
-Strategy: "Maximum 20% of equity per position (~$2,000 on a $10K account)."
+### DECIDED E — Midday triggers: hard-close losers, tighten stops, sector-kill (all same-day-skip gated)
 
-Three sizing rules:
+**Choice:** At 12:00 CT, midday:
+1. Pulls positions, current quotes, open stop orders, `account.daytrade_count`.
+2. For each position with `entry_date < today` (visa gate, Rule 15):
+   - **Hard-close** if unrealized P&L ≤ -7% (Rule 7) → market sell, after `daytrade_count` pre-flight.
+   - **Tighten** trailing stop to 7% trail at +15% gain; to 5% trail at +20% gain (Rule 8).
+   - **Sector-kill** if `TRADE-LOG.md` tail shows 2 consecutive losses in this position's sector → close all positions in that sector with `entry_date < today`.
+3. Same-day positions (`entry_date == today`) are **read-only** in midday — observed but never acted on.
+4. Telegram silent if no action; one message summarizing actions taken if any.
 
-1. **Always exactly 20%.** Predictable; max diversification at 5 positions.
-2. **Sized by R:R.** Higher R:R → larger position. Variable; harder to reason about.
-3. **Risk-parity sizing.** Size such that the stop distance × shares = a fixed dollar risk per trade (e.g., $200 = 2% of $10K). Variable position size, fixed risk.
+**Failure mode:** if Alpaca unreachable, send URGENT Telegram, do nothing else, exit. Trailing stops still in place server-side from prior daily-summary runs.
 
-**Recommendation:** Option 3 with `RISK_PER_TRADE_PCT` env var (default 2.0% = $200). Rationale: this is the textbook approach — fixed-risk, variable-size — and it makes the stop distance directly meaningful. A tight 5%-stop trade gets a $4K position (capped at 20% = $2K so really $2K); a wide 10%-stop trade gets a $2K position. Both risk $200 if stopped out. Capped at 20% per `TRADING-STRATEGY.md` rule 3.
+**Out of scope for v2:** thesis-break detection (deferred to v2.5). Pre-market is responsible for flagging thesis breaks in next morning's research; midday only acts on rules 7, 8, 10.
 
-**Worth pushing back on if:** user prefers Option 1's simplicity for v2 launch and wants Option 3 deferred to v2.5.
+### DECIDED F — Midday checks unrealized P&L vs entry, gated to skip same-day positions
 
-### OPEN DECISION E — Midday triggers and actions
+**Choice:** Midday computes `(current_price - entry_price) / entry_price * 100` for each position with `entry_date < today` (Rule 15 gate). If ≤ -7%, market-close after `daytrade_count` pre-flight.
 
-Midday runs at 12:00 CT every weekday. What it does:
+**Why:** Trailing stop alone doesn't enforce -7%-from-entry on a position that never ticks up (it fires at -10% from high, which on a never-ticking-up position is -10% from entry). Midday is the active enforcer of Rule 7.
 
-1. Pull positions, current quotes, open stop orders.
-2. For each position: compute unrealized P&L %, check thresholds.
-3. **Hard exits (always close):** unrealized loss ≤ -7% (rule 7). This means a `close` order at market, even though the trailing stop would eventually fire wider.
-4. **Stop tightening:** at +15% gain → re-place trailing stop with `trail_percent=7`. At +20% → `trail_percent=5`.
-5. **Sector kill:** if `TRADE-LOG.md` shows 2 consecutive losses in a sector, close all open positions in that sector (rule 10).
-6. **Telegram:** silent if no action; one message summarizing actions taken if any. URGENT prefix on hard exits.
+**Risk accepted:** a fresh position can fall through -7% on T (its first day) and ride the loss to overnight. The trailing stop placed at daily-summary will catch it the next day if it's still down 10% from entry. Bounded by risk-parity sizing: a 2%-of-equity risk budget caps the dollar exposure.
 
-**OPEN sub-questions:**
-- How does midday detect "thesis broken" (rule from sell-side)? Recommendation: out of scope for midday — relies on pre-market to flag thesis breaks in next morning's research, then midday acts. v2.5 could add a Perplexity check on each held ticker.
-- What's the failure mode if midday can't reach Alpaca? Recommendation: Telegram alert with `URGENT` prefix, do nothing else, exit. Trailing stops still in place server-side.
+### DECIDED G — Weekly-review proposes only, never auto-edits TRADING-STRATEGY
 
-### OPEN DECISION F — Sell-side: midday hard exits vs trailing stops
+**Choice:** Friday's `weekly-review` writes proposed changes to `WEEKLY-REVIEW.md` and sends a Telegram with the proposed diff. Human applies (or rejects) by hand. Never commits an edit to `TRADING-STRATEGY.md` directly.
 
-Tension: rule 7 says "Cut any losing position at -7%". Rule 6 says "10% trailing stop". A 10% trail can let a position drop to -10% from the high before firing. If a position drops -7% from entry without ever ticking up, the trailing stop hasn't moved and won't fire at -7%.
+**Why:** The rulebook is the safety system. An autonomous bot mutating its own safety rules creates the next post-mortem. v3 (live) might revisit this once trust history is longer.
 
-Three resolutions:
+### DECIDED H — Idempotency: read Alpaca state, skip duplicates
 
-1. **Hard -7% stop on entry.** Place a `stop` GTC at -7% from entry alongside the trailing stop. Whichever fires first wins.
-2. **Midday checks unrealized P&L vs entry.** If ≤ -7%, market-close immediately, ignore trailing stop.
-3. **Both.** Belt-and-suspenders.
+**Choice:** Every routine that places orders (market-open) reads today's orders + fills from Alpaca BEFORE placing anything. If an order or fill for ticker X already exists today, skip ticker X. No lock files, no committed run-state.
 
-**Recommendation:** Option 2. Rationale: keeps order book clean (one stop per position, not two), gives midday a real job, matches the strategy text ("Cut losers at -7% manually"). Risk: a -8% gap between midday firings goes undefended. Acceptable for paper; revisit in v3.
+**Why:** Alpaca state is the source of truth. Lock files via git commits are racy on cron-fired runs.
 
-### OPEN DECISION G — Weekly-review: write-eligible to TRADING-STRATEGY?
+### DECIDED I — Trade-row → idea linkage via `pm-YYYY-MM-DD-TICKER` ID
 
-Original v1 spec § 12 deferred this question. Two paths:
+**Choice:** Each pre-market idea is referenced as `pm-YYYY-MM-DD-TICKER`. RESEARCH-LOG entries gain an `**ID:** pm-2026-05-04-XLE` line per idea. Trade rows in TRADE-LOG.md include the same ID in their Catalyst field.
 
-1. **Auto-edit:** weekly-review can directly edit `TRADING-STRATEGY.md`, commit, push. Friday afternoons mutate the rulebook.
-2. **Propose-only:** weekly-review writes proposals to `WEEKLY-REVIEW.md` + sends a Telegram with the proposed diff. Human applies (or rejects) by hand on Saturday morning.
+**Why:** Simple, deterministic, no breaking schema change. Ambiguous only on duplicate-ticker-same-day, which already violates Rule 2 (max 5–6 positions, and implicitly max 1 per ticker).
 
-**Recommendation:** Option 2 for v2. Rationale: the rulebook is the safety system. An autonomous bot mutating its own safety rules is the kind of thing that creates the next post-mortem. Option 1 becomes considerable in v3 once the trust history is longer.
+### DECIDED J — Telegram volume: 6–21/week + 48-hour silence heartbeat
 
-### OPEN DECISION H — Idempotency on rerun
-
-What happens if `market-open` fires twice on the same morning (cron + manual run-now)?
-
-1. **Strict idempotency:** routine reads today's open orders + fills BEFORE placing anything; if a buy for ticker X is already open or filled today, skip.
-2. **Naive replay:** routine just runs again, possibly placing duplicate orders.
-3. **Lock file in repo:** routine writes a date-stamped lock file at start; refuses to run if a lock for today's date exists.
-
-**Recommendation:** Option 1. Rationale: the routine has read access to Alpaca state — it should USE that state to decide whether work is already done. Lock files via git commits are racy and brittle.
-
-### OPEN DECISION I — Trade-row schema in TRADE-LOG.md
-
-Schema already exists at top of `TRADE-LOG.md` (defined in v1 for v2 use):
-
-```
-### YYYY-MM-DD — TRADE: TICKER side=buy|sell qty=N
-- Entry: $X (or Exit: $X)
-- Stop level: $X (trailing N% / fixed $X)
-- Thesis: ...
-- Catalyst: ... (link to RESEARCH-LOG entry)
-- Target: $X (R:R X:1)
-- Realized P&L (on exits only): $X
-```
-
-Open question: how to link a trade row to its RESEARCH-LOG idea? Three options:
-
-1. **By date:** "see 2026-05-04 entry" — fuzzy if multiple ideas.
-2. **By idea ID:** add `id: pm-2026-05-04-XLE-1` to RESEARCH-LOG ideas; reference it in trade rows.
-3. **By idea hash:** ticker + date.
-
-**Recommendation:** Option 3 (`pm-YYYY-MM-DD-TICKER`). Rationale: simple, deterministic, no schema change to RESEARCH-LOG. Ambiguous only if pre-market generates two ideas for the same ticker same day, which violates max-1-position-per-ticker anyway.
-
-### OPEN DECISION J — Telegram message volume in v2
-
-v1 sends ~1 Telegram per weekday (EOD). v2 message budget:
-
-- Pre-market: silent (unchanged).
-- Market-open: 1 message per fill or reject (typical: 0–2/day).
-- Midday: silent unless action taken (typical: 0–1/day).
-- Daily-summary: 1/day (unchanged but richer content).
+**Choice:**
+- Pre-market: silent unless macro-urgent (unchanged from v1).
+- Market-open: 1 message per fill, 1 per reject. Typical 0–2/day.
+- Midday: silent unless action taken; 1 summary message if any. URGENT prefix on hard-close.
+- Daily-summary: 1/day, richer content (positions, fills, P&L, stops placed today).
 - Weekly-review: 1/Friday with grade card.
+- **Heartbeat:** if `daily-summary` notes that no Telegram message has been sent (by any routine) in the last 48 hours, it appends a one-line heartbeat to its EOD message ("Heartbeat: 48h silence — system alive, last action <date>"). Detected by reading the routine's own commit history on `main` and the timestamp of the last `telegram.sh` invocation logged via a small commit-ledger trick or a git-grep over recent commit messages mentioning Telegram.
 
-**Estimated weekly volume:** 5 (EOD) + 0–10 (market-open fills) + 0–5 (midday actions) + 1 (Fri review) = ~6–21/week. Acceptable.
+**Why:** Day-trader-conscious silence + an explicit liveness signal so a stretch of pure-HOLD weeks (which is *expected* and on-strategy) doesn't read as "is the bot still alive?".
 
-**OPEN sub-question:** should there be a daily heartbeat from market-open even when no orders placed (e.g., "market-open ran, 0 ideas executed today, 2 positions held")? My instinct: no — `git log` is the heartbeat.
+**Heartbeat detection mechanism:** out of scope for the spec; the implementation plan picks one of: (a) parse routine commit messages for "Telegram delivered" markers, (b) maintain a `memory/HEARTBEAT.md` file with last-Telegram-timestamp updated by `telegram.sh`. Recommend option (b) — single source of truth, no string parsing.
+
+---
+
+## 4a. New visa-aware safety rules (added to TRADING-STRATEGY.md)
+
+Three rules added during the brainstorming dialogue, all marked `(v2, visa-aware)`:
+
+- **Rule 13** — Stops are placed at market close on the entry day (daily-summary, T 15:00 CT), not at entry. This guarantees stops cannot fire same-day, eliminating the trailing-stop day-trade vector.
+- **Rule 14** — Pre-flight `daytrade_count` check before every sell. If `account.daytrade_count >= 2`, abort the sell, send Telegram URGENT, require human review. Buffer of 2 leaves room for one accidental day trade.
+- **Rule 15** — Midday hard-close (-7%) and sector-kill skip positions opened today. Same-day exits are day trades; same-day positions ride out T stop-less.
+
+These three rules together create defense-in-depth: by-design avoidance (Rules 13, 15) plus runtime guard (Rule 14).
 
 ---
 
@@ -276,45 +252,82 @@ Each new routine prompt follows the same template as v1's `pre-market.md`/`daily
 
 ```
 STEP 1 — Read memory: TRADING-STRATEGY.md (rules), today's RESEARCH-LOG.md entry (ideas)
-STEP 2 — Pull state: account, positions, orders, daytrade_count
-STEP 3 — Apply buy-side gate to each idea (skip with logged reason on failure)
-STEP 4 — Compute position sizes per OPEN DECISION D
-STEP 5 — Place limit orders per OPEN DECISION B; wait for fills (poll up to 60s)
-STEP 6 — On each fill: place trailing-stop GTC (per OPEN DECISION A)
-STEP 7 — Append trade rows + initial stop info to TRADE-LOG.md (schema per OPEN DECISION I)
-STEP 8 — Send Telegram per OPEN DECISION J: one msg per fill or reject
-STEP 9 — Commit + push to main
+STEP 2 — Pull state: account (incl. daytrade_count), positions, orders. Idempotency: skip any ticker already filled or open today.
+STEP 3 — For each idea: apply buy-side gate. Compute R:R. Skip and log reason on failure.
+STEP 4 — Rank passing ideas by R:R desc, ticker asc. Take top min(passing, weekly_cap_remaining).
+STEP 5 — For each selected idea: compute risk-parity size:
+           dollar_risk = RISK_PER_TRADE_PCT × equity (default 2.0% = $200 on $10k)
+           stop_distance_pct = trail_percent (default 10% from entry)
+           shares = floor(dollar_risk / (entry × stop_distance_pct))
+           cap shares so that shares × entry ≤ MAX_POSITION_PCT × equity (default 20%)
+STEP 6 — Place limit BUY orders at price = ask × (1 + MAX_ENTRY_SLIPPAGE_PCT), TIF=day.
+           Poll up to 60s for fill. NO trailing stops placed in this routine (Rule 13 — stops at daily-summary).
+STEP 7 — On each fill: append BUY trade row to TRADE-LOG.md (schema with id pm-YYYY-MM-DD-TICKER, sector, planned trail percent).
+STEP 8 — Telegram: 1 message per fill, 1 per reject. Silent if no orders placed.
+STEP 9 — Commit + push to main.
 ```
 
 ### midday prompt skeleton
 
 ```
-STEP 1 — Read memory: TRADING-STRATEGY.md (sell-side rules), tail of TRADE-LOG.md (entries + stops + sector tally)
-STEP 2 — Pull state: positions, current quotes, open stop orders
-STEP 3 — For each position: compute unrealized P&L %, check thresholds (per OPEN DECISIONS E + F)
-STEP 4 — Take actions: hard-close losers; tighten stops on gains; sector-kill on 2-loss streak
-STEP 5 — Append action rows to TRADE-LOG.md (sells = exit rows with realized P&L)
-STEP 6 — Send Telegram per OPEN DECISION J: silent if no action, one summary if any
-STEP 7 — Commit + push to main (skip if no changes)
+STEP 1 — Read memory: TRADING-STRATEGY.md (sell-side rules + Rules 13–15), tail of TRADE-LOG.md (entries, sector tally).
+STEP 2 — Pull state: account (incl. daytrade_count), positions, current quotes, open stop orders.
+STEP 3 — Filter positions to "actionable": entry_date < today (Rule 15 same-day skip). Same-day positions are read-only.
+STEP 4 — For each actionable position:
+           a. Compute unrealized P&L % vs entry.
+           b. If ≤ -7% (Rule 7): hard-close candidate.
+           c. If ≥ +20% gain: tighten trailing stop to 5%.
+           d. If ≥ +15% gain (and not already at 5% trail): tighten trailing stop to 7%.
+           e. If sector has 2 consecutive losses in TRADE-LOG.md tail: sector-kill candidate.
+STEP 5 — Pre-flight before any sell (Rule 14):
+           if account.daytrade_count >= 2:
+               abort all sells; send Telegram URGENT; commit a "midday: aborted sells, daytrade_count=N" note; exit
+STEP 6 — Execute actions:
+           - Hard-close: market sell. Append exit trade row with realized P&L.
+           - Tighten stop: cancel existing trailing stop, place new trailing-stop with narrower trail_percent.
+           - Sector-kill: market-close all actionable positions in that sector (each pre-flighted).
+STEP 7 — Telegram: silent if no actions. One summary message if any. URGENT prefix on hard-close or sector-kill.
+STEP 8 — Commit + push to main (skip if no changes).
+```
+
+### daily-summary prompt skeleton (v2 expansion)
+
+```
+STEP 1 — Read memory: tail of TRADE-LOG.md (yesterday's equity, today's BUY rows from market-open).
+STEP 2 — Pull final state: account, positions, orders, fills via `activities` (today only).
+STEP 3 — Compute Day P&L (realized + unrealized vs yesterday's equity), Phase P&L (vs $10K Day 0).
+STEP 4 — Place trailing-stop GTC orders for any positions opened today and not yet stopped (Rule 13):
+           For each position with entry_date == today and no existing trailing-stop:
+               trail_percent = idea.trail_percent (default 10)
+               bash scripts/alpaca.sh trailing-stop TICKER QTY TRAIL_PERCENT
+           Append "STOP PLACED" row to TRADE-LOG.md for each (links to the BUY row by ID).
+STEP 5 — Append EOD snapshot to TRADE-LOG.md (existing v1 schema, now with non-empty positions table + realized fills).
+STEP 6 — Heartbeat check: read memory/HEARTBEAT.md (last Telegram timestamp). If now - last > 48h, prepend
+           "Heartbeat: 48h silence — system alive" to the EOD Telegram body.
+STEP 7 — Telegram: 1 EOD message (always), with optional heartbeat prefix.
+STEP 8 — Commit + push to main. (TRADE-LOG.md + memory/HEARTBEAT.md updates.)
 ```
 
 ### weekly-review prompt skeleton
 
 ```
-STEP 1 — Read memory: TRADING-STRATEGY.md, this week's RESEARCH-LOG.md entries (Mon-Fri), this week's TRADE-LOG.md entries
-STEP 2 — Pull state: account, positions, fills via `activities`
+STEP 1 — Read memory: TRADING-STRATEGY.md, this week's RESEARCH-LOG.md entries (Mon-Fri), this week's TRADE-LOG.md entries.
+STEP 2 — Pull state: account, positions, all fills this week via `activities`.
 STEP 3 — Compute weekly grade card:
-  - Trades placed (target ≤3)
-  - Win/loss ratio
-  - Realized + unrealized P&L for the week
-  - R:R realized vs target on each closed trade
-  - Sector-level summary
-  - Rule violations (e.g., did any position exceed 20%? did midday miss a -7% close?)
-STEP 4 — Append week summary to TRADE-LOG.md (use schema TBD during brainstorming)
-STEP 5 — Append entry to WEEKLY-REVIEW.md including any proposed strategy mutations
-STEP 6 — Telegram: send the grade card (1 message)
-STEP 7 — Per OPEN DECISION G: do NOT auto-edit TRADING-STRATEGY.md; propose via WEEKLY-REVIEW + Telegram
-STEP 8 — Commit + push to main
+           - Trades placed this week (target ≤3) and how many cleared the buy-side gate
+           - Win/loss ratio on closed trades
+           - Realized + unrealized P&L for the week (vs week-open equity)
+           - R:R realized vs target on each closed trade
+           - Sector-level summary
+           - daytrade_count delta this week (target: 0)
+           - Rule violations: positions > 20%, missed -7% closes, missed stop-tightening, etc.
+STEP 4 — Append week-summary block to TRADE-LOG.md.
+STEP 5 — Append entry to WEEKLY-REVIEW.md following the existing template; include any proposed
+           changes to TRADING-STRATEGY.md as a `## Proposed strategy changes` block with diff markers.
+           DO NOT edit TRADING-STRATEGY.md (Rule G).
+STEP 6 — Telegram: send the grade card (1 message). If proposed strategy changes exist, prepend
+           "*Strategy changes proposed* — review WEEKLY-REVIEW.md before Mon".
+STEP 7 — Commit + push to main.
 ```
 
 ---
@@ -333,13 +346,18 @@ These extend the existing test pattern in v1's `tests/test_alpaca.sh`.
 
 ## 9. Bootstrap order (for the v2 implementation plan)
 
-1. Resolve every OPEN DECISION via brainstorming.
-2. Write the v2 implementation plan with writing-plans.
-3. Wrapper changes first (new alpaca.sh subcommands + tests). No routine touches Alpaca state-changing endpoints until the wrapper supports them safely.
-4. Local mirrors (`.claude/commands/*.md`) before cloud routines — test interactively with the kill-switch still ON.
-5. Flip `TRADING_ENABLED=true` ONE routine at a time, smoke-test with Run now, observe one cron firing before adding the next routine.
-6. Order of routine activation: `market-open` → `midday` → `weekly-review`. (Each builds on the prior week's data.)
-7. v2 exit criteria observation period.
+1. ~~Resolve every OPEN DECISION via brainstorming.~~ DONE 2026-05-05.
+2. Write the v2 implementation plan with writing-plans. **Current step.**
+3. Update `memory/TRADING-STRATEGY.md` with new Rules 13–15. (DONE in same brainstorming commit as this lock.)
+4. Wrapper changes first: add `trailing-stop`, `replace-stop`, `activities` subcommands to `scripts/alpaca.sh` with tests. No routine touches state-changing endpoints until wrappers exist + tests pass.
+5. Local mirrors (`.claude/commands/{market-open,midday,weekly-review,trade}.md`) before cloud routines — test interactively with `TRADING_ENABLED=false` still in place.
+6. Flip `TRADING_ENABLED=true` ONE routine at a time:
+   - `daily-summary` first (it gains stop-placement responsibility, lowest risk to enable since it only places stops on positions that already exist from market-open).
+   - `market-open` second (entries only, never sells).
+   - `midday` third (sells gated by Rules 14–15).
+   - `weekly-review` fourth (read-only against Alpaca; only writes to memory + Telegram).
+7. After each routine flip: smoke-test with Run now, observe one cron firing before flipping the next.
+8. v2 exit criteria observation period (§ 10).
 
 ---
 
@@ -348,12 +366,14 @@ These extend the existing test pattern in v1's `tests/test_alpaca.sh`.
 System is v2-stable when **all** observed (refined from v1 § 11):
 
 1. All five routines fire successfully on cloud cron for **2 consecutive weeks** (10 weekdays) with no manual intervention.
-2. Every position held at any point during the observation window had a real trailing-stop GTC order present (verifiable in `bash scripts/alpaca.sh orders` history).
-3. No `TRADING-STRATEGY.md` rule was violated (audit by re-reading `TRADE-LOG.md`).
-4. Midday took the right action on every threshold cross (≥-7% loser closed; +15%/+20% stops tightened); auditable from order history vs price history.
-5. Weekly-review actually graded the bot both weeks (not just "no trades, no comment").
+2. Every position held overnight during the observation window had a real trailing-stop GTC order present by 15:30 CT on its entry day (verifiable in `bash scripts/alpaca.sh orders` history).
+3. No `TRADING-STRATEGY.md` rule was violated, including new Rules 13–15 (audit by re-reading `TRADE-LOG.md`).
+4. Midday took the right action on every threshold cross for *actionable* (= entry_date < today) positions; auditable from order history vs price history.
+5. Weekly-review graded both weeks (not just "no trades, no comment") and produced at least one parseable proposed-changes block for human review.
 6. Zero `.env` files in the cloud clone (carry-forward from v1 #5).
 7. No Alpaca API errors propagated to Telegram URGENT alerts that required human cleanup (transient errors with successful retry don't count).
+8. **`account.daytrade_count` never exceeded 2 during the observation window** (Rule 14 buffer never breached → no PDT designation risk realized).
+9. Telegram heartbeat fired correctly on any 48h+ silence stretch within the observation window.
 
 Then v3 (live) becomes its own design discussion.
 
@@ -368,18 +388,19 @@ Then v3 (live) becomes its own design discussion.
 - Multi-strategy portfolios (one bot, one strategy)
 - Backtesting infrastructure
 - Web UI / mobile app
-- Auto-mutating `TRADING-STRATEGY.md` (deferred per OPEN DECISION G)
-- Perplexity-driven thesis-break detection on held positions (deferred to v2.5 per OPEN DECISION E)
+- Auto-mutating `TRADING-STRATEGY.md` (deferred per DECIDED G)
+- Perplexity-driven thesis-break detection on held positions (deferred to v2.5 per DECIDED E)
 
 ---
 
-## 12. Notes for the brainstorming session
+## 12. Brainstorming history (resolved)
 
-When the user pings to start brainstorming (after v1 criterion #1 closes):
+Brainstorming dialogue completed 2026-05-05. All decisions DECIDED in § 4.
 
-1. Walk OPEN DECISIONS A–J in order. Each is a single multiple-choice question plus my recommendation.
-2. After each decision, replace the OPEN DECISION block with a **DECIDED** block stating the chosen option and any user-provided rationale.
-3. Once all decisions are DECIDED, run the spec self-review (placeholder scan, internal consistency, scope check).
-4. Then transition to writing-plans.
+User-provided constraint that shaped the design: **international student visa**. PDT designation creates real visa risk. This converted three sub-decisions:
 
-Estimated brainstorming time: ~30 minutes (10 decisions × ~2–3 minutes each, mostly user confirming recommendations).
+1. **Stop placement timing** moved from market-open (T 08:30) to daily-summary (T 15:00, market close) so stops cannot fire same-day.
+2. **Midday hard-close + sector-kill** added a same-day-skip gate so they cannot create a same-day exit.
+3. **New Rule 14**: pre-flight `daytrade_count` check before every sell, abort + URGENT Telegram if `>= 2` (buffer of 2 leaves room for accidental day trades without immediately freezing the system).
+
+Brainstorming time: ~25 minutes. Outcome: spec locked, Rules 13–15 added to `TRADING-STRATEGY.md`, ready for writing-plans.
