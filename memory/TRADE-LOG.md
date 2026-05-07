@@ -11,6 +11,7 @@ In v1, only EOD snapshots are written (by the `daily-summary` routine). Trade ro
 ### YYYY-MM-DD — TRADE: TICKER side=buy|sell qty=N
 - Entry: $X (or Exit: $X)
 - Stop level: $X (trailing N% / fixed $X)
+- Sector: <GICS sector or ETF sector classification>
 - Thesis: ...
 - Catalyst: ... (link to RESEARCH-LOG entry)
 - Target: $X (R:R X:1)

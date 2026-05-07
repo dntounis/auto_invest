@@ -139,6 +139,7 @@ DO NOT cancel positions or close anything — Rule 15 (no same-day exits, no clo
 ### YYYY-MM-DD — TRADE: TICKER side=buy qty=N
 - Entry: $X
 - Stop level: pending (placed at daily-summary T 15:00 CT per Rule 13)
+- Sector: <GICS sector or ETF sector classification>
 - Thesis: <copied from RESEARCH-LOG entry>
 - Catalyst: pm-YYYY-MM-DD-TICKER (link to RESEARCH-LOG entry)
 - Target: $X (R:R X:1)

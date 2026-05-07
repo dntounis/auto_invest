@@ -19,7 +19,13 @@ DATE=$(TZ=America/Chicago date +%Y-%m-%d)
   `ALPACA_API_KEY`, `ALPACA_SECRET_KEY`, `ALPACA_ENDPOINT`, `ALPACA_DATA_ENDPOINT`,
   `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TRADING_ENABLED`.
 - There is NO `.env` file in this repo and you MUST NOT create, write, or source one.
-- Verify env vars BEFORE any wrapper call (same pattern as market-open).
+- Verify env vars BEFORE any wrapper call:
+```
+for v in ALPACA_API_KEY ALPACA_SECRET_KEY ALPACA_ENDPOINT ALPACA_DATA_ENDPOINT \
+         TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID TRADING_ENABLED; do
+    [[ -n "${!v:-}" ]] && echo "$v: set" || echo "$v: MISSING"
+done
+```
 - Sanity checks: `ALPACA_ENDPOINT` contains `paper-api.alpaca.markets`; `TRADING_ENABLED == "true"`.
   If either fails, STOP, Telegram-alert, exit.
 
@@ -48,8 +54,8 @@ DATE=$(TZ=America/Chicago date +%Y-%m-%d)
 
 - `memory/TRADING-STRATEGY.md` (sell-side rules + Rules 13–15)
 - Tail of `memory/TRADE-LOG.md` — open positions with their entry dates,
-  initial stop info, sector tags. Used for Rule 15 same-day filter and Rule 10
-  sector tally.
+  initial stop info, and the `Sector:` field on each open position's BUY row.
+  Used for Rule 15 same-day filter and Rule 10 sector tally.
 
 ## STEP 2 — Pull live paper-account state
 
@@ -63,11 +69,28 @@ Capture `account.daytrade_count` as `DTC`. If `DTC >= 2`, jump immediately to
 the abort path described in Rule 14 (skip steps 3–6, write the abort note to
 TRADE-LOG.md, Telegram URGENT, commit, exit).
 
+On DTC abort, append to memory/TRADE-LOG.md:
+```
+### YYYY-MM-DD — MIDDAY ABORT: daytrade_count=N
+- Reason: Rule 14 pre-flight tripped (DTC >= 2)
+- Pending actions skipped: <list of would-be actions>
+- Resolution: manual human review required
+```
+
 ## STEP 3 — Filter positions to actionable
 
 For each position, compute:
-- `entry_date` (from TRADE-LOG.md latest BUY row for this ticker, OR from
-  Alpaca if the ticker isn't in TRADE-LOG.md — fall back to assuming entry_date == today)
+- `entry_date` (from TRADE-LOG.md latest BUY row for this ticker).
+  If a position is held in Alpaca but has no matching BUY row in TRADE-LOG.md,
+  this indicates a memory-state desync (likely a failed market-open commit).
+  DO NOT silently assume entry_date — instead, send a Telegram URGENT alert
+  "midday $DATE: position TICKER held but no BUY row in TRADE-LOG.md, manual
+  review required" and treat the position as NON-actionable for this run
+  (skip it, do not act on its P&L).
+- Use `current_price` from the `positions` response (last trade price), NOT a
+  fresh `quote` call. The `quote.ap` field is the live ask and would
+  systematically overstate losses / understate gains for sell-side threshold
+  comparisons.
 - `unrealized_pl_pct = (current_price - avg_entry_price) / avg_entry_price * 100`
 
 Drop positions where `entry_date == today` (Rule 15). The remaining list is
@@ -86,14 +109,23 @@ threshold triggers an action:
    - Action: `replace-stop` with `trail_percent=5` for the position's current trailing stop
    - This is NOT a sell — it's a stop replacement. No `DTC` impact.
 
-3. **Tighten to 7%** (Rule 8) — `unrealized_pl_pct ≥ +15` AND current trail isn't already ≤ 7:
+3. **Tighten to 7%** (Rule 8) — `unrealized_pl_pct ≥ +15` AND current trail (from `orders open` response, parse `trail_percent` field on the open trailing-stop order matching this ticker) is currently > 7:
    - Action: `replace-stop` with `trail_percent=7`
 
-4. **Sector-kill** (Rule 10) — sector has 2 consecutive losses in TRADE-LOG.md tail:
+4. **Sector-kill** (Rule 10) — 2 consecutive losses in this position's sector.
+   Lookback: scan the most recent 20 EXIT rows in `memory/TRADE-LOG.md`, or
+   rows within the last 30 calendar days, whichever is shorter. "Loss" =
+   `Realized P&L: -$X` (negative). Two rows with the same `Sector:` tag, both
+   negative, in chronological order with no winning trade in that sector between
+   them, triggers sector-kill.
    - Action: market sell ALL actionable positions in this sector
    - Each sell counts toward `DTC` — if multiple sector positions exist, the
      pre-flight may pass for the first but fail mid-execution. Re-check `DTC`
      before each individual sell within the sector kill loop.
+   - Note: sector-kill is evaluated ONCE per unique sector across all actionable
+     positions, not once per position. Build the list of "doomed sectors" first
+     by scanning TRADE-LOG.md, then close all actionable positions in any doomed
+     sector in a single batch.
 
 5. Otherwise: no action.
 
@@ -142,7 +174,12 @@ For each stop tightening, append a STOP UPDATE row:
 - Silent if no actions taken AND `DTC < 2`.
 - Otherwise: ONE summary message listing actions taken (or aborts).
   - URGENT prefix on hard-close, sector-kill, or DTC abort.
-  - Format: `*MIDDAY MMM DD* (paper)\nActions: <ticker actions>\nDTC: <N>`
+  - Format prefix conventions:
+    - `*MIDDAY HARD-CLOSE MMM DD* (paper) — TICKER -X.X% from entry` (URGENT, hard-closes)
+    - `*MIDDAY SECTOR-KILL MMM DD* (paper) — sector X, N positions closed` (URGENT, sector kill)
+    - `*MIDDAY STOP UPDATE MMM DD* (paper) — TICKER trail X% → Y%` (informational, stop tightening)
+    - `*MIDDAY ABORT MMM DD* (paper) — daytrade_count=N, manual review required` (URGENT, DTC abort)
+  - Combine multiple actions into one message body when applicable.
 
 ## STEP 8 — COMMIT AND PUSH (mandatory)
 
@@ -151,5 +188,7 @@ git add memory/TRADE-LOG.md memory/HEARTBEAT.md
 git commit -m "midday $DATE: <summary>"
 git push origin main
 ```
+
+(HEARTBEAT.md is updated automatically by telegram.sh on any successful send; include it in the commit even if unmodified to keep commits atomic.)
 
 On push failure: `git pull --rebase origin main` then push again. Never `--force`.
