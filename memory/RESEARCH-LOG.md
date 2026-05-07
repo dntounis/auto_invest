@@ -23,7 +23,8 @@ Daily pre-market research entries are appended below by the `pre-market` routine
 - Sector momentum:
 
 ### Trade Ideas
-1. TICKER — catalyst, entry $X, stop $X, target $X, R:R X:1
+Listed in R:R-descending order (tie-break: ticker ascending). One numbered line per idea, format:
+1. **ID:** `pm-YYYY-MM-DD-TICKER` — TICKER, catalyst, entry $X, stop $X, target $X, R:R X:1, planned trail percent: 10
 2. ...
 
 ### Risk Factors

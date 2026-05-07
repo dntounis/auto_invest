@@ -32,14 +32,24 @@ Run `bash scripts/perplexity.sh "<query>"` for each:
 
 If `perplexity.sh` exits 3, fall back to native `WebSearch` and **flag the fallback in the research-log entry** ("Sources: WebSearch fallback used for queries: ...").
 
-## Step 4 — Append a dated entry to `memory/RESEARCH-LOG.md`
-Use the entry schema documented at the top of `RESEARCH-LOG.md`. Include:
-- Account snapshot (equity, cash, buying power, daytrade count)
-- Market context (oil, indices, VIX, today's releases)
-- 2–3 actionable trade ideas with catalyst + entry + stop + target + R:R
-- Risk factors for the day
-- Decision: TRADE or HOLD (default HOLD — patience > activity)
-- Sources section with Perplexity citations and any WebSearch fallback flags
+## Step 4 — Write a dated entry to `memory/RESEARCH-LOG.md`
+
+Use the schema documented at the top of `RESEARCH-LOG.md`. Include:
+
+- **Account snapshot:** equity, cash, buying power, daytrade count
+- **Market context:** oil, indices, VIX, today's releases, sector momentum
+- **2–3 actionable trade ideas, ranked by R:R descending** (tie-break: ticker ascending). One numbered line per idea using this exact format:
+  ```
+  1. **ID:** `pm-YYYY-MM-DD-TICKER` — TICKER, catalyst, entry $X, stop $X, target $X, R:R X:1, planned trail percent: 10
+  ```
+  Each idea must satisfy the buy-side gate in `TRADING-STRATEGY.md` (≤6 positions, ≤3 trades/week, ≤20% equity, sector momentum aligned). Skip ideas that fail. Default planned trail percent is 10; deviate only with explicit reason.
+- **Risk factors:** macro, sector, idiosyncratic
+- **Decision:** TRADE or HOLD (default HOLD — patience > activity)
+- **Sources:** Perplexity citations + any WebSearch fallback flags
+
+> v2 reminder: `market-open` reads this entry and places limit orders for the top
+> `min(passing_ideas, weekly_cap_remaining)` ideas in R:R order. Stops are placed
+> by `daily-summary` at market close (Rule 13 — visa-aware).
 
 ## Step 5 — No notification by default
 Local mode is interactive — you'll see the result in the chat. No Telegram call needed unless you want to test the path.

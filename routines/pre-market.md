@@ -91,15 +91,18 @@ Use the schema documented at the top of `RESEARCH-LOG.md`. Include:
 
 - **Account snapshot:** equity, cash, buying power, daytrade count
 - **Market context:** oil, indices, VIX, today's releases, sector momentum
-- **2–3 actionable trade ideas:** TICKER — catalyst, entry $X, stop $X, target $X, R:R X:1
-  - Each idea must satisfy the buy-side gate in `TRADING-STRATEGY.md` (≤6 positions,
-    ≤3 trades/week, ≤20% equity, sector momentum aligned, etc.). Skip ideas that fail.
+- **2–3 actionable trade ideas, ranked by R:R descending** (tie-break: ticker ascending). One numbered line per idea using this exact format:
+  ```
+  1. **ID:** `pm-YYYY-MM-DD-TICKER` — TICKER, catalyst, entry $X, stop $X, target $X, R:R X:1, planned trail percent: 10
+  ```
+  Each idea must satisfy the buy-side gate in `TRADING-STRATEGY.md` (≤6 positions, ≤3 trades/week, ≤20% equity, sector momentum aligned). Skip ideas that fail. Default planned trail percent is 10; deviate only with explicit reason.
 - **Risk factors:** macro, sector, idiosyncratic
 - **Decision:** TRADE or HOLD (default HOLD — patience > activity)
 - **Sources:** Perplexity citations + any WebSearch fallback flags
 
-> v1 reminder: trade ideas are documented for tracking only. The kill-switch
-> prevents execution. v2 will hand these ideas to a separate `market-open` routine.
+> v2 reminder: `market-open` reads this entry and places limit orders for the top
+> `min(passing_ideas, weekly_cap_remaining)` ideas in R:R order. Stops are placed
+> by `daily-summary` at market close (Rule 13 — visa-aware).
 
 ## STEP 5 — Notification: silent unless macro-urgent
 

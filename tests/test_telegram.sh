@@ -61,4 +61,31 @@ assert_contains "$body2" '"test"'
 assert_contains "$body2" '`code`'
 rm -rf tests/.tmp/tg.*
 
+# Test: telegram.sh updates HEARTBEAT.md on successful send (using fallback path)
+start_test "telegram.sh updates memory/HEARTBEAT.md on fallback (no TELEGRAM_BOT_TOKEN)"
+TMP="$(mktemp -d tests/.tmp/tg.XXXXXX)"
+(
+    cd "$TMP"
+    mkdir -p scripts memory
+    cp "$ROOT/scripts/telegram.sh" scripts/
+    cat > memory/HEARTBEAT.md <<'EOF'
+# Heartbeat ledger
+
+last_telegram: 2020-01-01T00:00:00Z
+EOF
+    rm -f .env
+    unset TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID
+    bash scripts/telegram.sh "test heartbeat update" >/dev/null 2>&1
+    grep "^last_telegram: " memory/HEARTBEAT.md
+)
+rc=$?
+ledger_line=$(grep "^last_telegram: " "$TMP/memory/HEARTBEAT.md" 2>/dev/null || echo "")
+# Should NOT be the bootstrap timestamp anymore
+assert_exit_code 0 "$rc"
+if [[ "$ledger_line" == "last_telegram: 2020-01-01T00:00:00Z" ]]; then
+    fail "HEARTBEAT.md was not refreshed (still has bootstrap timestamp)"
+else
+    pass
+fi
+
 print_summary

@@ -117,5 +117,96 @@ rc=$?
 assert_exit_code 1 "$rc"
 assert_contains "$out" "Usage"
 
+# Test 8: trailing-stop subcommand gated by TRADING_ENABLED
+start_test "exits 4 on trailing-stop when TRADING_ENABLED != true"
+TMP="$(mktemp -d tests/.tmp/alp.XXXXXX)"
+out=$(
+    cd "$TMP"
+    cp -r "$ROOT/scripts" .
+    rm -f .env
+    export ALPACA_API_KEY="dummy" ALPACA_SECRET_KEY="dummy"
+    export ALPACA_ENDPOINT="https://paper-api.alpaca.markets/v2"
+    export ALPACA_DATA_ENDPOINT="https://data.alpaca.markets/v2"
+    unset TRADING_ENABLED
+    bash scripts/alpaca.sh trailing-stop XLE 5 10 2>&1
+)
+rc=$?
+assert_exit_code 4 "$rc"
+assert_contains "$out" "TRADING_ENABLED"
+
+# Test 9: trailing-stop with missing args
+start_test "exits 1 on trailing-stop with missing args"
+TMP="$(mktemp -d tests/.tmp/alp.XXXXXX)"
+out=$(
+    cd "$TMP"
+    cp -r "$ROOT/scripts" .
+    rm -f .env
+    export ALPACA_API_KEY="dummy" ALPACA_SECRET_KEY="dummy"
+    export ALPACA_ENDPOINT="https://paper-api.alpaca.markets/v2"
+    export ALPACA_DATA_ENDPOINT="https://data.alpaca.markets/v2"
+    export TRADING_ENABLED="true"
+    bash scripts/alpaca.sh trailing-stop 2>&1
+)
+rc=$?
+assert_exit_code 1 "$rc"
+assert_contains "$out" "usage: trailing-stop"
+
+# Test: replace-stop subcommand gated by TRADING_ENABLED
+start_test "exits 4 on replace-stop when TRADING_ENABLED != true"
+TMP="$(mktemp -d tests/.tmp/alp.XXXXXX)"
+out=$(
+    cd "$TMP"
+    cp -r "$ROOT/scripts" .
+    rm -f .env
+    export ALPACA_API_KEY="dummy" ALPACA_SECRET_KEY="dummy"
+    export ALPACA_ENDPOINT="https://paper-api.alpaca.markets/v2"
+    export ALPACA_DATA_ENDPOINT="https://data.alpaca.markets/v2"
+    unset TRADING_ENABLED
+    bash scripts/alpaca.sh replace-stop dummy-id XLE 5 7 2>&1
+)
+rc=$?
+assert_exit_code 4 "$rc"
+assert_contains "$out" "TRADING_ENABLED"
+
+# Test: replace-stop with missing args
+start_test "exits 1 on replace-stop with missing args"
+TMP="$(mktemp -d tests/.tmp/alp.XXXXXX)"
+out=$(
+    cd "$TMP"
+    cp -r "$ROOT/scripts" .
+    rm -f .env
+    export ALPACA_API_KEY="dummy" ALPACA_SECRET_KEY="dummy"
+    export ALPACA_ENDPOINT="https://paper-api.alpaca.markets/v2"
+    export ALPACA_DATA_ENDPOINT="https://data.alpaca.markets/v2"
+    export TRADING_ENABLED="true"
+    bash scripts/alpaca.sh replace-stop 2>&1
+)
+rc=$?
+assert_exit_code 1 "$rc"
+assert_contains "$out" "usage: replace-stop"
+
+# Test: activities does NOT require TRADING_ENABLED (read-only)
+start_test "activities works without TRADING_ENABLED (read-only subcommand)"
+TMP="$(mktemp -d tests/.tmp/alp.XXXXXX)"
+out=$(
+    cd "$TMP"
+    cp -r "$ROOT/scripts" .
+    rm -f .env
+    # Use bogus keys so the curl call fails with auth error, not exits 4
+    export ALPACA_API_KEY="dummy" ALPACA_SECRET_KEY="dummy"
+    export ALPACA_ENDPOINT="https://paper-api.alpaca.markets/v2"
+    export ALPACA_DATA_ENDPOINT="https://data.alpaca.markets/v2"
+    unset TRADING_ENABLED
+    bash scripts/alpaca.sh activities 2>&1
+)
+rc=$?
+# Must NOT be exit 4 (kill-switch) and must NOT show "Usage:" (subcommand should be recognized)
+if [[ "$rc" == "4" ]]; then
+    fail "activities was kill-switch-gated but should be read-only"
+else
+    pass
+fi
+assert_not_contains "$out" "Usage: bash scripts/alpaca.sh"
+
 rm -rf tests/.tmp/alp.*
 print_summary

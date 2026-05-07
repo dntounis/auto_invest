@@ -11,7 +11,7 @@ other branch. Tomorrow's pre-market routine reads `tail of TRADE-LOG.md` from
 a fresh `main` clone — if today's EOD lands on a feature branch, tomorrow's
 Day P&L computation breaks.
 
-You are running the **daily-summary workflow** (v1, paper, EOD snapshot only).
+You are running the **daily-summary workflow** (v2, paper, EOD snapshot + stop placement + heartbeat).
 Resolve today's date via:
 ```
 DATE=$(TZ=America/Chicago date +%Y-%m-%d)
@@ -36,18 +36,19 @@ for v in ALPACA_API_KEY ALPACA_SECRET_KEY ALPACA_ENDPOINT ALPACA_DATA_ENDPOINT \
     [[ -n "${!v:-}" ]] && echo "$v: set" || echo "$v: MISSING"
 done
 ```
-- Sanity check: `ALPACA_ENDPOINT` MUST contain `paper-api.alpaca.markets` in v1.
+- Sanity check: `ALPACA_ENDPOINT` MUST contain `paper-api.alpaca.markets` in v2.
 
 ## IMPORTANT — PERSISTENCE
 
 - Fresh clone. File changes VANISH unless committed and pushed to `main`.
-- You MUST commit and push at STEP 6. **This commit is mandatory** — tomorrow's Day P&L
+- You MUST commit and push at STEP 8. **This commit is mandatory** — tomorrow's Day P&L
   math depends on this snapshot persisting.
 
 ## IMPORTANT — KILL SWITCH
 
-- v1 has `TRADING_ENABLED=false`. This routine never calls state-changing Alpaca
-  subcommands; it is purely read-only state + computation + log append.
+- `TRADING_ENABLED` gates all state-changing Alpaca subcommands. STEP 4 places
+  trailing-stop GTC orders via `bash scripts/alpaca.sh trailing-stop`; the wrapper
+  checks the kill switch and will refuse if `TRADING_ENABLED=false`.
 
 ---
 
@@ -71,10 +72,58 @@ bash scripts/alpaca.sh orders
 
 - **Day P&L** ($ and %) = today's equity − yesterday's equity from STEP 1
 - **Phase cumulative P&L** ($ and %) = today's equity − $10,000 starting baseline
-- **Trades today**: always "none" in v1 (no order code runs)
-- **Trades this week** running total: always 0 in v1
+- **Trades today**: count BUY rows in TRADE-LOG.md committed today by `market-open` (`grep -c "^### .* — TRADE: .* side=buy" memory/TRADE-LOG.md` filtered by today's date) AND EXIT rows committed today by `midday` (`side=sell`). Format as `<N opened, K closed>`.
+- **Trades this week** running total: count BUY rows since Monday's date (use TRADE-LOG.md tail). Hard cap at 3 per Rule 4.
 
-## STEP 4 — Append EOD snapshot to `memory/TRADE-LOG.md`
+## STEP 4 — Place trailing stops for today's new positions (Rule 13, visa-aware)
+
+For each position opened today (entry_date == today, identifiable from
+TRADE-LOG.md BUY rows committed earlier today by `market-open`), place a
+trailing-stop GTC order. This routine fires at 15:00 CT exactly = 16:00 ET =
+NYSE close, so the order queues in Alpaca's GTC book without firing same-day
+(`extended_hours=false` is set in the wrapper).
+
+For each today-opened position with no existing trailing stop:
+```
+TRAIL_PCT=10  # v2 always uses 10% (TRADING-STRATEGY.md Rule 6).
+              # Pre-market may emit "planned trail percent: N" for sizing purposes,
+              # but daily-summary places the canonical 10% trail. Per-position trail
+              # customization deferred to v3.
+bash scripts/alpaca.sh trailing-stop TICKER QTY $TRAIL_PCT
+```
+
+If a today-opened position already has a trailing stop in `bash scripts/alpaca.sh orders open`,
+SKIP it (idempotency — daily-summary may have run before via Run-now).
+
+After each successful stop placement, append a STOP PLACED row to TRADE-LOG.md:
+
+```
+### YYYY-MM-DD — STOP PLACED: TICKER trail %N
+- Order ID: <from response>
+- Trigger reason: routine placement at market close (Rule 13)
+- Links to BUY: pm-YYYY-MM-DD-TICKER
+```
+
+## STEP 5 — Heartbeat check (DECIDED J)
+
+Read `memory/HEARTBEAT.md`:
+```
+LAST_TG=$(grep "^last_telegram: " memory/HEARTBEAT.md | sed 's/last_telegram: //')
+```
+
+Compute hours since:
+```
+NOW=$(date -u +%s)
+LAST_S=$(date -u -d "$LAST_TG" +%s 2>/dev/null || python3 -c "from datetime import datetime; print(int(datetime.fromisoformat('$LAST_TG'.replace('Z','+00:00')).timestamp()))")
+HOURS_SINCE=$(( (NOW - LAST_S) / 3600 ))
+```
+
+If `HOURS_SINCE >= 48`, set `HEARTBEAT_PREFIX` to:
+`"Heartbeat: ${HOURS_SINCE}h silence — system alive\n"`
+
+Otherwise empty string. The prefix gets prepended to the EOD Telegram body in STEP 7.
+
+## STEP 6 — Append EOD snapshot to `memory/TRADE-LOG.md`
 
 Match the schema at the top of `TRADE-LOG.md` exactly:
 ```
@@ -86,19 +135,20 @@ Match the schema at the top of `TRADE-LOG.md` exactly:
 **Notes:** one-paragraph plain-english summary.
 ```
 
-In v1 the positions table will be empty (or just a "No positions" row). Notes should
-mention what the morning's research said and whether anything notable happened.
+Notes should mention what the morning's research said, how many positions were opened
+or closed today, and whether any trailing stops were placed.
 
-## STEP 5 — Send ONE Telegram message (always)
+## STEP 7 — Send ONE Telegram message (always)
 
-≤ 15 lines. Always include the `(paper)` suffix in v1.
+≤ 15 lines. Always include the `(paper)` suffix.
 
 ```
-bash scripts/telegram.sh "*EOD <MMM DD>* (paper)
+bash scripts/telegram.sh "${HEARTBEAT_PREFIX}*EOD <MMM DD>* (paper)
 Equity: \$<X> (<±X%> day, <±X%> phase)
 Cash: \$<X>
-Trades today: none (v1 research only)
-Open positions: none
+Trades today: <N opened, K closed>
+Open positions: <N tickers> (<sector breakdown>)
+Stops placed at close: <K positions>
 Pre-market plan today: <decision from today's research log>
 Tomorrow: pre-market checks at 6:00 CT"
 ```
@@ -107,10 +157,10 @@ If `TELEGRAM_BOT_TOKEN` or `TELEGRAM_CHAT_ID` is unset, the wrapper falls back t
 `DAILY-SUMMARY.md` (gitignored). That fallback should never trigger in cloud — if it
 does, an env var is missing; treat it as a routine failure and stop.
 
-## STEP 6 — COMMIT AND PUSH (mandatory)
+## STEP 8 — COMMIT AND PUSH (mandatory)
 
 ```
-git add memory/TRADE-LOG.md
+git add memory/TRADE-LOG.md memory/HEARTBEAT.md
 git commit -m "EOD snapshot $DATE"
 git push origin main
 ```
