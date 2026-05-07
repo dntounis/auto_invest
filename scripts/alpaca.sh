@@ -105,6 +105,28 @@ print(json.dumps({
         curl -fsS -H "$H_KEY" -H "$H_SEC" -H "Content-Type: application/json" \
             -X POST -d "$body" "$API/orders"
         ;;
+    replace-stop)
+        require_trading_enabled
+        oid="${1:?usage: replace-stop ORDER_ID SYM QTY NEW_TRAIL_PCT}"
+        sym="${2:?usage: replace-stop ORDER_ID SYM QTY NEW_TRAIL_PCT}"
+        qty="${3:?usage: replace-stop ORDER_ID SYM QTY NEW_TRAIL_PCT}"
+        trail="${4:?usage: replace-stop ORDER_ID SYM QTY NEW_TRAIL_PCT}"
+        # Cancel existing stop. If it already fired or doesn't exist, Alpaca returns 422 — accept.
+        curl -fsS -H "$H_KEY" -H "$H_SEC" -X DELETE "$API/orders/$oid" || true
+        body=$(python3 -c "
+import json, sys
+print(json.dumps({
+    'symbol': sys.argv[1],
+    'qty': sys.argv[2],
+    'side': 'sell',
+    'type': 'trailing_stop',
+    'trail_percent': sys.argv[3],
+    'time_in_force': 'gtc',
+    'extended_hours': False,
+}))" "$sym" "$qty" "$trail")
+        curl -fsS -H "$H_KEY" -H "$H_SEC" -H "Content-Type: application/json" \
+            -X POST -d "$body" "$API/orders"
+        ;;
     *)
         echo "Usage: bash scripts/alpaca.sh <account|positions|position|quote|orders|order|cancel|cancel-all|close|close-all|trailing-stop|replace-stop|activities> [args]" >&2
         exit 1
