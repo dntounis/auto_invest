@@ -31,13 +31,48 @@ In Claude Code cloud → Routines → New Routine:
 7. **Prompt:** paste the contents of `pre-market.md` (or `daily-summary.md`) **verbatim**. Do not paraphrase — the env-var-check and commit/push blocks are load-bearing.
 8. **Save**, then click **"Run now"** to do a smoke test before waiting for the cron.
 
-## v2 routines (not built yet)
+## v2 routines (active)
 
-- `market-open.md` — `30 8 * * 1-5`
-- `midday.md` — `0 12 * * 1-5`
-- `weekly-review.md` — `0 16 * * 5`
+Three additional routines plus expanded daily-summary. Set up in this order;
+flip `TRADING_ENABLED=true` only after each successful smoke test.
 
-These get added once v1 has run cleanly for 5 consecutive weekdays. See `docs/superpowers/specs/2026-04-25-auto-invest-design.md` § 11 for the full v1→v2→v3 phased path.
+### Order of routine activation
+
+1. **`auto_invest daily-summary`** (already exists from v1 — re-paste prompt with v2 changes; flip `TRADING_ENABLED=true`)
+2. **`auto_invest market-open`** — `30 8 * * 1-5` America/Chicago
+3. **`auto_invest midday`** — `0 12 * * 1-5` America/Chicago
+4. **`auto_invest weekly-review`** — `0 16 * * 5` America/Chicago
+
+### Per-v2-routine env vars
+
+In addition to the v1 set (Alpaca, Perplexity, Telegram, `TRADING_ENABLED`),
+add these to the env-vars textbox:
+
+- `TRADING_ENABLED=true` (was `false` in v1)
+- `MAX_ENTRY_SLIPPAGE_PCT=0.10` (default 0.10%)
+- `RISK_PER_TRADE_PCT=2.0` (default 2% of equity)
+- `MAX_POSITION_PCT=20` (default 20% cap)
+
+### Per-routine prompt re-paste
+
+For each of the four routines, copy the entire contents of the corresponding
+`routines/<name>.md` file and paste verbatim into the routine's Prompt field.
+Save. Smoke-test with Run now before relying on cron.
+
+### Visa-aware safety chain
+
+The v2 system avoids day trades by construction:
+
+- `market-open` only places BUYs. It cannot create a same-day exit.
+- `daily-summary` places trailing stops at 15:00 CT (= market close). They
+  enter the GTC book but cannot fire same-day (regular session is over and
+  `extended_hours: false`). Earliest possible fire is T+1.
+- `midday` and `weekly-review` skip positions opened today (Rule 15) and
+  pre-flight `account.daytrade_count` before any sell (Rule 14).
+
+If `daytrade_count` ever reaches 2, the routines abort all sells and Telegram
+URGENT — leaving manual sells to a human review (one buffer slot before the
+PDT designation threshold of 4).
 
 ## Why "no `.env` file in cloud"
 
