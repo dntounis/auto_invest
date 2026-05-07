@@ -91,40 +91,81 @@ For each idea in today's RESEARCH-LOG entry, run the Buy-Side Gate from
 - Trades placed this week (incl. this one) ≤ 3
 - Position cost ≤ 20% of account equity
 - Position cost ≤ available cash
-- `account.daytrade_count` MUST be ≤ 1 to allow new entries (Rule 14 buffer)
+- `account.daytrade_count` MUST be ≤ 1 to allow new entries (Rule 14 buffer).
+  WHY: a buy today could trigger a stop-fired sell tomorrow, bumping DTC by 1; a
+  buffer of 1 keeps us 2 below the PDT threshold of 3 even if a same-day stop
+  fires unexpectedly (rare but possible if Rule 13 is bypassed in an edge case).
 - Specific catalyst is documented in today's RESEARCH-LOG entry (true by construction)
 - Instrument is a stock (not option/crypto/forex/futures)
 
 ## STEP 4 — Rank passing ideas, take top N
 
 - Already ranked by R:R descending in pre-market output (DECIDED C).
-- `weekly_cap_remaining = 3 - trades_this_week`
+- `weekly_cap_remaining = 3 - trades_this_week` (from TRADE-LOG.md tally read in STEP 1)
 - Take `min(len(passing_ideas), weekly_cap_remaining)`. May be zero — in which
   case skip to STEP 8 with no orders placed.
 
-## STEP 5 — Compute risk-parity position size per idea (DECIDED D)
+## STEP 5 — Per-idea: fetch live quote, extract trail, compute size (DECIDED D)
+
+For each passing idea, execute the following sub-steps **in order**:
+
+**5a. Fetch live ask price**
+
+```
+bash scripts/alpaca.sh quote TICKER
+```
+
+Alpaca's `/stocks/{sym}/quotes/latest` returns:
+```json
+{"quote": {"ap": <ask_price>, "as": <ask_size>, ...}}
+```
+
+Extract `live_ask = response.quote.ap`. The `.ap` field is the correct ask price
+field name. Do NOT use `.ask` or `.askPrice` — those are not Alpaca fields.
+
+If `live_ask` is zero or null, skip this idea and log "no ask price available".
+
+**5b. Extract trail percent**
+
+Parse the RESEARCH-LOG entry for this idea for a line matching:
+```
+planned trail percent: N
+```
+(where N is a number). Set `trail_pct = N`.
+
+If that line is absent, or N is 0 or blank, set `trail_pct = 10` (default).
+This default prevents division-by-zero in the sizing formula below.
+
+**5c. Compute position size**
 
 ```
 RISK_PCT=${RISK_PER_TRADE_PCT:-2.0}        # default 2% of equity
 MAX_POS_PCT=${MAX_POSITION_PCT:-20}        # default 20% cap
 SLIPPAGE_PCT=${MAX_ENTRY_SLIPPAGE_PCT:-0.10}
 
-dollar_risk = (RISK_PCT / 100) * account.equity                   # e.g., 200 on 10k
-stop_distance_pct = idea.trail_percent / 100                      # e.g., 0.10
-shares_by_risk = floor(dollar_risk / (idea.entry * stop_distance_pct))
-shares_by_cap  = floor((MAX_POS_PCT / 100) * account.equity / idea.entry)
-shares = min(shares_by_risk, shares_by_cap)
+dollar_risk       = (RISK_PCT / 100) * account.equity          # e.g., 200 on 10k
+stop_distance_pct = trail_pct / 100                            # e.g., 0.10
+shares_by_risk    = floor(dollar_risk / (live_ask * stop_distance_pct))
+shares_by_cap     = floor((MAX_POS_PCT / 100) * account.equity / live_ask)
+shares            = min(shares_by_risk, shares_by_cap)
 ```
 
 Must be ≥ 1, else skip the idea (cap or risk budget too small).
 
-## STEP 6 — Place limit BUY orders
+**5d. Compute limit price**
 
-For each idea:
+```
+limit_price = round(live_ask * (1 + SLIPPAGE_PCT / 100), 2)
+```
 
-1. Pull current quote: `bash scripts/alpaca.sh quote TICKER` → extract ask price.
-2. Compute limit price: `limit = round(ask * (1 + SLIPPAGE_PCT/100), 2)`.
-3. Place the order:
+After all ideas are processed, proceed to STEP 6 with each idea's
+`(shares, limit_price)` pair already computed.
+
+## STEP 6 — Place limit BUY orders and poll for fills
+
+For each idea with a valid `(shares, limit_price)` from STEP 5:
+
+1. Place the order:
 ```
 ORDER_JSON=$(python3 -c "
 import json
@@ -133,21 +174,23 @@ print(json.dumps({
     'qty': SHARES,
     'side': 'buy',
     'type': 'limit',
-    'limit_price': str(LIMIT),
+    'limit_price': str(LIMIT_PRICE),
     'time_in_force': 'day',
 }))")
 bash scripts/alpaca.sh order "$ORDER_JSON"
 ```
-4. Poll up to 60 seconds for fill: `bash scripts/alpaca.sh orders open` and look
-   for the order ID. If still open after 60 s, leave it (will fill or cancel at
-   close). Telegram-alert "TICKER limit order placed, not yet filled".
+2. Poll for fill: check every 5 s, up to 12 times (60 s total):
+   `bash scripts/alpaca.sh orders open` and look for the order ID.
+   - If the order is no longer in the open list, it filled — record as filled.
+   - If still open after 12 checks (60 s), leave it (will fill or cancel at
+     close). Telegram-alert "TICKER limit order placed, not yet filled".
 
 DO NOT place a trailing stop here — that is `daily-summary`'s job (Rule 13).
 
-## STEP 7 — Append BUY trade rows to `memory/TRADE-LOG.md`
+## STEP 7 — Append entries to `memory/TRADE-LOG.md`
 
-For each filled order (or open-pending), append a row matching the schema at the
-top of `TRADE-LOG.md`:
+**Filled orders only** — append a full TRADE row matching the schema at the top
+of `TRADE-LOG.md`:
 
 ```
 ### YYYY-MM-DD — TRADE: TICKER side=buy qty=N
@@ -157,6 +200,14 @@ top of `TRADE-LOG.md`:
 - Catalyst: pm-YYYY-MM-DD-TICKER (link to RESEARCH-LOG entry)
 - Target: $X (R:R X:1)
 - Realized P&L: n/a (open position)
+```
+
+**Pending (not-yet-filled) orders** — append a one-line note only (NO full TRADE
+row). `daily-summary` will upgrade the note to a full TRADE row once the fill is
+confirmed at EOD:
+
+```
+- PENDING YYYY-MM-DD TICKER: limit order placed @ $LIMIT_PRICE, not yet filled as of market-open run
 ```
 
 ## STEP 8 — Telegram
@@ -172,6 +223,10 @@ git add memory/TRADE-LOG.md memory/HEARTBEAT.md
 git commit -m "market-open $DATE: <N> orders, <K> filled"
 git push origin main
 ```
+
+Note: `HEARTBEAT.md` is updated automatically by `telegram.sh` on every
+successful send; include it in the commit even if unmodified to keep commits
+atomic and ensure the heartbeat timestamp is never silently left behind.
 
 On push failure (non-fast-forward / divergence):
 ```
