@@ -15,7 +15,7 @@ In v1, only EOD snapshots are written (by the `daily-summary` routine). Trade ro
 - Thesis: ...
 - Catalyst: ... (link to RESEARCH-LOG entry)
 - Target: $X (R:R X:1)
-- Realized P&L (on exits only): $X
+- Realized P&L: $X (X.X%) (on exit only; "n/a (open position)" on entry)
 ```
 
 ### EOD snapshot (v1)

@@ -25,12 +25,21 @@ bash scripts/alpaca.sh orders open # open trailing-stop orders (for replace-stop
 
 If `DTC >= 2`, abort all sells; print intended actions; exit.
 
+On DTC >= 2 abort, also write a one-block note to memory/TRADE-LOG.md (locally; not committed):
+
+```
+### YYYY-MM-DD — MIDDAY ABORT: daytrade_count=N
+- Reason: Rule 14 pre-flight tripped (DTC >= 2)
+- Pending actions skipped: <list>
+- Resolution: manual human review required
+```
+
 ## Step 3 — Filter actionable
 For each position:
 - Determine `entry_date` from TRADE-LOG.md latest BUY row for this ticker
 - Compute `unrealized_pl_pct = (current_price - avg_entry_price) / avg_entry_price * 100`. **Use `current_price` from the `positions` response, NOT `quote.ap`** (live ask would systematically skew P&L).
 
-Drop positions where `entry_date == today` (Rule 15). Drop positions held in Alpaca but missing from TRADE-LOG.md (memory desync — flag as needing manual review). The remaining list is "actionable".
+Drop positions where `entry_date == today` (Rule 15). Drop positions held in Alpaca but missing from TRADE-LOG.md (memory desync). Send Telegram URGENT: 'midday $DATE: position TICKER held in Alpaca but missing from TRADE-LOG.md, manual review required'. Then skip the position (treat as non-actionable). The remaining list is "actionable".
 
 ## Step 4 — Decide actions (in priority order, first match wins)
 1. ≤ -7% → hard-close (Rule 7)
@@ -44,11 +53,32 @@ Drop positions where `entry_date == today` (Rule 15). Drop positions held in Alp
 bash scripts/alpaca.sh close TICKER                                  # hard-close / sector-kill
 bash scripts/alpaca.sh replace-stop ORDER_ID TICKER QTY NEW_TRAIL    # tighten
 ```
-Refresh DTC between sells. Abort if DTC reaches 2.
+After each individual sell, refresh DTC:
+```
+DTC=$(bash scripts/alpaca.sh account | python3 -c "import json,sys; print(json.load(sys.stdin)['daytrade_count'])")
+```
+Abort if DTC reaches 2.
 
 ## Step 6 — Append action rows to `memory/TRADE-LOG.md` (locally)
-- EXIT row schema: same as BUY but `side=sell`, with `Exit:` (not `Entry:`), `Realized P&L: $X (X.X%)`. **Include the `Sector:` field copied from the original BUY row** so the sector-kill lookback works on EXIT rows.
-- STOP UPDATE row schema: `### YYYY-MM-DD — STOP UPDATE: TICKER trail %X -> %Y` with `Trigger:` and `New stop order ID:` lines.
+
+For each completed sell, append an EXIT trade row:
+```
+### YYYY-MM-DD — TRADE: TICKER side=sell qty=N
+- Exit: $X
+- Stop level: <was: trail N% / fixed $X — fired: yes/no/manual>
+- Sector: <copied from original BUY row>
+- Thesis: <closed via Rule 7 / 8 / 10 — one phrase>
+- Catalyst: <links back to original BUY's pm-YYYY-MM-DD-TICKER>
+- Target: <was $X, R:R X:1>
+- Realized P&L: $X (X.X%)
+```
+
+For each stop tightening, append a STOP UPDATE row:
+```
+### YYYY-MM-DD — STOP UPDATE: TICKER trail %X -> %Y
+- Trigger: +15% gain / +20% gain (Rule 8)
+- New stop order ID: <id from replace-stop response>
+```
 
 ## Step 7 — Telegram
 Silent if no actions and DTC < 2. Otherwise one summary message with prefix conventions:

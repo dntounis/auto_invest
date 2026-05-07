@@ -156,6 +156,7 @@ For each completed sell, append an EXIT trade row:
 ### YYYY-MM-DD — TRADE: TICKER side=sell qty=N
 - Exit: $X
 - Stop level: <was: trail N% / fixed $X — fired: yes/no/manual>
+- Sector: <copied from original BUY row>
 - Thesis: <closed via Rule 7 / 8 / 10 — one phrase>
 - Catalyst: <links back to original BUY's pm-YYYY-MM-DD-TICKER>
 - Target: <was $X, R:R X:1>
