@@ -185,5 +185,28 @@ rc=$?
 assert_exit_code 1 "$rc"
 assert_contains "$out" "usage: replace-stop"
 
+# Test: activities does NOT require TRADING_ENABLED (read-only)
+start_test "activities works without TRADING_ENABLED (read-only subcommand)"
+TMP="$(mktemp -d tests/.tmp/alp.XXXXXX)"
+out=$(
+    cd "$TMP"
+    cp -r "$ROOT/scripts" .
+    rm -f .env
+    # Use bogus keys so the curl call fails with auth error, not exits 4
+    export ALPACA_API_KEY="dummy" ALPACA_SECRET_KEY="dummy"
+    export ALPACA_ENDPOINT="https://paper-api.alpaca.markets/v2"
+    export ALPACA_DATA_ENDPOINT="https://data.alpaca.markets/v2"
+    unset TRADING_ENABLED
+    bash scripts/alpaca.sh activities 2>&1
+)
+rc=$?
+# Must NOT be exit 4 (kill-switch) and must NOT show "Usage:" (subcommand should be recognized)
+if [[ "$rc" == "4" ]]; then
+    fail "activities was kill-switch-gated but should be read-only"
+else
+    pass
+fi
+assert_not_contains "$out" "Usage: bash scripts/alpaca.sh"
+
 rm -rf tests/.tmp/alp.*
 print_summary

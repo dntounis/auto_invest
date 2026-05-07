@@ -127,6 +127,13 @@ print(json.dumps({
         curl -fsS -H "$H_KEY" -H "$H_SEC" -H "Content-Type: application/json" \
             -X POST -d "$body" "$API/orders"
         ;;
+    activities)
+        # Read-only — no kill-switch gate.
+        # Optional first arg: date (YYYY-MM-DD). Defaults to today in America/Chicago.
+        date_filter="${1:-$(TZ=America/Chicago date +%Y-%m-%d)}"
+        curl -fsS -H "$H_KEY" -H "$H_SEC" \
+            "$API/account/activities?date=$date_filter"
+        ;;
     *)
         echo "Usage: bash scripts/alpaca.sh <account|positions|position|quote|orders|order|cancel|cancel-all|close|close-all|trailing-stop|replace-stop|activities> [args]" >&2
         exit 1

@@ -57,6 +57,17 @@ assert_contains() {
     fi
 }
 
+assert_not_contains() {
+    local haystack="$1"
+    local needle="$2"
+    local msg="${3:-string should not contain substring}"
+    if [[ "$haystack" != *"$needle"* ]]; then
+        pass
+    else
+        fail "$msg: '$needle' was present in output"
+    fi
+}
+
 assert_file_exists() {
     local path="$1"
     if [[ -f "$path" ]]; then
