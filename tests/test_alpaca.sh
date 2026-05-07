@@ -117,5 +117,39 @@ rc=$?
 assert_exit_code 1 "$rc"
 assert_contains "$out" "Usage"
 
+# Test 8: trailing-stop subcommand gated by TRADING_ENABLED
+start_test "exits 4 on trailing-stop when TRADING_ENABLED != true"
+TMP="$(mktemp -d tests/.tmp/alp.XXXXXX)"
+out=$(
+    cd "$TMP"
+    cp -r "$ROOT/scripts" .
+    rm -f .env
+    export ALPACA_API_KEY="dummy" ALPACA_SECRET_KEY="dummy"
+    export ALPACA_ENDPOINT="https://paper-api.alpaca.markets/v2"
+    export ALPACA_DATA_ENDPOINT="https://data.alpaca.markets/v2"
+    unset TRADING_ENABLED
+    bash scripts/alpaca.sh trailing-stop XLE 5 10 2>&1
+)
+rc=$?
+assert_exit_code 4 "$rc"
+assert_contains "$out" "TRADING_ENABLED"
+
+# Test 9: trailing-stop with missing args
+start_test "exits 1 on trailing-stop with missing args"
+TMP="$(mktemp -d tests/.tmp/alp.XXXXXX)"
+out=$(
+    cd "$TMP"
+    cp -r "$ROOT/scripts" .
+    rm -f .env
+    export ALPACA_API_KEY="dummy" ALPACA_SECRET_KEY="dummy"
+    export ALPACA_ENDPOINT="https://paper-api.alpaca.markets/v2"
+    export ALPACA_DATA_ENDPOINT="https://data.alpaca.markets/v2"
+    export TRADING_ENABLED="true"
+    bash scripts/alpaca.sh trailing-stop 2>&1
+)
+rc=$?
+assert_exit_code 1 "$rc"
+assert_contains "$out" "usage: trailing-stop"
+
 rm -rf tests/.tmp/alp.*
 print_summary
