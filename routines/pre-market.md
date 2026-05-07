@@ -91,11 +91,11 @@ Use the schema documented at the top of `RESEARCH-LOG.md`. Include:
 
 - **Account snapshot:** equity, cash, buying power, daytrade count
 - **Market context:** oil, indices, VIX, today's releases, sector momentum
-- **2–3 actionable trade ideas, ranked by R:R descending** (tie-break: ticker ascending). Each idea MUST include:
-  - **ID:** `pm-YYYY-MM-DD-TICKER` — used by `market-open` to link trades to ideas
-  - TICKER — catalyst, entry $X, stop $X, target $X, R:R X:1, **planned trail percent** (default 10)
-  - Each idea must satisfy the buy-side gate in `TRADING-STRATEGY.md` (≤6 positions,
-    ≤3 trades/week, ≤20% equity, sector momentum aligned, etc.). Skip ideas that fail.
+- **2–3 actionable trade ideas, ranked by R:R descending** (tie-break: ticker ascending). One numbered line per idea using this exact format:
+  ```
+  1. **ID:** `pm-YYYY-MM-DD-TICKER` — TICKER, catalyst, entry $X, stop $X, target $X, R:R X:1, planned trail percent: 10
+  ```
+  Each idea must satisfy the buy-side gate in `TRADING-STRATEGY.md` (≤6 positions, ≤3 trades/week, ≤20% equity, sector momentum aligned). Skip ideas that fail. Default planned trail percent is 10; deviate only with explicit reason.
 - **Risk factors:** macro, sector, idiosyncratic
 - **Decision:** TRADE or HOLD (default HOLD — patience > activity)
 - **Sources:** Perplexity citations + any WebSearch fallback flags
