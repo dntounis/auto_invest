@@ -130,6 +130,8 @@ bash scripts/alpaca.sh order "$ORDER_JSON"
 
 DO NOT place a trailing stop here — Rule 13 says daily-summary places it at market close.
 
+DO NOT cancel positions or close anything — Rule 15 (no same-day exits, no closes, no cancels) applies even though this routine never sells.
+
 ## Step 7 — Append to `memory/TRADE-LOG.md` (locally)
 **Filled orders** — append a full TRADE row using the schema at the top of TRADE-LOG.md:
 
