@@ -36,7 +36,7 @@ for v in ALPACA_API_KEY ALPACA_SECRET_KEY ALPACA_ENDPOINT ALPACA_DATA_ENDPOINT \
     [[ -n "${!v:-}" ]] && echo "$v: set" || echo "$v: MISSING"
 done
 ```
-- Sanity check: `ALPACA_ENDPOINT` MUST contain `paper-api.alpaca.markets` in v1.
+- Sanity check: `ALPACA_ENDPOINT` MUST contain `paper-api.alpaca.markets` in v2.
 
 ## IMPORTANT — PERSISTENCE
 
@@ -72,8 +72,8 @@ bash scripts/alpaca.sh orders
 
 - **Day P&L** ($ and %) = today's equity − yesterday's equity from STEP 1
 - **Phase cumulative P&L** ($ and %) = today's equity − $10,000 starting baseline
-- **Trades today**: always "none" in v1 (no order code runs)
-- **Trades this week** running total: always 0 in v1
+- **Trades today**: count BUY rows in TRADE-LOG.md committed today by `market-open` (`grep -c "^### .* — TRADE: .* side=buy" memory/TRADE-LOG.md` filtered by today's date) AND EXIT rows committed today by `midday` (`side=sell`). Format as `<N opened, K closed>`.
+- **Trades this week** running total: count BUY rows since Monday's date (use TRADE-LOG.md tail). Hard cap at 3 per Rule 4.
 
 ## STEP 4 — Place trailing stops for today's new positions (Rule 13, visa-aware)
 
