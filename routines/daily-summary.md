@@ -85,7 +85,10 @@ NYSE close, so the order queues in Alpaca's GTC book without firing same-day
 
 For each today-opened position with no existing trailing stop:
 ```
-TRAIL_PCT=10  # default per TRADING-STRATEGY.md Rule 6 unless idea specified otherwise
+TRAIL_PCT=10  # v2 always uses 10% (TRADING-STRATEGY.md Rule 6).
+              # Pre-market may emit "planned trail percent: N" for sizing purposes,
+              # but daily-summary places the canonical 10% trail. Per-position trail
+              # customization deferred to v3.
 bash scripts/alpaca.sh trailing-stop TICKER QTY $TRAIL_PCT
 ```
 

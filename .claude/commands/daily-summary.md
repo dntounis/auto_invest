@@ -30,7 +30,10 @@ For each position opened today (entry_date == today, identified from BUY rows
 in TRADE-LOG.md committed earlier today by `market-open`) with no existing
 trailing stop in `orders open`:
 ```
-TRAIL_PCT=10  # default per Rule 6
+TRAIL_PCT=10  # v2 always uses 10% (TRADING-STRATEGY.md Rule 6).
+              # Pre-market may emit "planned trail percent: N" for sizing purposes,
+              # but daily-summary places the canonical 10% trail. Per-position trail
+              # customization deferred to v3.
 bash scripts/alpaca.sh trailing-stop TICKER QTY $TRAIL_PCT
 ```
 Visa-aware: this fires at 15:00 CT = 16:00 ET = NYSE close, so the stop queues in Alpaca's GTC book without firing same-day (`extended_hours=false`).

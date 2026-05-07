@@ -93,8 +93,9 @@ For each idea in today's RESEARCH-LOG entry, run the Buy-Side Gate from
 - Position cost ≤ available cash
 - `account.daytrade_count` MUST be ≤ 1 to allow new entries (Rule 14 buffer).
   WHY: a buy today could trigger a stop-fired sell tomorrow, bumping DTC by 1; a
-  buffer of 1 keeps us 2 below the PDT threshold of 3 even if a same-day stop
-  fires unexpectedly (rare but possible if Rule 13 is bypassed in an edge case).
+  buffer of 1 keeps us well below the FINRA PDT threshold of 4 day trades in 5
+  rolling business days even if a same-day stop fires unexpectedly (rare but
+  possible if Rule 13 is bypassed in an edge case).
 - Specific catalyst is documented in today's RESEARCH-LOG entry (true by construction)
 - Instrument is a stock (not option/crypto/forex/futures)
 

@@ -35,8 +35,8 @@ Idempotency: skip any ticker with an existing today BUY (DECIDED H).
 ## Step 3 — Apply buy-side gate
 Per `TRADING-STRATEGY.md`. Reject ideas where `account.daytrade_count > 1` to
 preserve Rule 14 buffer (a buy today + a stop-triggered sell tomorrow could
-bump DTC; buffer of 1 keeps us 2 below the PDT threshold of 3 even if a
-same-day stop fires unexpectedly).
+bump DTC; buffer of 1 keeps us well below the FINRA PDT threshold of 4 day
+trades in 5 rolling business days even if a same-day stop fires unexpectedly).
 
 Additional gate checks per idea:
 - Total positions after fill ≤ 6

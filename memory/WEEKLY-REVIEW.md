@@ -20,6 +20,7 @@ Friday weekly reviews are appended below by the `weekly-review` routine *(v2)*. 
 | Best trade | SYM +X% |
 | Worst trade | SYM -X% |
 | Profit factor | X.XX |
+| daytrade_count | N (delta vs prior week: ±M) |
 
 ### Closed Trades
 | Ticker | Entry | Exit | P&L | Notes |
