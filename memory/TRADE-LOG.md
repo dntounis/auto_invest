@@ -117,3 +117,11 @@ No positions yet. v1 launches on the next weekday's `pre-market` routine. The `d
 | —      | —      | —     | —     | —       | —              | —    |
 
 **Notes:** Day 9 v1 paper, kill-switch active — no orders, no positions, no fills. Equity flat at $10,000.00 (`balance_asof` 2026-05-06, refreshed +1d vs. Day 8); reconciles cleanly to the Day 8 EOD snapshot. Week 2 Day 4 — 3-trade budget intact (0/3). No fresh `RESEARCH-LOG.md` entry was written for 2026-05-07, so the carrying stance is yesterday's third-pass 2026-05-06 read: **HOLD** into Thu Q1 nonfarm productivity (consensus +1.0% SAAR vs. Q4 +1.8%) + jobless claims (~205K), and the dominant **Fri Apr NFP +62K consensus** week-risk that now looks vulnerable post-ADP Wed (+118K vs. 65K consensus, +91% upside beat). Carry-queue from yesterday's research: **XLE / XLI / XLB (XLP defensive alternate)** for v2 market-open; **ARM AMC last night** sets today's AI/semi tape (single-name binary, not in queue). Standing macro frame: **VIX 17.38 May 5 close** (calm regime <20 holds), **WTI ~$102** post-Gulf de-escalation (two-sided sensitivity acute toward $90 lower-triangle bound), **SPX 7,200.75 May 4 cash** with Goldman ">7,100 froth" sentiment risk extended, Energy YTD **+32.64%** still leading. Entering ahead of NFP on either side remains high-variance. PDT room intact (0/5 daytrades). Patience > activity.
+
+### 2026-05-12 — MIDDAY NO-ACTION
+- Account: equity $10,000.00, cash $10,000.00, `daytrade_count`=0, `balance_asof` 2026-05-11
+- Positions: 0 open
+- Open orders: 0
+- Actionable positions (post Rule 15 same-day filter): 0
+- Actions taken: none — no positions to evaluate against Rules 7/8/10
+- Telegram: silent (no actions AND DTC < 2)
