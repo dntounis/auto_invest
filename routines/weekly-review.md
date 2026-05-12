@@ -150,7 +150,8 @@ Rule violations: <count>
 ```
 git add memory/TRADE-LOG.md memory/WEEKLY-REVIEW.md memory/HEARTBEAT.md
 git commit -m "weekly-review $DATE"
+git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/dntounis/auto_invest.git"
 git push origin main
 ```
 
-On push failure: `git pull --rebase origin main` then push again. Never `--force`.
+On push failure: `git pull --rebase origin main` then `git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/dntounis/auto_invest.git"` then push again. Never `--force`.

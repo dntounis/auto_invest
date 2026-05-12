@@ -162,7 +162,8 @@ does, an env var is missing; treat it as a routine failure and stop.
 ```
 git add memory/TRADE-LOG.md memory/HEARTBEAT.md
 git commit -m "EOD snapshot $DATE"
+git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/dntounis/auto_invest.git"
 git push origin main
 ```
 
-On push failure: `git pull --rebase origin main` then push again. Never `--force`.
+On push failure: `git pull --rebase origin main` then `git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/dntounis/auto_invest.git"` then push again. Never `--force`.

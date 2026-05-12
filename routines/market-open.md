@@ -84,6 +84,10 @@ double-buy.
 
 ## STEP 3 — Apply buy-side gate to each idea
 
+First, read the `**Decision:**` line from today's RESEARCH-LOG entry.
+- If `Decision: HOLD` → log "market-open $DATE: pre-market Decision=HOLD — skipping execution", send Telegram "market-open $DATE (paper) — pre-market HOLD decision: no orders placed", then skip to STEP 8.
+- If `Decision: TRADE` → proceed with gate checks below.
+
 For each idea in today's RESEARCH-LOG entry, run the Buy-Side Gate from
 `TRADING-STRATEGY.md`. Skip and log reason for any failure:
 
@@ -223,6 +227,7 @@ confirmed at EOD:
 ```
 git add memory/TRADE-LOG.md memory/HEARTBEAT.md
 git commit -m "market-open $DATE: <N> orders, <K> filled"
+git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/dntounis/auto_invest.git"
 git push origin main
 ```
 
@@ -233,6 +238,7 @@ atomic and ensure the heartbeat timestamp is never silently left behind.
 On push failure (non-fast-forward / divergence):
 ```
 git pull --rebase origin main
+git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/dntounis/auto_invest.git"
 git push origin main
 ```
 

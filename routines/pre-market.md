@@ -119,12 +119,14 @@ bash scripts/telegram.sh "*Pre-market URGENT $DATE* (paper) — <one-line reason
 ```
 git add memory/RESEARCH-LOG.md
 git commit -m "pre-market research $DATE"
+git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/dntounis/auto_invest.git"
 git push origin main
 ```
 
 On push failure (non-fast-forward / divergence):
 ```
 git pull --rebase origin main
+git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/dntounis/auto_invest.git"
 git push origin main
 ```
 
