@@ -123,3 +123,12 @@ No positions yet. v1 launches on the next weekday's `pre-market` routine. The `d
 - SKIPPED 2026-05-12 XLE (catalyst pm-2026-05-12-XLE): no ask price available (ap=0, bid=$56.02) — quote returned with empty ask side; sizing aborted per STEP 5a spec.
 - SKIPPED 2026-05-12 XLP (catalyst pm-2026-05-12-XLP): no ask price available (ap=0, bid=$81.95) — quote returned with empty ask side; sizing aborted per STEP 5a spec.
 - PENDING 2026-05-12 XLI: limit order placed @ $180.21, not yet filled as of market-open run (order id 523ea89b-92d2-4764-813f-0ee592d4b39a, qty 11, TIF day, live_ask $180.03 / bid $168.86 at submission, expires 2026-05-13T20:00:00Z; catalyst pm-2026-05-12-XLI; trail percent 10; cost-at-limit $1,982.31 = 19.82% equity; buy-side gate all pass — positions 0/6, trades-this-week 0/3, DTC 0). daily-summary will upgrade to a full TRADE row if/when filled.
+
+## May 12 — EOD Snapshot (Day 12, Tuesday)
+**Portfolio:** $10,000.00 | **Cash:** $10,000.00 (100%) | **Day P&L:** $0.00 (0.00%) | **Phase P&L:** $0.00 (0.00%)
+
+| Ticker | Shares | Entry | Close | Day Chg | Unrealized P&L | Stop |
+| ------ | ------ | ----- | ----- | ------- | -------------- | ---- |
+| —      | —      | —     | —     | —       | —              | —    |
+
+**Notes:** Day 12 v2 paper, **TRADING_ENABLED=true** — equity flat at $10,000.00 (`balance_asof` 2026-05-11), no positions, no fills today. This morning's `market-open` routine processed three pre-market ideas (XLE / XLP / XLI from `pm-2026-05-12-*`): **XLE and XLP skipped** (no live ask available — ap=0; sizing aborted per STEP 5a); **XLI limit @ $180.21 placed** (qty 11, TIF day, order id `523ea89b-92d2-4764-813f-0ee592d4b39a`, expires 2026-05-13T20:00:00Z) and **still ACCEPTED / not filled** by close (filled_qty=0). Today's pre-market read: **HOLD-into-PPI** given hot April CPI (+3.8% YoY, highest in ~2yrs) printed 8:30 AM ET completing the three-leg hawkish stack (ADP +118K, NFP +115K, CPI 3.8%) + Hormuz re-escalation on Trump ceasefire doubts (June WTI CLM26 +4.19% intraday) + VIX trending toward 20 trigger (18.93 intraday, ~1.1pt buffer). **0 trailing stops placed today** (Rule 13 — no positions opened today; XLI pending limit does not qualify). Trades this week: 0/3 — weekly cap intact. PDT room intact (0/5 daytrades). Three-day documentation gap (May 8 / May 11 / no EOD entries written; this snapshot resumes the cadence). Tomorrow's pre-market: PPI April release 8:30 AM ET — confirms/refutes inflation-stickiness narrative.
