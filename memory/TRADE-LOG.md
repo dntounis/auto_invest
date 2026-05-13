@@ -166,3 +166,29 @@ Pre-market Decision: HOLD / TRADE-READY (conditional TRADE per rationale); three
 - Target: $98.40 (R:R 2:1 vs. entry $82 / stop $73.80 in pre-market plan)
 - Realized P&L: n/a (open position)
 - Order id: e3bc8926-b9fa-4859-81cf-5d43e6aed451, cost basis $1,938.31 (19.38% equity)
+
+### 2026-05-13 — STOP PLACED: XLE trail 10%
+- Order ID: 9049f7fc-4123-4018-b077-9bdcf84d3867
+- Trigger reason: routine placement at market close (Rule 13)
+- Links to BUY: pm-2026-05-13-XLE
+
+### 2026-05-13 — STOP PLACED: XLI trail 10%
+- Order ID: 9321e3e4-45b2-440c-a445-bc7ccf7d1d4e
+- Trigger reason: routine placement at market close (Rule 13)
+- Links to BUY: pm-2026-05-13-XLI
+
+### 2026-05-13 — STOP PLACED: XLP trail 10%
+- Order ID: 997935c2-e53a-4292-af4c-607a92ab3084
+- Trigger reason: routine placement at market close (Rule 13)
+- Links to BUY: pm-2026-05-13-XLP
+
+## May 13 — EOD Snapshot (Day 13, Wednesday)
+**Portfolio:** $10,019.17 | **Cash:** $4,202.96 (41.95%) | **Day P&L:** +$19.17 (+0.19%) | **Phase P&L:** +$19.17 (+0.19%)
+
+| Ticker | Shares | Entry      | Close    | Day Chg | Unrealized P&L | Stop      |
+| ------ | ------ | ---------- | -------- | ------- | -------------- | --------- |
+| XLE    | 34     | $57.290588 | $57.59   | +0.52%  | +$10.18        | $51.83 (trail 10%) |
+| XLI    | 11     | $173.713636| $173.62  | -0.05%  | -$1.03         | $156.26 (trail 10%) |
+| XLP    | 23     | $84.274348 | $84.71   | +0.52%  | +$10.02        | $76.24 (trail 10%) |
+
+**Notes:** Day 13 v2 paper, **TRADING_ENABLED=true** — first deployment day of the challenge. This morning's pre-market research landed on **HOLD / TRADE-READY** post-hot-PPI (Core PPI MoM +0.5% vs. +0.2% consensus, completing the four-leg hawkish stack ADP+NFP+CPI+PPI), with R:R 2:1 ideas on XLE / XLI / XLP all in the leading sector quadrant. Market-open executed cleanly: **3 limit-with-slippage BUYs filled** within ~40s (XLE 34 @ $57.29 avg, XLI 11 @ $173.71 avg, XLP 23 @ $84.27 avg; combined cost basis $5,797.04 = 57.97% equity deployed). **3 trailing stops placed at close per Rule 13** (XLE stop $51.83, XLI $156.26, XLP $76.24 — all 10% GTC). 0 positions closed today. Equity reconciles $10,000.00 (yesterday close) → $10,019.17 today (+$19.17 / +0.19%) — XLE and XLP closed slightly above entry (+0.52% each), XLI flat (-0.05%); intraday drift only since these are same-day fills. **Trades this week: 3/3 — weekly cap reached** (Rule 4); no more BUYs until Monday's fresh budget. Capital deployment at 58% sits below the 75–85% v2 target but is a conservative first-deployment posture; future weeks can layer in additional sector ETFs (XLB defensive alternate, XLU improving) up to the 5–6 position cap. PDT room intact (daytrade_count 0/5). Tomorrow's pre-market: Retail Sales April (8:30 AM ET, consensus +0.6% MoM) is the next macro inflection; Thu–Fri Trump–Xi Beijing summit + Fri Powell→Warsh Fed Chair transition + Fri UMich Sentiment round out the week.
