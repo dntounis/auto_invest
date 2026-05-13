@@ -132,3 +132,37 @@ No positions yet. v1 launches on the next weekday's `pre-market` routine. The `d
 | —      | —      | —     | —     | —       | —              | —    |
 
 **Notes:** Day 12 v2 paper, **TRADING_ENABLED=true** — equity flat at $10,000.00 (`balance_asof` 2026-05-11), no positions, no fills today. This morning's `market-open` routine processed three pre-market ideas (XLE / XLP / XLI from `pm-2026-05-12-*`): **XLE and XLP skipped** (no live ask available — ap=0; sizing aborted per STEP 5a); **XLI limit @ $180.21 placed** (qty 11, TIF day, order id `523ea89b-92d2-4764-813f-0ee592d4b39a`, expires 2026-05-13T20:00:00Z) and **still ACCEPTED / not filled** by close (filled_qty=0). Today's pre-market read: **HOLD-into-PPI** given hot April CPI (+3.8% YoY, highest in ~2yrs) printed 8:30 AM ET completing the three-leg hawkish stack (ADP +118K, NFP +115K, CPI 3.8%) + Hormuz re-escalation on Trump ceasefire doubts (June WTI CLM26 +4.19% intraday) + VIX trending toward 20 trigger (18.93 intraday, ~1.1pt buffer). **0 trailing stops placed today** (Rule 13 — no positions opened today; XLI pending limit does not qualify). Trades this week: 0/3 — weekly cap intact. PDT room intact (0/5 daytrades). Three-day documentation gap (May 8 / May 11 / no EOD entries written; this snapshot resumes the cadence). Tomorrow's pre-market: PPI April release 8:30 AM ET — confirms/refutes inflation-stickiness narrative.
+
+## 2026-05-13 — Market-Open Run (Day 13, Wednesday, Week 3 Day 3)
+
+Pre-market Decision: HOLD / TRADE-READY (conditional TRADE per rationale); three R:R 2:1 ideas ranked ticker-ascending. Buy-side gate at submit: equity $10,000.00, cash $10,000.00, positions 0/6, trades-this-week 0/3, daytrade_count 0 (≤1 buffer ✓), no open orders / no idempotency conflicts. Live quotes clean (spreads <0.1% on all three). Risk sizing: RISK_PCT=2%, MAX_POS_PCT=20%, SLIPPAGE_PCT=0.10%, trail_pct=10 for all. All three limit BUYs placed and filled within ~40s of submission.
+
+### 2026-05-13 — TRADE: XLE side=buy qty=34
+- Entry: $57.290588 (avg fill; limit $57.42, live_ask $57.36 at submit)
+- Stop level: pending (placed at daily-summary T 15:00 CT per Rule 13)
+- Sector: Energy (S&P 500 Energy Select Sector SPDR ETF)
+- Thesis: Sector YTD leader (+22–30% across sources); two-day hot CPI+PPI stack confirmed energy is inflation arithmetic driver (gasoline +28% YoY, fuel oil +54% YoY); Hormuz ceasefire on "life support" framing (Trump "piece of garbage" rhetoric); WTI $102.93 spot / Brent $107.77; XLE in leading quadrant per Investing.com sector-rotation guide May 13.
+- Catalyst: pm-2026-05-13-XLE (link to RESEARCH-LOG entry 2026-05-13)
+- Target: $120 (R:R 2:1 vs. entry $100 / stop $90 in pre-market plan)
+- Realized P&L: n/a (open position)
+- Order id: be5f1289-fb9e-4b85-95b9-7b14ed22cee5, cost basis $1,947.88 (19.48% equity)
+
+### 2026-05-13 — TRADE: XLI side=buy qty=11
+- Entry: $173.713636 (avg fill; limit $174.09, live_ask $173.92 at submit)
+- Stop level: pending (placed at daily-summary T 15:00 CT per Rule 13)
+- Sector: Industrials (S&P 500 Industrial Select Sector SPDR ETF)
+- Thesis: Industrials ETF in leading quadrant; capex / AI-infra / grid / reshoring spine intact; defense kicker reinforced by Hormuz re-escalation; yesterday's $180.21 limit expired unfilled on stale-quote spread — thesis intact, re-entered at live market.
+- Catalyst: pm-2026-05-13-XLI (link to RESEARCH-LOG entry 2026-05-13)
+- Target: $194 (R:R 2:1 vs. entry $162 / stop $146 in pre-market plan)
+- Realized P&L: n/a (open position)
+- Order id: 5685c54e-7a78-48a4-abda-987a03845ec7, cost basis $1,910.85 (19.11% equity)
+
+### 2026-05-13 — TRADE: XLP side=buy qty=23
+- Entry: $84.274348 (avg fill; limit $84.28, live_ask $84.20 at submit)
+- Stop level: pending (placed at daily-summary T 15:00 CT per Rule 13)
+- Sector: Consumer Staples (S&P 500 Consumer Staples Select Sector SPDR ETF)
+- Thesis: Staples ETF in leading quadrant; defensive bid into two-day hot CPI+PPI tape + four-leg hawkish stack (ADP+NFP+CPI+PPI) + 10Y at cycle-high 4.46%; cleanest setup post-PPI; lowest-beta of the three legs.
+- Catalyst: pm-2026-05-13-XLP (link to RESEARCH-LOG entry 2026-05-13)
+- Target: $98.40 (R:R 2:1 vs. entry $82 / stop $73.80 in pre-market plan)
+- Realized P&L: n/a (open position)
+- Order id: e3bc8926-b9fa-4859-81cf-5d43e6aed451, cost basis $1,938.31 (19.38% equity)
