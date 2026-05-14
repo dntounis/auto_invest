@@ -200,3 +200,14 @@ Pre-market Decision: HOLD / TRADE-READY (conditional TRADE per rationale); three
 ## 2026-05-14 — Midday Run (Day 14, Thursday, Week 3 Day 4)
 
 - midday 2026-05-14: **NO ACTION.** Rule 14 pre-flight: `daytrade_count=0` (< 2, pass). 3 actionable positions — XLE/XLI/XLP all entered 2026-05-13 (< today, not Rule 15 same-day). Unrealized P&L vs. entry: **XLE +1.38%** ($58.08 vs. $57.290588), **XLI +0.33%** ($174.28 vs. $173.713636), **XLP +1.01%** ($85.125 vs. $84.274348). Thresholds: none ≤ -7% (Rule 7 hard-close), none ≥ +15%/+20% (Rule 8 stop-tighten). Sector-kill (Rule 10): 0 EXIT rows in TRADE-LOG.md — no consecutive sector losses, no doomed sectors. **0 sells, 0 stop tightenings.** Held book unchanged; 3 trailing-stop GTC sells remain active (XLE id 9049f7fc trail 10%, XLI id 9321e3e4 trail 10%, XLP id 997935c2 trail 10%). Equity $10,052.64. Telegram silent (no actions, DTC < 2).
+
+## May 14 — EOD Snapshot (Day 14, Thursday)
+**Portfolio:** $10,049.04 | **Cash:** $4,202.96 (41.83%) | **Day P&L:** +$29.87 (+0.30%) | **Phase P&L:** +$49.04 (+0.49%)
+
+| Ticker | Shares | Entry      | Close    | Day Chg | Unrealized P&L | Stop      |
+| ------ | ------ | ---------- | -------- | ------- | -------------- | --------- |
+| XLE    | 34     | $57.290588 | $58.05   | +0.72%  | +$25.66        | $52.36 (trail 10%) |
+| XLI    | 11     | $173.713636| $174.51  | +0.51%  | +$8.76         | $157.25 (trail 10%) |
+| XLP    | 23     | $84.274348 | $84.91   | +0.22%  | +$14.62        | $76.73 (trail 10%) |
+
+**Notes:** Day 14 v2 paper, **TRADING_ENABLED=true** — held book unchanged, equity $10,049.04 reconciles $10,019.17 (May 13 close) → today (+$29.87 / +0.30%); all three positions closed green on the day. This morning's pre-market research landed on **HOLD** — weekly cap reached 3/3 (Rule 4), so no buy-side action was possible regardless of setup; hot April Retail Sales (+1.7% MoM vs. +0.4% consensus, third consecutive hot demand/inflation print), Strait of Hormuz reported closed (oil supply premium hard in price), and a record-high SPX cash close Wednesday were the tape backdrop. Market-open placed **0 orders** (weekly cap); midday took **0 actions** (no -7% hard-close, no +15%/+20% stop-tighten, no sector-kill — all three positions green and in the leading sector quadrant). **0 positions opened, 0 closed today; 0 trailing stops placed** (Rule 13 — no positions opened today). The 3 trailing-stop GTC sells from May 13 remain active and have trailed up with price: XLE $52.36, XLI $157.25, XLP $76.73 (all 10%). Trades this week: 3/3 — weekly cap reached; no more BUYs until Monday's fresh budget. Capital deployment 58.2% (cash 41.8%). PDT room intact (daytrade_count 0/5). Tomorrow's pre-market: Kevin Warsh replaces Jerome Powell as Fed Chair; UMich Consumer Sentiment (preliminary); Trump–Xi Beijing summit continues. Watchlist for Monday's fresh budget: XLB (only unheld leading-quadrant sector), then XLU (improving).
