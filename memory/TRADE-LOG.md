@@ -226,3 +226,12 @@ Pre-market Decision: HOLD / TRADE-READY (conditional TRADE per rationale); three
 | XLP    | 23     | $84.274348 | $84.66   | -0.38%  | +$8.87         | $77.02 (trail 10%) |
 
 **Notes:** Day 15 v2 paper, **TRADING_ENABLED=true** — held book unchanged; equity $10,055.34 reconciles $10,049.04 (May 14 close) → today (+$6.30 / +0.06%). Mixed-tape Friday: **XLE +2.31%** ($59.41 close, trail-stop ratcheted up to $53.45 on new hwm $59.39 — best of the three), **XLI -1.79%** ($171.39, mild giveback), **XLP -0.38%** ($84.66, near-flat). This morning's pre-market research landed on **HOLD** — weekly cap reached 3/3 (Rule 4), so no buy-side action possible regardless of setup; tape backdrop was the **Powell → Warsh Fed Chair transition** (sentiment-mixed, hawkish-lean structurally), Strait of Hormuz reported effectively closed (WTI $102 / Brent $106 plateau, XLE tailwind intact), VIX 17.87 May 13 close (calm regime firm), SPX at record high post-Wed cash close, and a thin macro/earnings session (no marquee BMO, no scheduled US data release — UMich preliminary was May 8). Market-open placed **0 orders** (weekly cap); midday took **0 actions** (no -7% hard-close, no +15%/+20% stop-tighten, no sector-kill — all three sectors leading-quadrant, two of three green on-position). **0 positions opened, 0 closed today; 0 trailing stops placed at close** (Rule 13 — no positions opened today). 3 trailing-stop GTC sells from May 13 remain active; XLE stop ratcheted up +$0.21 (to $53.45 from $53.244 at midday) on intraday new hwm $59.39, XLI/XLP stops unchanged. Trades this week: **3/3 — weekly cap reached**; fresh budget Monday 2026-05-18. Capital deployment 58.2% (cash 41.8%). PDT room intact (daytrade_count 0/5). **Week 3 close summary:** 3 BUYs filled Wed (XLE/XLI/XLP), 0 sells, phase P&L +$55.34 / +0.55% — first full deployment week complete, held book all green-or-flat, no Rule triggers fired. Monday's pre-market: re-validate watchlist **XLB** (only unheld leading-quadrant sector, ~$53 entry / $47.70 stop / $63.60 target, R:R 2:1) then **XLU** (improving, ~$45 entry / $40.50 stop / $54 target, R:R 2:1) with live prices for fresh 3-trade budget. Friday weekly-review routine fires next per the v2 cadence.
+
+### 2026-05-15 — WEEK SUMMARY (Week ending 2026-05-15)
+- Trades placed: 3 (W:0 / L:0 / open:3)
+- Week P&L: +$55.34 (+0.55%)
+- Phase P&L: +$55.34 (+0.55%)
+- Best: XLE +3.70% (unrealized)
+- Worst: XLI -1.34% (unrealized)
+- daytrade_count delta: n/a (week 1) -> 0
+- Rule violations: none
