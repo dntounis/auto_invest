@@ -253,3 +253,20 @@ Pre-market Decision: HOLD / TRADE-READY (conditional TRADE per rationale); three
 ## 2026-05-18 — Midday Run (Day 18, Monday, Week 4 Day 1)
 
 - midday 2026-05-18: **NO ACTION.** Rule 14 pre-flight: `daytrade_count=0` (< 2, pass). 4 open positions; **XLB skipped (Rule 15 same-day** — entered 2026-05-18 by this morning's market-open). 3 actionable positions — XLE/XLI/XLP all entered 2026-05-13 (< today). Unrealized P&L vs. entry: **XLE +5.43%** ($60.40 vs. $57.290588), **XLI -1.95%** ($170.33 vs. $173.713636), **XLP +1.28%** ($85.355 vs. $84.274348). Thresholds: none ≤ -7% (Rule 7 hard-close), none ≥ +15%/+20% (Rule 8 stop-tighten). Sector-kill (Rule 10): 0 EXIT rows in TRADE-LOG.md — no consecutive sector losses, no doomed sectors. **0 sells, 0 stop tightenings.** Held book unchanged; 3 trailing-stop GTC sells remain active (XLE id 9049f7fc trail 10% stop $54.603 hwm $60.67, XLI id 9321e3e4 trail 10% stop $157.2525 hwm $174.725, XLP id 997935c2 trail 10% stop $77.202 hwm $85.78). XLB stop pending (placed at daily-summary T 15:00 CT per Rule 13). Equity $10,104.16. Telegram silent (no actions, DTC < 2).
+
+### 2026-05-18 — STOP PLACED: XLB trail 10%
+- Order ID: 1fbb4c78-74c2-4a6e-afa1-62226ba5db2f
+- Trigger reason: routine placement at market close (Rule 13)
+- Links to BUY: pm-2026-05-18-XLB
+
+## May 18 — EOD Snapshot (Day 18, Monday)
+**Portfolio:** $10,120.71 | **Cash:** $2,199.76 (21.74%) | **Day P&L:** +$65.37 (+0.65%) | **Phase P&L:** +$120.71 (+1.21%)
+
+| Ticker | Shares | Entry      | Close    | Day Chg | Unrealized P&L | Stop      |
+| ------ | ------ | ---------- | -------- | ------- | -------------- | --------- |
+| XLB    | 40     | $50.08     | $50.19   | -0.22%  | +$4.40         | $45.17 (trail 10%) |
+| XLE    | 34     | $57.290588 | $60.5705 | +1.90%  | +$111.52       | $54.63 (trail 10%) |
+| XLI    | 11     | $173.713636| $170.75  | -0.38%  | -$32.60        | $157.25 (trail 10%) |
+| XLP    | 23     | $84.274348 | $85.90   | +1.49%  | +$37.39        | $77.35 (trail 10%) |
+
+**Notes:** Day 18 v2 paper, **TRADING_ENABLED=true** — Week 4 Day 1. Equity $10,120.71 reconciles $10,055.34 (May 15 close) → today (+$65.37 / +0.65%); phase P&L crosses **+1% milestone** at +$120.71 / +1.21%. This morning's pre-market research landed on **HOLD-WITH-ONE-ARMED-IDEA**: 1 armed (`pm-2026-05-18-XLB`), 1 deferred (`pm-2026-05-18-XLU` — sector-momentum spirit fails on 30Y 5.12% breakout). Market-open executed cleanly on the armed idea: **1 limit-with-slippage BUY filled** (XLB 40 @ $50.08 avg, cost basis $2,003.20 = 19.97% equity). Midday took **0 actions** (XLB Rule-15 same-day skip; XLE/XLI/XLP no -7% hard-close, no +15%/+20% stop-tighten, no sector-kill). **1 trailing stop placed at close** (Rule 13): XLB 10% GTC stop $45.17 (hwm $50.19). Held-book trail stops ratcheted up intraday on new hwms: XLE stop $54.63 (hwm $60.70, up from $54.603 at midday), XLI stop $157.25 unchanged (hwm $174.725), XLP stop $77.35 (hwm $85.94, up from $77.202 at midday). Sector breakdown across 4 positions: Materials (XLB), Energy (XLE), Industrials (XLI), Staples (XLP) — all leading-quadrant. **Trades this week: 1/3** — 2-trade buffer remaining for Tue–Fri (Rule 4). Capital deployment **78.27%** (within v2 75–85% target band — first time hitting the band). PDT room intact (daytrade_count 0/5). Tomorrow's pre-market: re-evaluate `pm-2026-05-18-XLU` if 30Y backs off <5.05% (carried forward); also VIX May expiration Tue May 19 (settlement-week noise); FOMC Minutes Wed = key macro catalyst; NVDA earnings Thu post-close.
