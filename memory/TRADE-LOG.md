@@ -235,3 +235,17 @@ Pre-market Decision: HOLD / TRADE-READY (conditional TRADE per rationale); three
 - Worst: XLI -1.34% (unrealized)
 - daytrade_count delta: n/a (week 1) -> 0
 - Rule violations: none
+
+## 2026-05-18 — Market-Open Run (Day 18, Monday, Week 4 Day 1)
+
+- market-open 2026-05-18: pre-market Decision=HOLD-WITH-ONE-ARMED-IDEA → 1 armed idea live (`pm-2026-05-18-XLB`), 1 deferred (`pm-2026-05-18-XLU` — sector-momentum spirit fails today on 30Y 5.12% print). Account state at run: equity $10,031.10, cash $4,202.96, daytrade_count 0, positions 3/6 (XLE/XLI/XLP), 3 trailing-stop GTC sells active, no open BUY orders → idempotency OK. Buy-side gate XLB: positions 4/6 ✓, trades-this-week 1/3 ✓ (fresh budget), cost $2,003.20 = 19.97% equity ≤ 20% cap ✓, cost ≤ cash ✓, daytrade_count 0 ≤ 1 ✓, catalyst documented ✓, stock-only ✓ — passes cleanly. Live ask $50.11 < $51.50 skip-threshold ✓. **1 order placed, 1 filled.**
+
+### 2026-05-18 — TRADE: XLB side=buy qty=40
+- Entry: $50.08 (avg fill; limit $50.16, live_ask $50.11 at submit)
+- Stop level: pending (placed at daily-summary T 15:00 CT per Rule 13)
+- Sector: Materials (S&P 500 Materials Select Sector SPDR ETF)
+- Thesis: XLB only unheld leading-quadrant sector (XLE/XLI/XLP/XLB all leading per Investing.com sector-rotation guide); cyclical / inflation-sensitive + Hormuz supply-premium tailwind + sticky-inflation framing (CPI/PPI both hot in prior week); Friday's -2.65% pullback to $50.30 = healthier entry zone; structurally insulated from 30Y 5.12% breakout (short-duration cyclical, not rate-sensitive).
+- Catalyst: pm-2026-05-18-XLB (link to RESEARCH-LOG entry 2026-05-18)
+- Target: $60.36 (R:R 2:1 vs. entry $50.30 / stop $45.27 in pre-market plan)
+- Realized P&L: n/a (open position)
+- Order id: 958bbcd1-4537-4956-b09b-48d3de43cf35, cost basis $2,003.20 (19.97% equity)
