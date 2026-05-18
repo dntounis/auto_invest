@@ -249,3 +249,7 @@ Pre-market Decision: HOLD / TRADE-READY (conditional TRADE per rationale); three
 - Target: $60.36 (R:R 2:1 vs. entry $50.30 / stop $45.27 in pre-market plan)
 - Realized P&L: n/a (open position)
 - Order id: 958bbcd1-4537-4956-b09b-48d3de43cf35, cost basis $2,003.20 (19.97% equity)
+
+## 2026-05-18 — Midday Run (Day 18, Monday, Week 4 Day 1)
+
+- midday 2026-05-18: **NO ACTION.** Rule 14 pre-flight: `daytrade_count=0` (< 2, pass). 4 open positions; **XLB skipped (Rule 15 same-day** — entered 2026-05-18 by this morning's market-open). 3 actionable positions — XLE/XLI/XLP all entered 2026-05-13 (< today). Unrealized P&L vs. entry: **XLE +5.43%** ($60.40 vs. $57.290588), **XLI -1.95%** ($170.33 vs. $173.713636), **XLP +1.28%** ($85.355 vs. $84.274348). Thresholds: none ≤ -7% (Rule 7 hard-close), none ≥ +15%/+20% (Rule 8 stop-tighten). Sector-kill (Rule 10): 0 EXIT rows in TRADE-LOG.md — no consecutive sector losses, no doomed sectors. **0 sells, 0 stop tightenings.** Held book unchanged; 3 trailing-stop GTC sells remain active (XLE id 9049f7fc trail 10% stop $54.603 hwm $60.67, XLI id 9321e3e4 trail 10% stop $157.2525 hwm $174.725, XLP id 997935c2 trail 10% stop $77.202 hwm $85.78). XLB stop pending (placed at daily-summary T 15:00 CT per Rule 13). Equity $10,104.16. Telegram silent (no actions, DTC < 2).
