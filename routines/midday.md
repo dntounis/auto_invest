@@ -98,19 +98,46 @@ Drop positions where `entry_date == today` (Rule 15). The remaining list is
 
 ## STEP 4 — Decide actions per actionable position
 
-For each position, check thresholds in this order. Only the FIRST matching
-threshold triggers an action:
+For each position, evaluate in this order. Hard-close (1) is exclusive — if it
+fires, skip the rest for that position. The profit ladder (2) may both scale out
+AND tighten in the same run; momentum-decay (3) only ever fires on losers below
+entry, so (2) and (3) are mutually exclusive in practice.
+
+Determine each position's `tier` (`core` | `satellite`) from its latest BUY row in
+TRADE-LOG.md (the `Tier:` field). Default to `core` if the field is absent.
 
 1. **Hard-close** (Rule 7) — `unrealized_pl_pct ≤ -7`:
    - Action: market sell entire position
    - This is a sell → `DTC` pre-flight already passed (it's < 2 by virtue of reaching this step)
 
-2. **Tighten to 5%** (Rule 8) — `unrealized_pl_pct ≥ +20`:
-   - Action: `replace-stop` with `trail_percent=5` for the position's current trailing stop
-   - This is NOT a sell — it's a stop replacement. No `DTC` impact.
+2. **Profit ladder** (Rule 8, v3) — for winners, get the ladder targets:
+   ```
+   LADDER_JSON=$(python3 scripts/sizing.py ladder --tier "$TIER" --unrealized-pct "$UPCT")
+   ```
+   - **Scale-out:** if `scaleouts_due` > the number of `SCALE-OUT` rows already logged
+     for this position in TRADE-LOG.md, sell 1/3 of the *current* qty:
+     `bash scripts/alpaca.sh scale-out TICKER $((CUR_QTY/3))`. This is a SELL — the
+     Rule 14 `DTC` pre-flight (STEP 2) must have passed; re-check `DTC` before the sell.
+   - **Tighten:** if `target_trail_pct` is non-null AND strictly less than the current
+     open stop's `trail_percent` (never raise a stop's trail, never within 3% of price —
+     Rule 9): `bash scripts/alpaca.sh replace-stop OID TICKER QTY $target_trail_pct`.
+     (Stop replacement is not a sell — no `DTC` impact.)
 
-3. **Tighten to 7%** (Rule 8) — `unrealized_pl_pct ≥ +15` AND current trail (from `orders open` response, parse `trail_percent` field on the open trailing-stop order matching this ticker) is currently > 7:
-   - Action: `replace-stop` with `trail_percent=7`
+3. **Momentum-decay rotation** (Rule 16, v3) — for laggards:
+   ```
+   # 10-session returns: last close vs the close 10 bars earlier
+   POS_RET from `bash scripts/alpaca.sh bars TICKER 1Day 11`
+   SPY_RET from `bash scripts/alpaca.sh bars SPY 1Day 11`
+   PRIOR_FLAG = 1 if the most recent DECAY-FLAG row for TICKER in TRADE-LOG.md is flag=1, else 0
+   DECAY_JSON=$(python3 scripts/sizing.py decay --unrealized-pct "$UPCT" \
+       --pos-ret-10d "$POS_RET" --spy-ret-10d "$SPY_RET" --prior-flag "$PRIOR_FLAG")
+   ```
+   - Always append a `DECAY-FLAG TICKER flag=<flag>` row (STEP 6) — this is the state
+     the next midday reads for consecutiveness.
+   - If `rotate == 1`: re-check Rule 14 `DTC`; if `DTC < 2`, `bash scripts/alpaca.sh close TICKER`
+     (a ROTATE-EXIT) and Telegram-note it. If `DTC ≥ 2`, abort + URGENT Telegram.
+   - A core ETF additionally rotates (treat as `rotate=1`) if its sector has exited the
+     leading momentum quadrant per the rotation read.
 
 4. **Sector-kill** (Rule 10) — 2 consecutive losses in this position's sector.
    Lookback: scan the most recent 20 EXIT rows in `memory/TRADE-LOG.md`, or
@@ -134,10 +161,13 @@ threshold triggers an action:
 For each scheduled action:
 
 ```
-# Hard-close or sector-kill
+# Hard-close, sector-kill, or momentum-decay rotation (full exit)
 bash scripts/alpaca.sh close TICKER
 
-# Tighten stop
+# Scale-out partial (Rule 8 ladder) — sell 1/3 of current qty
+bash scripts/alpaca.sh scale-out TICKER PARTIAL_QTY
+
+# Tighten stop (Rule 8 ladder)
 bash scripts/alpaca.sh replace-stop EXISTING_ORDER_ID TICKER QTY NEW_TRAIL_PCT
 ```
 
@@ -166,8 +196,31 @@ For each completed sell, append an EXIT trade row:
 For each stop tightening, append a STOP UPDATE row:
 ```
 ### YYYY-MM-DD — STOP UPDATE: TICKER trail %X -> %Y
-- Trigger: +15% gain / +20% gain (Rule 8)
+- Trigger: Rule 8 profit ladder, tier=<core|satellite>, unrealized +X%
 - New stop order ID: <id from replace-stop response>
+```
+
+For each scale-out partial sell, append a SCALE-OUT row (v3):
+```
+### YYYY-MM-DD — SCALE-OUT: TICKER qty=N (1/3 of M)
+- Tier: <core|satellite>
+- Trigger: Rule 8 ladder, unrealized +X% (scale-out #K of 2)
+- Realized P&L on slice: $X (X.X%)
+```
+
+For each momentum-decay evaluation, append a DECAY-FLAG row (v3 — state for the next midday):
+```
+### YYYY-MM-DD — DECAY-FLAG: TICKER flag=0|1
+- unrealized %X | 10-session pos %A vs SPY %B | prior_flag=0|1 | rotate=0|1
+```
+
+For each momentum-decay rotation exit, append a ROTATE-EXIT row (v3):
+```
+### YYYY-MM-DD — TRADE: TICKER side=sell qty=N
+- Exit: $X
+- Sector: <copied from original BUY row>
+- Thesis: <closed via Rule 16 momentum-decay rotation — 2nd consecutive lag>
+- Realized P&L: $X (X.X%)
 ```
 
 ## STEP 7 — Telegram
@@ -178,6 +231,8 @@ For each stop tightening, append a STOP UPDATE row:
   - Format prefix conventions:
     - `*MIDDAY HARD-CLOSE MMM DD* (paper) — TICKER -X.X% from entry` (URGENT, hard-closes)
     - `*MIDDAY SECTOR-KILL MMM DD* (paper) — sector X, N positions closed` (URGENT, sector kill)
+    - `*MIDDAY ROTATE MMM DD* (paper) — TICKER rotated out (Rule 16 momentum-decay)` (informational)
+    - `*MIDDAY SCALE-OUT MMM DD* (paper) — TICKER trimmed 1/3 @ +X% (Rule 8)` (informational)
     - `*MIDDAY STOP UPDATE MMM DD* (paper) — TICKER trail X% → Y%` (informational, stop tightening)
     - `*MIDDAY ABORT MMM DD* (paper) — daytrade_count=N, manual review required` (URGENT, DTC abort)
   - Combine multiple actions into one message body when applicable.
