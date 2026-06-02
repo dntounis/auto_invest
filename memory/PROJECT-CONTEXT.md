@@ -3,9 +3,11 @@
 ## Mission
 Beat the S&P 500 over the challenge window. Stocks only — no options, ever.
 
-## Mode (v1)
-- **Paper trading only.** `TRADING_ENABLED=false`.
-- No order code paths execute. The Alpaca wrapper refuses every state-changing subcommand at the wrapper level (exit 4) until the env var is flipped — that flip happens at the v1→v2 boundary, not in v1.
+## Mode (v3 — core-satellite momentum)
+- **Paper trading only.** `TRADING_ENABLED=true` (since v2).
+- **v3 strategy:** ETF *core* (≥45% of deployed) + single-stock *satellites* (≤3 names) for alpha. Risk-parity sizing, profit ladders (scale-out + tighter trail), momentum-decay rotation (Rule 16), weekly cap raised to 5. See `TRADING-STRATEGY.md`.
+- Safety-critical math is deterministic in `scripts/sizing.py` (modes: `size`, `ladder`, `decay`), unit-tested in `tests/test_sizing.sh`. New read-only `alpaca.sh bars` (DMA/RS) and gated `alpaca.sh scale-out` subcommands.
+- Visa-aware Rules 13/14/15 unchanged — zero day-trades by construction. The wrapper kill-switch is still the last line of defense; do not work around it.
 
 ## Capital & Platform
 - Starting capital: ~$10,000 paper

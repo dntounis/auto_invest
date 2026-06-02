@@ -8,6 +8,8 @@ when ready to design.
 
 ## Stale-quote miss on market-open (logged 2026-05-17, observed 2026-05-12)
 
+> **PROMOTED** into `docs/superpowers/specs/2026-06-02-auto-invest-v3-design.md` §3.6 and implemented in `market-open` STEP 5a (prior-close limit fallback) — 2026-06-02.
+
 ### Finding
 
 Market-open routine fired 2026-05-12 at 8:30 CT. Alpaca returned:
