@@ -85,7 +85,7 @@ Run `bash scripts/perplexity.sh "<query>"` for each:
 
 **Single-stock satellite screen (v3).** For each single-stock candidate from the momentum query, confirm trend + relative strength before proposing it:
 - `bash scripts/alpaca.sh bars TICKER 1Day 200` → confirm last close > 50-DMA and > 200-DMA.
-- `bash scripts/alpaca.sh bars SPY 1Day 50` → compute candidate's 10- and 50-session returns vs SPY (relative strength must be positive).
+- `bash scripts/alpaca.sh bars SPY 1Day 60` → compute candidate's 10- and 50-session returns vs SPY (relative strength must be positive). (60 bars gives margin for the 50-session lookback, which needs 51 closes.)
 - Reject candidates failing the liquidity filter (thin average volume / wide quoted spread — also guards against stale-open quotes).
 
 If `perplexity.sh` exits 3, fall back to native `WebSearch` and **flag the fallback

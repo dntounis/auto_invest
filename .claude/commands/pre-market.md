@@ -33,7 +33,7 @@ Run `bash scripts/perplexity.sh "<query>"` for each:
 
 **Single-stock satellite screen (v3).** For each single-stock candidate:
 - `bash scripts/alpaca.sh bars TICKER 1Day 200` → confirm last close > 50-DMA and > 200-DMA.
-- `bash scripts/alpaca.sh bars SPY 1Day 50` → candidate 10-/50-session returns vs SPY (relative strength positive).
+- `bash scripts/alpaca.sh bars SPY 1Day 60` → candidate 10-/50-session returns vs SPY (relative strength positive). (60 bars covers the 50-session lookback, which needs 51 closes.)
 - Reject candidates failing the liquidity filter (thin volume / wide spread).
 
 If `perplexity.sh` exits 3, fall back to native `WebSearch` and **flag the fallback in the research-log entry** ("Sources: WebSearch fallback used for queries: ..."). If `alpaca.sh bars` is unavailable, degrade the satellite screen to catalyst + liquidity only and flag it.
