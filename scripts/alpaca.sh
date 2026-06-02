@@ -154,12 +154,25 @@ print(json.dumps({
             "$API/account/activities?date=$date_filter"
         ;;
     bars)
-        # Read-only — no kill-switch gate. Daily bars for moving-average / RS.
-        sym="${1:?usage: bars SYM [timeframe] [limit]}"
+        # Read-only — no kill-switch gate. Returns the most recent COUNT daily
+        # bars (default 60) for moving-average / relative-strength math.
+        # Note: Alpaca's bars endpoint returns null with limit-only and yields
+        # bars ascending-from-`start`, so we set a `start` window wide enough to
+        # cover COUNT trading days (~7 calendar per 5 trading) and trim to the
+        # last COUNT bars here, keeping the COUNT arg meaning "last N bars".
+        sym="${1:?usage: bars SYM [timeframe] [count]}"
         timeframe="${2:-1Day}"
-        limit="${3:-60}"
+        count="${3:-60}"
+        start=$(python3 -c "import sys,datetime; n=int(sys.argv[1]); print((datetime.date.today()-datetime.timedelta(days=n*2+15)).isoformat())" "$count")
         curl -fsS -H "$H_KEY" -H "$H_SEC" \
-            "$DATA/stocks/$sym/bars?timeframe=$timeframe&limit=$limit&adjustment=all"
+            "$DATA/stocks/$sym/bars?timeframe=$timeframe&start=$start&limit=10000&adjustment=all" \
+        | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+bars = d.get('bars') or []
+n = int(sys.argv[1])
+d['bars'] = bars[-n:]
+print(json.dumps(d))" "$count"
         ;;
     *)
         echo "Usage: bash scripts/alpaca.sh <account|positions|position|quote|orders|order|cancel|cancel-all|close|close-all|trailing-stop|replace-stop|activities|bars|scale-out> [args]" >&2
