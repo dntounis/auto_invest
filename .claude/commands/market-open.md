@@ -40,13 +40,15 @@ trades in 5 rolling business days even if a same-day stop fires unexpectedly).
 
 Additional gate checks per idea:
 - Total positions after fill ≤ 6
-- Trades placed this week (incl. this one) ≤ 3
+- Trades placed this week (incl. this one) ≤ 5
 - Position cost ≤ 20% of account equity
 - Position cost ≤ available cash
+- **(v3, satellite only)** ETF-core market value stays ≥ 45% of deployed equity after the fill (skip + log if breached)
+- **(v3, satellite only)** ≤ 2 satellite names in this idea's GICS sector after the fill
 - Instrument is a stock (not option/crypto/forex/futures)
 
 ## Step 4 — Rank, take top N
-Ideas already ranked R:R-desc by pre-market. Take `min(passing, 3 - trades_this_week)`
+Ideas already ranked R:R-desc by pre-market. Take `min(passing, 5 - trades_this_week)` *(v3 — cap 5)*
 (trades_this_week from TRADE-LOG.md tally read in Step 1). If the result is zero,
 skip to Step 8 with no orders placed.
 
@@ -67,7 +69,11 @@ Alpaca's `/stocks/{sym}/quotes/latest` returns:
 Extract `live_ask = response.quote.ap`. The `.ap` field is the correct ask price
 field name. Do NOT use `.ask` or `.askPrice` — those are not Alpaca fields.
 
-If `live_ask` is zero or null, skip this idea and log "no ask price available".
+If `live_ask` is zero or null (stale quote), apply the **v3 fallback** before skipping:
+read prior close via `bash scripts/alpaca.sh bars TICKER 1Day 2`. If a `bid` exists
+within `MAX_ENTRY_SLIPPAGE_PCT` of prior close, set `limit_price = round(prior_close
+* (1 + MAX_ENTRY_SLIPPAGE_PCT/100), 2)`, use `prior_close` as the sizing `price`, and
+place a day-TIF limit (Telegram-note non-URGENT). Else skip and log "no ask price available".
 
 **5b. Extract trail percent**
 
@@ -80,21 +86,19 @@ planned trail percent: N
 If that line is absent, or N is 0 or blank, set `trail_pct = 10` (default).
 This default prevents division-by-zero in the sizing formula below.
 
-**5c. Compute position size**
+**5c. Compute position size (deterministic helper — v3)**
+
+Use the idea's **stop width** as `stop-frac` (parse `stop width N%` from the pm idea
+line; fall back to `trail_pct / 100`). Then:
 
 ```
-RISK_PCT=${RISK_PER_TRADE_PCT:-2.0}        # default 2% of equity
-MAX_POS_PCT=${MAX_POSITION_PCT:-20}        # default 20% cap
-SLIPPAGE_PCT=${MAX_ENTRY_SLIPPAGE_PCT:-0.10}
-
-dollar_risk       = (RISK_PCT / 100) * account.equity          # e.g., 200 on 10k
-stop_distance_pct = trail_pct / 100                            # e.g., 0.10
-shares_by_risk    = floor(dollar_risk / (live_ask * stop_distance_pct))
-shares_by_cap     = floor((MAX_POS_PCT / 100) * account.equity / live_ask)
-shares            = min(shares_by_risk, shares_by_cap)
+SIZE_JSON=$(python3 scripts/sizing.py size \
+    --equity "$EQUITY" --price "$LIVE_ASK" --stop-frac "$STOP_FRAC")
 ```
 
-If shares < 1, skip this idea (cap or risk budget too small).
+Parse `shares`/`clamped`. If `clamped == "floor_skip"` or `shares < 1`, skip the idea
+and log the reason. Same risk-parity logic (2% equity risk, clamped to the 20% cap),
+now deterministic and unit-tested.
 
 **5d. Compute limit price**
 
@@ -138,6 +142,7 @@ DO NOT cancel positions or close anything — Rule 15 (no same-day exits, no clo
 ```
 ### YYYY-MM-DD — TRADE: TICKER side=buy qty=N
 - Entry: $X
+- Tier: core|satellite *(v3 — copied from the pm idea line)*
 - Stop level: pending (placed at daily-summary T 15:00 CT per Rule 13)
 - Sector: <GICS sector or ETF sector classification>
 - Thesis: <copied from RESEARCH-LOG entry>

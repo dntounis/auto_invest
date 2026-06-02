@@ -41,16 +41,21 @@ For each position:
 
 Drop positions where `entry_date == today` (Rule 15). Drop positions held in Alpaca but missing from TRADE-LOG.md (memory desync). Send Telegram URGENT: 'midday $DATE: position TICKER held in Alpaca but missing from TRADE-LOG.md, manual review required'. Then skip the position (treat as non-actionable). The remaining list is "actionable".
 
-## Step 4 — Decide actions (in priority order, first match wins)
-1. ≤ -7% → hard-close (Rule 7)
-2. ≥ +20% → replace-stop trail=5 (Rule 8)
-3. ≥ +15% AND current trail > 7 (parse `trail_percent` from `orders open` response for this ticker) → replace-stop trail=7 (Rule 8)
+## Step 4 — Decide actions
+Determine each position's `tier` (`core`|`satellite`) from its BUY row `Tier:` field (default `core`). Hard-close (1) is exclusive; ladder (2) may scale-out AND tighten; decay (3) only fires on losers below entry.
+
+1. ≤ -7% → hard-close (Rule 7). Exclusive.
+2. **Profit ladder (Rule 8, v3):** `LADDER_JSON=$(python3 scripts/sizing.py ladder --tier "$TIER" --unrealized-pct "$UPCT")`.
+   - Scale-out: if `scaleouts_due` > count of `SCALE-OUT` rows already logged for this position → `bash scripts/alpaca.sh scale-out TICKER $((CUR_QTY/3))` (SELL; re-check DTC first).
+   - Tighten: if `target_trail_pct` non-null AND < current open stop trail (never raise, never < 3%) → `replace-stop OID TICKER QTY $target_trail_pct`.
+3. **Momentum-decay rotation (Rule 16, v3):** `POS_RET` from `bash scripts/alpaca.sh bars TICKER 1Day 11`, `SPY_RET` from `bash scripts/alpaca.sh bars SPY 1Day 11`, `PRIOR_FLAG` from the latest DECAY-FLAG row for TICKER. `DECAY_JSON=$(python3 scripts/sizing.py decay --unrealized-pct "$UPCT" --pos-ret-10d "$POS_RET" --spy-ret-10d "$SPY_RET" --prior-flag "$PRIOR_FLAG")`. Always log a DECAY-FLAG row. If `rotate==1` and DTC < 2 → `close TICKER` (ROTATE-EXIT). Core ETF also rotates if its sector left the leading quadrant.
 4. Sector-kill (Rule 10): scan most recent 20 EXIT rows OR last 30 calendar days (whichever is shorter); if this position's sector has 2 consecutive losses (negative `Realized P&L`, same `Sector:` tag, no winner between them) → close all actionable positions in that sector in a batch. Evaluate sector-kill ONCE per unique sector.
 5. Else: no action.
 
 ## Step 5 — Execute
 ```
-bash scripts/alpaca.sh close TICKER                                  # hard-close / sector-kill
+bash scripts/alpaca.sh close TICKER                                  # hard-close / sector-kill / rotation
+bash scripts/alpaca.sh scale-out TICKER PARTIAL_QTY                  # Rule 8 ladder partial (1/3)
 bash scripts/alpaca.sh replace-stop ORDER_ID TICKER QTY NEW_TRAIL    # tighten
 ```
 After each individual sell, refresh DTC:
@@ -76,14 +81,29 @@ For each completed sell, append an EXIT trade row:
 For each stop tightening, append a STOP UPDATE row:
 ```
 ### YYYY-MM-DD — STOP UPDATE: TICKER trail %X -> %Y
-- Trigger: +15% gain / +20% gain (Rule 8)
+- Trigger: Rule 8 profit ladder, tier=<core|satellite>, unrealized +X%
 - New stop order ID: <id from replace-stop response>
 ```
+
+For each scale-out (v3):
+```
+### YYYY-MM-DD — SCALE-OUT: TICKER qty=N (1/3 of M)
+- Tier: <core|satellite> | Trigger: Rule 8 ladder, +X% (scale-out #K of 2) | Realized P&L on slice: $X
+```
+
+For each momentum-decay evaluation (v3 — state for next midday):
+```
+### YYYY-MM-DD — DECAY-FLAG: TICKER flag=0|1
+- unrealized %X | 10-session pos %A vs SPY %B | prior_flag=0|1 | rotate=0|1
+```
+(A ROTATE-EXIT is logged as a normal sell EXIT row with Thesis "Rule 16 momentum-decay rotation".)
 
 ## Step 7 — Telegram
 Silent if no actions and DTC < 2. Otherwise one summary message with prefix conventions:
 - `*MIDDAY HARD-CLOSE MMM DD* (paper)` — URGENT, hard-close
 - `*MIDDAY SECTOR-KILL MMM DD* (paper)` — URGENT, sector kill
+- `*MIDDAY ROTATE MMM DD* (paper)` — informational, momentum-decay rotation
+- `*MIDDAY SCALE-OUT MMM DD* (paper)` — informational, Rule 8 partial
 - `*MIDDAY STOP UPDATE MMM DD* (paper)` — informational, stop tightening
 - `*MIDDAY ABORT MMM DD* (paper)` — URGENT, DTC abort
 

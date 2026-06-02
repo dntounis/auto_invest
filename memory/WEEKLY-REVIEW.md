@@ -15,6 +15,8 @@ Friday weekly reviews are appended below by the `weekly-review` routine *(v2)*. 
 | Week return | ±$X (±X%) |
 | S&P 500 week | ±X% |
 | Bot vs S&P | ±X% |
+| Alpha vs SPX (v3) | ±X% (headline) |
+| Core/Satellite P&L (v3) | core ±$X / satellite ±$X |
 | Trades | N (W:X / L:Y / open:Z) |
 | Win rate | X% |
 | Best trade | SYM +X% |

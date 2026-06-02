@@ -92,9 +92,11 @@ For each idea in today's RESEARCH-LOG entry, run the Buy-Side Gate from
 `TRADING-STRATEGY.md`. Skip and log reason for any failure:
 
 - Total positions after this fill ≤ 6
-- Trades placed this week (incl. this one) ≤ 3
+- Trades placed this week (incl. this one) ≤ 5
 - Position cost ≤ 20% of account equity
 - Position cost ≤ available cash
+- **(v3, satellite only)** If this idea's `tier` is `satellite`: ETF-core market value after this fill stays ≥ 45% of deployed equity (sum of all position market values from `positions`). Skip + log if it would breach the core floor.
+- **(v3, satellite only)** If this idea's `tier` is `satellite`: ≤ 2 satellite names (existing + pending) in this idea's GICS sector after the fill. Skip + log if it would make 3.
 - `account.daytrade_count` MUST be ≤ 1 to allow new entries (Rule 14 buffer).
   WHY: a buy today could trigger a stop-fired sell tomorrow, bumping DTC by 1; a
   buffer of 1 keeps us well below the FINRA PDT threshold of 4 day trades in 5
@@ -106,7 +108,7 @@ For each idea in today's RESEARCH-LOG entry, run the Buy-Side Gate from
 ## STEP 4 — Rank passing ideas, take top N
 
 - Already ranked by R:R descending in pre-market output (DECIDED C).
-- `weekly_cap_remaining = 3 - trades_this_week` (from TRADE-LOG.md tally read in STEP 1)
+- `weekly_cap_remaining = 5 - trades_this_week` (from TRADE-LOG.md tally read in STEP 1) *(v3 — cap raised to 5)*
 - Take `min(len(passing_ideas), weekly_cap_remaining)`. May be zero — in which
   case skip to STEP 8 with no orders placed.
 
@@ -128,7 +130,15 @@ Alpaca's `/stocks/{sym}/quotes/latest` returns:
 Extract `live_ask = response.quote.ap`. The `.ap` field is the correct ask price
 field name. Do NOT use `.ask` or `.askPrice` — those are not Alpaca fields.
 
-If `live_ask` is zero or null, skip this idea and log "no ask price available".
+If `live_ask` is zero or null (stale pre-market quote), apply the **v3 stale-quote
+fallback** before skipping: read the prior session close via
+`bash scripts/alpaca.sh bars TICKER 1Day 2` (use the second-to-last bar's close).
+If a `bid` exists and is within `MAX_ENTRY_SLIPPAGE_PCT` of that prior close, set
+`limit_price = round(prior_close * (1 + MAX_ENTRY_SLIPPAGE_PCT/100), 2)` and place a
+**day-TIF limit** at that price (it fills when the ask materializes intraday) — use
+`prior_close` as the sizing `price` in 5c. Send a non-URGENT Telegram note
+"stale-open quote on TICKER — placed prior-close limit fallback". If `bid` is also
+absent or the spread is unreasonable, skip the idea and log "no ask price available".
 
 **5b. Extract trail percent**
 
@@ -141,21 +151,23 @@ planned trail percent: N
 If that line is absent, or N is 0 or blank, set `trail_pct = 10` (default).
 This default prevents division-by-zero in the sizing formula below.
 
-**5c. Compute position size**
+**5c. Compute position size (deterministic helper — v3)**
+
+Use the idea's **stop width** as `stop-frac`: parse `stop width N%` from the pm idea
+line (e.g. core ETF 0.10, satellite stock 0.13). If no explicit stop width, fall back
+to `trail_pct / 100`. Then call the unit-tested sizer:
 
 ```
-RISK_PCT=${RISK_PER_TRADE_PCT:-2.0}        # default 2% of equity
-MAX_POS_PCT=${MAX_POSITION_PCT:-20}        # default 20% cap
 SLIPPAGE_PCT=${MAX_ENTRY_SLIPPAGE_PCT:-0.10}
-
-dollar_risk       = (RISK_PCT / 100) * account.equity          # e.g., 200 on 10k
-stop_distance_pct = trail_pct / 100                            # e.g., 0.10
-shares_by_risk    = floor(dollar_risk / (live_ask * stop_distance_pct))
-shares_by_cap     = floor((MAX_POS_PCT / 100) * account.equity / live_ask)
-shares            = min(shares_by_risk, shares_by_cap)
+SIZE_JSON=$(python3 scripts/sizing.py size \
+    --equity "$EQUITY" --price "$LIVE_ASK" --stop-frac "$STOP_FRAC")
 ```
 
-Must be ≥ 1, else skip the idea (cap or risk budget too small).
+Parse `shares` and `clamped` from `SIZE_JSON`. If `clamped == "floor_skip"` or
+`shares < 1`, skip the idea and log the reason (`floor_skip` = cap/risk budget too
+small). This replaces the prior hand-computed `shares_by_risk`/`shares_by_cap`
+formula (same risk-parity logic — 2% equity at risk, clamped to the 20% Rule 3 cap —
+now deterministic and unit-tested in `tests/test_sizing.sh`).
 
 **5d. Compute limit price**
 
@@ -200,6 +212,7 @@ of `TRADE-LOG.md`:
 ```
 ### YYYY-MM-DD — TRADE: TICKER side=buy qty=N
 - Entry: $X
+- Tier: core|satellite *(v3 — copied from the pm idea line; midday/weekly-review read this)*
 - Stop level: pending (placed at daily-summary T 15:00 CT per Rule 13)
 - Sector: <GICS sector or ETF sector classification>
 - Thesis: <copied from RESEARCH-LOG entry>

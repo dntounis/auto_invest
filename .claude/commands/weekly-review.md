@@ -36,6 +36,8 @@ bash scripts/alpaca.sh activities    # today only sanity check
 | Week return | (ending - starting) / starting * 100, $ and % |
 | S&P 500 week | from Perplexity if available, else "n/a" |
 | Bot vs S&P | week_return - S&P 500 week (positive = beat the market) |
+| Alpha vs SPX (v3) | headline alpha = Bot vs S&P, stated explicitly |
+| Core/satellite attribution (v3) | P&L of `Tier: core` vs `Tier: satellite` positions (no Tier field = core) |
 | Trades placed | count of BUY rows in TRADE-LOG.md this week |
 | Win rate | (closed winners) / (closed total) |
 | Best trade | highest realized P&L % |
@@ -57,7 +59,7 @@ bash scripts/alpaca.sh activities    # today only sanity check
 ```
 
 ## Step 5 — Append entry to `memory/WEEKLY-REVIEW.md` (locally)
-Use the template at the top of WEEKLY-REVIEW.md. Include `daytrade_count: <N>` in the stats table for next week's delta computation. If proposed strategy changes exist, append `## Proposed strategy changes (NOT auto-applied — human review required)` block.
+Use the template at the top of WEEKLY-REVIEW.md. Include `daytrade_count: <N>` in the stats table for next week's delta computation. **(v3)** If the satellite sleeve has underperformed the ETF core per-capital for 3+ consecutive weeks (compare the Core/satellite attribution across the last three entries), propose shrinking the satellite allocation. If proposed strategy changes exist, append `## Proposed strategy changes (NOT auto-applied — human review required)` block.
 
 ## Step 6 — Telegram (1 message)
 ```

@@ -56,21 +56,21 @@ cd "$ROOT"
 
 echo "test_sizing.sh"
 
-# size: ETF, 10% stop on $10k equity, $100 px → risk-parity $2000 == 20% cap, 20 sh
-start_test "size: ETF 10% stop clamps to 20% cap"
-out=$(python3 scripts/sizing.py size --equity 10000 --price 100 --stop-frac 0.10 2>&1)
+# size: tight 5% stop → raw $4000 > $2000 cap → clamps, floor(2000/100)=20 sh
+start_test "size: tight stop clamps to 20% cap"
+out=$(python3 scripts/sizing.py size --equity 10000 --price 100 --stop-frac 0.05 2>&1)
 assert_contains "$out" '"shares": 20'
 assert_contains "$out" '"clamped": "cap"'
 
-# size: stock, 13% stop, $150 px → $200/(0.13*150)=10.25 → 10 sh, $1500, not capped
+# size: stock, 13% stop, $150 px → $200/0.13=$1538 < $2000 cap → floor(1538/150)=10 sh
 start_test "size: stock 13% stop risk-parity (uncapped)"
 out=$(python3 scripts/sizing.py size --equity 10000 --price 150 --stop-frac 0.13 2>&1)
 assert_contains "$out" '"shares": 10'
 assert_contains "$out" '"clamped": "none"'
 
-# size: tiny budget → below 5% floor → skip
-start_test "size: below min-pos floor returns floor_skip"
-out=$(python3 scripts/sizing.py size --equity 10000 --price 900 --stop-frac 0.20 2>&1)
+# size: wide 50% stop → raw $400, floor(400/100)=4 sh, cost $400 < 5% floor ($500) → skip
+start_test "size: tiny risk budget below min-pos floor → floor_skip"
+out=$(python3 scripts/sizing.py size --equity 10000 --price 100 --stop-frac 0.5 2>&1)
 assert_contains "$out" '"shares": 0'
 assert_contains "$out" '"clamped": "floor_skip"'
 

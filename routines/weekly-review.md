@@ -95,6 +95,8 @@ Compute from the read-in data:
 | Week return | `(ending - starting) / starting * 100`, $ and % |
 | S&P 500 week | from Perplexity if available, else mark "n/a" |
 | Bot vs S&P | week_return - S&P 500 week (positive = beat the market) |
+| Alpha vs SPX (v3) | same as Bot vs S&P — state explicitly as the headline alpha number |
+| Core/satellite attribution (v3) | sum realized+unrealized P&L of `Tier: core` positions vs `Tier: satellite` positions this week (read the `Tier:` field on BUY rows; older v2 ETF positions with no Tier field count as core) |
 | Trades placed | count of BUY rows in TRADE-LOG.md this week |
 | Win rate | (closed winners) / (closed total) |
 | Best trade | highest realized P&L % |
@@ -122,6 +124,12 @@ Use the template at the top of `memory/WEEKLY-REVIEW.md`. Fill in every section
 (stats table, closed trades, open positions, what worked, what didn't, lessons,
 adjustments, grade A/B/C/D/F). Always include `daytrade_count: <N>` somewhere in
 the stats table or open positions section so next week's review can compute the delta.
+
+**Satellite-sleeve check (v3):** if the single-stock satellite sleeve has
+underperformed the ETF core on a per-capital basis for **3+ consecutive weeks**
+(compare the Core/satellite attribution row across the last three WEEKLY-REVIEW
+entries), append a proposed change to shrink the satellite allocation / raise the
+ETF-core floor. Never auto-apply (DECIDED G).
 
 If proposed strategy changes exist, append a `## Proposed strategy changes` block:
 
