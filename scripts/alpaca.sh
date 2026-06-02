@@ -89,6 +89,22 @@ case "$cmd" in
         require_trading_enabled
         curl -fsS -H "$H_KEY" -H "$H_SEC" -X DELETE "$API/positions"
         ;;
+    scale-out)
+        require_trading_enabled
+        sym="${1:?usage: scale-out SYM QTY}"
+        qty="${2:?usage: scale-out SYM QTY}"
+        body=$(python3 -c "
+import json, sys
+print(json.dumps({
+    'symbol': sys.argv[1],
+    'qty': sys.argv[2],
+    'side': 'sell',
+    'type': 'market',
+    'time_in_force': 'day',
+}))" "$sym" "$qty")
+        curl -fsS -H "$H_KEY" -H "$H_SEC" -H "Content-Type: application/json" \
+            -X POST -d "$body" "$API/orders"
+        ;;
     trailing-stop)
         require_trading_enabled
         sym="${1:?usage: trailing-stop SYM QTY TRAIL_PCT}"
@@ -137,8 +153,16 @@ print(json.dumps({
         curl -fsS -H "$H_KEY" -H "$H_SEC" \
             "$API/account/activities?date=$date_filter"
         ;;
+    bars)
+        # Read-only — no kill-switch gate. Daily bars for moving-average / RS.
+        sym="${1:?usage: bars SYM [timeframe] [limit]}"
+        timeframe="${2:-1Day}"
+        limit="${3:-60}"
+        curl -fsS -H "$H_KEY" -H "$H_SEC" \
+            "$DATA/stocks/$sym/bars?timeframe=$timeframe&limit=$limit&adjustment=all"
+        ;;
     *)
-        echo "Usage: bash scripts/alpaca.sh <account|positions|position|quote|orders|order|cancel|cancel-all|close|close-all|trailing-stop|replace-stop|activities> [args]" >&2
+        echo "Usage: bash scripts/alpaca.sh <account|positions|position|quote|orders|order|cancel|cancel-all|close|close-all|trailing-stop|replace-stop|activities|bars|scale-out> [args]" >&2
         exit 1
         ;;
 esac

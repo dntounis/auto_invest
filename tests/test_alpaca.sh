@@ -208,5 +208,76 @@ else
 fi
 assert_not_contains "$out" "Usage: bash scripts/alpaca.sh"
 
+# Test: bars does NOT require TRADING_ENABLED (read-only)
+start_test "bars works without TRADING_ENABLED (read-only subcommand)"
+TMP="$(mktemp -d tests/.tmp/alp.XXXXXX)"
+out=$(
+    cd "$TMP"
+    cp -r "$ROOT/scripts" .
+    rm -f .env
+    export ALPACA_API_KEY="dummy" ALPACA_SECRET_KEY="dummy"
+    export ALPACA_ENDPOINT="https://paper-api.alpaca.markets/v2"
+    export ALPACA_DATA_ENDPOINT="https://data.alpaca.markets/v2"
+    unset TRADING_ENABLED
+    bash scripts/alpaca.sh bars SPY 2>&1
+)
+rc=$?
+if [[ "$rc" == "4" ]]; then
+    fail "bars was kill-switch-gated but should be read-only"
+else
+    pass
+fi
+assert_not_contains "$out" "Usage: bash scripts/alpaca.sh"
+
+# Test: bars with missing symbol exits 1
+start_test "exits 1 on bars with missing symbol"
+TMP="$(mktemp -d tests/.tmp/alp.XXXXXX)"
+out=$(
+    cd "$TMP"
+    cp -r "$ROOT/scripts" .
+    rm -f .env
+    export ALPACA_API_KEY="dummy" ALPACA_SECRET_KEY="dummy"
+    export ALPACA_ENDPOINT="https://paper-api.alpaca.markets/v2"
+    export ALPACA_DATA_ENDPOINT="https://data.alpaca.markets/v2"
+    bash scripts/alpaca.sh bars 2>&1
+)
+rc=$?
+assert_exit_code 1 "$rc"
+assert_contains "$out" "usage: bars"
+
+# Test: scale-out subcommand gated by TRADING_ENABLED
+start_test "exits 4 on scale-out when TRADING_ENABLED != true"
+TMP="$(mktemp -d tests/.tmp/alp.XXXXXX)"
+out=$(
+    cd "$TMP"
+    cp -r "$ROOT/scripts" .
+    rm -f .env
+    export ALPACA_API_KEY="dummy" ALPACA_SECRET_KEY="dummy"
+    export ALPACA_ENDPOINT="https://paper-api.alpaca.markets/v2"
+    export ALPACA_DATA_ENDPOINT="https://data.alpaca.markets/v2"
+    unset TRADING_ENABLED
+    bash scripts/alpaca.sh scale-out XLE 5 2>&1
+)
+rc=$?
+assert_exit_code 4 "$rc"
+assert_contains "$out" "TRADING_ENABLED"
+
+# Test: scale-out with missing args exits 1
+start_test "exits 1 on scale-out with missing args"
+TMP="$(mktemp -d tests/.tmp/alp.XXXXXX)"
+out=$(
+    cd "$TMP"
+    cp -r "$ROOT/scripts" .
+    rm -f .env
+    export ALPACA_API_KEY="dummy" ALPACA_SECRET_KEY="dummy"
+    export ALPACA_ENDPOINT="https://paper-api.alpaca.markets/v2"
+    export ALPACA_DATA_ENDPOINT="https://data.alpaca.markets/v2"
+    export TRADING_ENABLED="true"
+    bash scripts/alpaca.sh scale-out 2>&1
+)
+rc=$?
+assert_exit_code 1 "$rc"
+assert_contains "$out" "usage: scale-out"
+
 rm -rf tests/.tmp/alp.*
 print_summary
