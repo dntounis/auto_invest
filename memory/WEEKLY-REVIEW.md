@@ -251,3 +251,79 @@ Process was clean — 0 rule violations, visa-aware machinery flawless, trail st
 - **Rationale:** The structural cap exists because the screened universe is implicitly the four defensive/cyclical sectors. Listing the leading-quadrant candidates explicitly each Monday surfaces tech rotations without requiring a rule change.
 - **Evidence:** Five consecutive weeks of pre-market never proposed XLK / XLY / XLC; the prompt language defaults to whatever the RRG cites as leading, which has been Energy / Industrials / Materials / Staples throughout the v2-active window.
 - **Conviction: HIGH** (this is a transparency/audit fix, not a strategy change).
+
+## Week ending 2026-06-05
+
+### Stats
+| Metric | Value |
+|--------|-------|
+| Starting portfolio | $9,979.14 |
+| Ending portfolio | $9,955.40 |
+| Week return | -$23.74 (-0.24%) |
+| S&P 500 week | ~-2.34% (May 29 7,580.06 → Jun 5 ~7,402 per TradingEconomics post-NFP -2.39% Fri; data noisy across sources) |
+| Bot vs S&P | +2.10% (beat) |
+| Alpha vs SPX (v3) | **+2.10% (headline)** — first beat-the-benchmark week since Week 3 |
+| Core/Satellite P&L (v3) | core +$3.56 / satellite -$27.27 |
+| Trades | 2 (W:0 / L:1 / open:1 — CAT carryforward) |
+| Win rate | 0% (1 closed, 1 loss) |
+| Best trade | XLE +0.89% (unrealized week move) |
+| Worst trade | XLP -2.094% (realized — Rule 16 rotation) |
+| Profit factor | 0.00 (1 closed loss, 0 wins) |
+| daytrade_count | 0 (delta vs prior week: 0) |
+| Capital deployment | 77.29% (within v3 75–85% band) |
+
+### Closed Trades
+| Ticker | Entry       | Exit    | P&L                  | Notes |
+| ------ | ----------- | ------- | -------------------- | ----- |
+| XLP    | $84.274348  | $82.51  | -$40.58 (-2.094%)    | Rule 16 momentum-decay rotation Wed Jun 3 (2nd consecutive midday lag; flag=1 Jun 2 + Jun 3); swing exit 21 calendar days from May 13 BUY, DTC=0 untouched. First v3 rotation exit. |
+
+### Open Positions at Week End
+| Ticker | Entry       | Close    | Unrealized      | Stop                   | Tier      |
+| ------ | ----------- | -------- | --------------- | ---------------------- | --------- |
+| CAT    | $915.635    | $903.75  | -$23.77 (-1.30%)| $846.432 (trail 10%)   | satellite |
+| XLB    | $50.08      | $50.63   | +$22.00 (+1.10%)| $46.97991 (trail 10%)  | core      |
+| XLE    | $57.290588  | $57.71   | +$14.26 (+0.73%)| $55.53 (trail 10%)     | core      |
+| XLI    | $173.713636 | $174.18  | +$5.13 (+0.30%) | $158.796 (trail 10%)   | core      |
+
+### What Worked
+- **First v3 satellite entry executed clean.** CAT BUY Thu Jun 4 — 15-session HOLD streak broken; passed every prong of the v3 single-stock checklist (price > 50-DMA + 200-DMA; positive 10s/50s-RS vs SPY; adequate liquidity; AI/data-center catalyst documented) AND every prong of the Buy-Side Gate (positions 4/6, weekly cap 2/5, 18.15% equity cost basis 1.85pp under Rule 3 cap, ETF core 76.46% post-fill well above 45% floor, ≤2 satellites/sector at 1/2, DTC=0). Limit fill at $915.635 was $6.835/share better than the $922.47 limit — clean execution.
+- **First v3 Rule 16 rotation exit executed clean.** XLP closed Wed Jun 3 on 2nd-consecutive-lag (flag=1 Jun 2 + Jun 3) per `sizing.py decay`: 10-session pos -4.14% vs SPY +2.87%, unrealized -2.08% below entry. Rule 14 DTC=0 pre-flight passed; swing exit 21 calendar days from BUY → DTC untouched; trailing stop id 997935c2 cancelled pre-sell; loss booked at -$40.58 / -2.094% (well above the -7% Rule 7 floor — Rule 16 caught dead-money before it became a hard-close).
+- **Beat the benchmark.** Bot -0.24% vs SPX ~-2.34% on the NFP-Friday risk-off → **+2.10% alpha** — first beat-the-benchmark week since Week 3. Held-book cyclical concentration (Materials/Energy/Industrials) outperformed a tech-led tape selloff; the XLP rotation removed the staples drag two days before the broad-market drawdown.
+- **v3 strategy fired as designed.** Rule 16 caught a structural laggard (XLP, -2.09% realized loss) and freed cash; the v3 single-stock satellite gate then deployed it (CAT, 18.15% equity). The structural cap-and-lag pattern flagged in Weeks 3–5 broke this week — the v3 satellite sleeve did exactly what it was designed to do.
+- **Zero rule violations, visa-aware machinery flawless.** DTC held 0/5 all week; CAT trailing stop placed at 15:00 CT per Rule 13; Rule 15 same-day skip protected CAT on Thu midday; Rule 14 pre-flight passed both Wed (XLP rotation) and every midday. Six straight weeks of clean execution.
+- **Capital deployment recovered to band.** After the XLP exit pushed deployment to 59.4% (below 75% floor), the CAT add lifted it back to 77.5% within one trading day — operationally the v3 sleeve closed the cash-drag gap that haunted Weeks 4–5.
+
+### What Didn't Work
+- **NFP Friday wiped Thursday's HWM.** Phase P&L hit +$154.63 / +1.55% at Thu close (fresh HWM for the v3 phase) but the NFP-driven -1.75% Fri drawdown unwound the gain. EOD phase P&L closed -$22.99 / -0.23%; live equity at weekly-review read sits $9,955.40 (-$44.60 / -0.45% phase). The week was won on relative performance (alpha) but lost on absolute (still red).
+- **CAT absorbed the bulk of Friday's drawdown.** Single-stock satellite -$73.46 intraday from $940.48 hwm to $903.75 close (-3.91% Fri), -$23.77 unrealized on-cost at week end (-1.30%). Stop cushion compressed to 6.34% (was 10.00% fresh Thu close), now the book's second-tightest. The single-stock satellite design accepts higher idiosyncratic vol — but the first satellite entered the day before the binary macro print is a timing tension worth flagging.
+- **XLP rotation realized a -2.09% loss.** Rule 16 fired correctly per spec, but the cleanest sell signal still booked a loss. Net of the XLP loss + cyclical mark-to-market lift the core sleeve P&L this week was only +$3.56 — alpha mostly came from satellite absence (not holding what SPX held) rather than core selection skill.
+- **Best closed trade of the week was a loss.** Win rate 0%, profit factor 0.00. Both are statistically meaningless on n=1 closed trade but visually noisy in the grade card; will recover as more rotations close out.
+
+### Key Lessons
+- **v3 satellite-sleeve activation broke the Weeks-3–5 structural cap.** The pattern flagged for 3 weeks (leading-quadrant universe exhausted → weekly cap unused → cash drag) resolved this week without the proposed RSP-of-last-resort: a *single-stock* satellite (CAT) deployed the freed cash post-rotation. Strong evidence the v3 design (raise weekly cap 3→5 + add single-stock satellite gate) directly addressed the structural problem.
+- **Rule 16 momentum-decay rotation is operationally sound.** The chain-state machinery (DECAY-FLAG state rows, prior_flag carryover via TRADE-LOG.md) worked as designed: XLI flagged Tue, chain reset Wed (above entry); XLP flagged Tue, fired Wed (2nd consecutive lag + still below entry). The rule fires on the correct trigger and stays dormant otherwise. Visa-aware swing-only exit confirmed (21 calendar days, DTC untouched).
+- **Concentration risk in single-stock satellites is real.** CAT 1 position contributed -$27.27 of the -$23.74 week — i.e., the entire week's loss + a small net offset from the core. With $1,831 cost basis (18.15% equity), a single-stock satellite is large enough to swing the weekly P&L on its own. Risk-parity sizing (Rule 3 cap + 10% trail) is the protection; the trade-off is alpha exposure costs vol.
+- **Beat-the-benchmark math rotates with tape regime.** Weeks 4–5 the bot lagged a risk-on rally; Week 6 the bot beat a risk-off NFP-day. The held book (3 cyclical ETFs + 1 industrials stock) is positioned for cyclical leadership; a sustained tech rally would re-open the Weeks 4–5 lag. This is not a permanent fix — just an alignment with the current leading-quadrant.
+- **Visa-aware machinery (Rules 13/14/15) bulletproof for the 6th consecutive week.** Six weeks, zero day trades, zero same-day exit risk, every stop placed at close, every pre-flight passed. The risk lives entirely in strategy selection, not execution discipline.
+
+### Adjustments for Next Week
+- **Monday pre-market (Jun 8, Week 7 Day 1):** post-NFP-conditioned screen. Re-arm `pm-2026-06-05-AVGO` if 10s-RS turns positive AND XLK rotates leading (NFP-driven risk-off Fri may compress mega-cap growth — both prongs could shift); re-arm `pm-2026-06-05-NVDA` on same conditions (needs ~+5pp relative outperformance vs SPY over 10 sessions); re-arm `pm-2026-06-05-XLU` if XLU re-rotates leading AND 30Y holds <5.05% post-NFP (most likely re-arm path if NFP soft); monitor GE (50s-RS closing fast at -3.17pp from -7.16pp Thu).
+- **Watch CAT.** Stop $846.432 cushion 6.34% — book's second-tightest after XLE. If post-NFP risk-off extends into Monday and CAT crosses -7% from entry ($851.54), Rule 7 hard-close fires (Rule 15 no longer applies — CAT now T+2 on Mon). Single-stock satellite vol is the cost of the alpha exposure; let trail/Rule 7 do their job, don't pre-empt.
+- **Watch XLE.** Book's tightest cushion at 3.78% ($55.53 stop vs $57.71 close). 7 consecutive weeks of XLE in the book; oil-headline asymmetry remains poor. If oil unwinds further into next week, the trail likely fires — Rule 13 keeps it clean.
+- **3 trades remain in Week 7's fresh v3 budget.** Capital deployment 77.29% (within band) — no forced-add pressure. Patience > activity (Rule 12); only deploy if a clean satellite or core ETF passes the gate.
+- **No auto-applied strategy mutations** (DECIDED G — rulebook is the safety system). The prior 2 weeks' RSP-of-last-resort proposal is now lower priority — v3 satellite slot activated this week and closed the cash-drag gap operationally. See proposed strategy notes below.
+
+### Overall Grade: B
+
+First v3 mechanics-validation week. Two clean v3 firsts (Rule 16 rotation + single-stock satellite entry) both executed exactly per spec; the structural cap-and-lag pattern that hurt Weeks 4–5 resolved within v3's design (no rule change needed). Beat the benchmark by +2.10% — first benchmark beat since Week 3. Zero rule violations, six straight weeks of bulletproof visa-aware execution. But absolute P&L still red on the week (-0.24%) and phase (-0.45%); the only closed trade was a loss; CAT's NFP-Friday drawdown ate the held-book gains. Graded B to weight v3's first successful end-to-end cycle (the design works) against the absolute miss (still under water) and the cyclical-concentration timing risk into next week's binary macro flow (CPI Jun 11 + FOMC Jun 16–17).
+
+## Proposed strategy changes (NOT auto-applied — human review required)
+
+- **Prior RSP-of-last-resort proposal (Weeks 4–5) — DOWNGRADE to LOW conviction / consider tabling.** This week's CAT entry validated the v3 single-stock satellite sleeve as the operational answer to the cap-and-lag problem the RSP proposal was designed to solve. Capital deployment recovered from 59.4% post-XLP-exit to 77.5% within one trading day via the satellite route — exactly the gap the RSP-of-last-resort was meant to plug. Recommendation: keep the proposal on file for a regime where (a) the single-stock satellite gate fails to find ideas for ≥2 consecutive weeks AND (b) deployment falls below the 75% floor, but defer adoption while v3 satellites are firing.
+- **Conviction: LOW (downgraded from MEDIUM).**
+
+- **Rule 8 ladder — no proposed change, but flag for observation.** Held book never crossed the +4% first-tier core threshold this week (XLB +1.10%, XLE +0.73%, XLI +0.30%) — Rule 8 stayed dormant for the 6th straight week. CAT hit +2.73% intraday Thu (above entry $915.635 to $940.48 hwm) but never crossed the +6% first-tier satellite threshold. The ladder remains untested in real conditions; observation continues.
+
+- **Rule 16 momentum-decay — keep as-is.** First firing executed cleanly per spec (XLP). The 10-session window + 2-consecutive-flag chain + below-entry AND lagging-SPY conjunction caught a true laggard and stayed dormant on XLI when it recovered above entry. No proposed change.
+
+- **Cyclical concentration observation (not a proposed change).** Held book is currently Materials + Energy + Industrials (ETF + stock) = 100% cyclical. Industrials concentration alone is 48% of deployed (XLI $1,916 + CAT $1,808). The book is well-positioned for cyclical leadership but vulnerable to a sustained tech-rally regime. If XLK rotates leading next week, the Rule 11 satellite gate should fire (AVGO/NVDA re-arm path) and naturally diversify out of cyclicals. No rule change proposed — flagged for next week's pre-market to surface explicitly.
