@@ -1725,3 +1725,69 @@ Buy-side gate (forward check, live, **all 3 candidates DEFERRED**):
 - Sizing math: no fills today — sizing reference only. AVGO if re-armed: `python3 scripts/sizing.py size --equity 10143.05 --price 418.91 --stop-frac 0.15` would clamp to ≤4 sh ≈ 16.5% equity at 2% equity-at-risk; not invoked.
 - WebSearch fallback used: **NO** (Perplexity reachable for all 10 mandated queries + 4 follow-ups: NFP forecast, Initial Claims actual, 30Y yield, CAT news, sector ETF news).
 
+## 2026-06-08 — Pre-market Research
+
+### Account
+- Equity: $10,026.94
+- Cash: $2,266.19
+- Buying power: $30,794.87
+- Daytrade count: 0 (pattern_day_trader=false; balance_asof 2026-06-05 — normal Mon ledger lag)
+- Positions: 4/6 (CAT 2 @ $915.635 cur $916.08; XLB 40 @ $50.08 cur $50.63; XLE 34 @ $57.290588 cur $58.35; XLI 11 @ $173.713636 cur $174.50)
+- Open orders: 4 trailing-stop GTC sells (CAT id 5b125534 trail 10% stop $846.432 hwm $940.48; XLB id 1fbb4c78 trail 10% stop $46.97991 hwm $52.1999; XLE id 9049f7fc trail 10% stop $55.53 hwm $61.70; XLI id 9321e3e4 trail 10% stop $158.796 hwm $176.44)
+- ETF core $5,928.60 / total deployed $7,760.75 = **76.39%** ≥ 45% floor ✓
+- Capital deployment 77.40% — within v3 75–85% target band
+- Sector book: Materials (XLB), Energy (XLE), Industrials (XLI ETF + CAT satellite, 1/2 Industrials satellite slots; Industrials concentration $3,748.50 = 48% of deployed)
+- Trades this week: **0/5** (Week 7 Day 1 — Mon, fresh budget)
+
+### Market Context
+- **WTI / Brent oil:** WTI ~$92–96/bbl prediction-market range; Brent ~$106 area (Perplexity sources less precise — no real-time spot, but range stable from Fri).
+- **S&P 500 futures:** ETM26 ~7,416 +0.21% premarket per Markets Insider; Investing.com ~7,399.75 (slight feed diff). Net: mildly positive bounce after Fri NFP-driven -2.6% SPY selloff (Jun 4 757.09 → Jun 5 737.55).
+- **VIX:** 15.78 Jun 4 close (Cboe); TradingEconomics 16.06 monthly. **Calm regime** despite Fri's reset — vol contained.
+- **Today's catalysts:** Light Mon — Fed-easing narrative + AI-capex theme (JPM/Invesco), sector rotation broadening per Morningstar. No marquee macro release today (CPI Wed, PPI Thu are the week's binary prints).
+- **Earnings before open:** Medtronic (MDT) PMO; Campbell's (CPB), Graham (GHM), Mission Produce (AVO), Vail Resorts (MTN) TBD. None held.
+- **Economic calendar:** CPI **Wed Jun 10 08:30 ET** (binary), PPI Thu Jun 11 08:30 ET, Initial Jobless Claims Thu. Next NFP not until Jul 3. CAT virtual shareholder meeting Wed Jun 10 08:00 CDT (calendar event, not earnings).
+- **30Y Treasury yield:** **5.02% today** (Trading Economics; YCharts 5.01% Fri close, FRED 4.97% Jun 4) — **breached 5.00% upward, margin to 5.05% XLU re-arm threshold compressed to ~3 bps from 6 bps Fri**. Hot NFP (+172K vs +85K consensus, +87K beat) pushed long end up Fri.
+- **Sector momentum (6-mo trailing as YTD proxy, Schwab/SSGA Jun 5):** XLE +35.3% (leader) → XLK +18.7% → XLB +13.6% → XLI +13.1% → XLP +9.9% → XLRE +10.1% → XLC +9.0% → XLY +4.3% → XLU +2.3% → XLF -1.0% → XLV -4.5%. **Held book (XLE/XLB/XLI) sits in top 4 ex-XLK** — leading-quadrant positioning intact post-NFP-Friday.
+- **NFP recap (Fri Jun 5):** Actual **+172K** vs consensus +85K (+87K beat); unemployment 4.3% steady; revisions Mar +214K / Apr +179K (+93K combined). Hot for rates (30Y +5bps to 5.02%), hot for cyclicals (good for XLE/XLB/XLI), bad for rate-sensitives (XLU still capped) and tech multiples (XLK -6.7% on day).
+
+### Single-stock satellite screen (v3 — alpaca.sh bars + RS vs SPY)
+- **SPY reference:** Jun 5 close 737.55 vs May 21 (10-sess) 742.72 → 10s **-0.70%**; vs Mar 25 (50-sess) 656.82 → 50s **+12.29%**.
+- **AVGO** (XLK satellite carryforward): close 385.73, 10s -6.96% (Jun 3 479 → Jun 4 419 → Jun 5 386 = **-19.5% in 2 days**, AVGO Q2 print disappointment); 10s-RS **-6.26pp ✗**; 50s-RS +8.70pp ✓; DMA pass. **FAIL 10s-RS** — defer.
+- **NVDA** (XLK satellite carryforward): close 205.10, 10s -6.45%; 10s-RS **-5.75pp ✗**; 50s-RS +2.63pp ✓; DMA pass. **FAIL 10s-RS** — defer.
+- **GE** (XLI satellite candidate): close 328.00, 10s +8.70%; 10s-RS **+9.40pp ✓**; 50s +10.60%, 50s-RS **-1.69pp ✗** (closing fast from -3.17pp Fri); DMA pass. **FAIL 50s-RS** by 1.7pp — defer (would also breach Industrials 2/2 satellite cap if added to CAT).
+- **MPC** (XLE satellite candidate): close 262.01, 10s +5.47%; 10s-RS **+6.17pp ✓**; 50s +9.02%, 50s-RS **-3.27pp ✗**; DMA pass. **FAIL 50s-RS** — defer.
+- **XLU** (defensive ETF re-arm path): close 44.35, 10s -1.44%; 10s-RS **-0.74pp ✗**; 50s -1.99%, 50s-RS **-14.28pp ✗ very negative**. Fails sector momentum despite 30Y holding sub-5.05%. **FAIL**.
+- **XLF** (financials ETF re-arm path): close 52.30, 10s +1.10%; 10s-RS +1.80pp ✓; 50s +6.00%, 50s-RS **-6.29pp ✗**. **FAIL 50s-RS**.
+- **Other momentum names from Perplexity** (WK, AMRX, BE, SITM, STX) — all XLK or XLV exposure post-Fri XLK -6.7% rinse → 10s-RS structurally compromised; not screened individually (would fail same gate as AVGO/NVDA).
+- **Net: 0 single-stock satellites pass the full v3 gate today.** Mon post-NFP-Fri tape: XLK reset broke 10s-RS for most tech satellites; non-tech cyclical satellites (GE, MPC) fail 50s-RS vs SPY's stretched 50-day +12.29%.
+
+### Trade Ideas
+Listed in R:R-descending order (tie-break: ticker ascending). One numbered line per idea, format:
+
+**0 armed ideas for Mon 2026-06-08 (structural HOLD)** — all 4 leading-quadrant sector ETFs accounted for (XLE/XLB/XLI held + XLK not held, XLP rotated 2026-06-03); 0 NEW single-stock satellites pass the full v3 gate (AVGO/NVDA wrecked on Fri tech reset; GE/MPC fail 50s-RS; WK/STX/SITM/BE/AMRX would fail same XLK-reset gate). CAT (Industrials satellite, 1/2 slot) held at full size — no re-add (would breach 20% position cap and Industrials 2/2 satellite quota would require sector-mate). Per spec: HOLD day — no satellite idea required; reason documented above.
+
+Deferred candidates (carryforward to Tue post-CPI conditioning):
+- `pm-2026-06-08-AVGO` — re-arm if 10s-RS turns positive (needs +6.5pp swing) AND post-earnings stabilization confirmed (Jun 5 close 385.73 vs Jun 2 high 488 = -21% — possible value bid bounce, but momentum-broken). Tier: satellite.
+- `pm-2026-06-08-GE` — re-arm if 50s-RS turns positive (closing fast: -3.17pp Fri → -1.69pp Mon = +1.5pp/session pace; needs ~1 more session if pace holds); but Industrials already at 48% of deployed + 1/2 satellite slot used by CAT → would require selling CAT or hitting 2/2 cap. Tier: satellite.
+- `pm-2026-06-08-XLU` — re-arm if XLU re-rotates leading (10s-RS currently -0.74pp; needs sustained outperformance) AND 30Y holds <5.05% through CPI Wed (current 5.02%, **margin compressed to 3 bps** — soft CPI most likely re-arm path). Tier: core.
+- `pm-2026-06-08-MPC` — re-arm if 50s-RS turns positive (oil leadership + refiner margins, but needs sustained outperformance); would compete with XLE ETF slot if Energy concentration becomes question. Tier: satellite.
+
+### Risk Factors
+- **Macro / inflation:** **CPI Wed Jun 10 08:30 ET is the week's primary binary print.** Hot CPI + hot NFP combo would lock 30Y back above 5.05% (kill XLU re-arm path), pressure all rate-sensitives, but reinforce cyclical bid (good for XLE/XLB/XLI book). Soft CPI = dovish surprise relative to hawkish NFP backdrop = XLU re-arm catalyst + broad multiple expansion. PPI Thu Jun 11 secondary.
+- **Rates / Fed:** **30Y 5.02% — breached 5.00% UP Fri post-NFP** (vs 4.99% Thu). Margin to 5.05% XLU-trigger threshold **3 bps** (was 6 bps Fri, 7 bps Wed). Single CPI surprise either direction will move the long end ±5–8 bps. Per Invesco, Fed cut 25 bps last week and signaled one more in 2026 — supportive for risk overall but rate-sensitives still capped by long-end stickiness.
+- **Sector / tech reset:** **XLK -6.7% Fri** (AVGO -20% in 2 days, NVDA -6.6% Fri); reset broke 10s-RS for most tech satellites for ≥5–10 sessions until momentum rebuilds. **No structural reason held cyclical book (XLE/XLB/XLI) would be infected** — Fri's selloff was tech-led; cyclicals down 1.1–3.9% (CAT worst, XLI best of held), all stop cushions intact.
+- **Idiosyncratic (CAT):** CAT virtual shareholder meeting **Wed Jun 10 08:00 CDT** — calendar event, no earnings/guidance update expected; AI/power-infrastructure narrative (MarketBeat/Tikr) intact. CAT closed Fri $903.75 (-3.91% on NFP-Fri risk-off); intraday Mon $916.08 (+1.36%) — bouncing. Stop cushion 8.23% ($846.432 vs $916.08) — well clear.
+- **Geopolitical / oil:** WTI $92–96 / Brent ~$106 — Energy thesis intact; no acute geopolitical print over weekend per Perplexity scan.
+- **Liquidity / event-risk:** Light Mon catalyst day → likely range-bound until CPI Wed.
+
+### Decision
+**HOLD** — 0 armed ideas; structural HOLD with deferred candidates pending CPI Wed read.
+
+Rationale: (1) 4 leading-quadrant sector ETFs already represented in held book (3 ETFs + 1 satellite); (2) 0 NEW satellites pass full v3 gate (AVGO/NVDA broken on Fri tech reset; GE/MPC fail 50s-RS); (3) XLU re-arm gated on dovish CPI Wed AND XLU re-rotating leading; (4) Week 7 budget 5/5 unused — patience > activity per Rule 12. Held book stop cushions: CAT 8.23%, XLB 7.78%, XLE 5.07%, XLI 9.89% — all clear of Rule 6 trigger. Market-open will be no-op (0 armed ideas). Midday will evaluate Rule 8 ladder + Rule 16 decay (CAT prior_flag=0 reset; XLB/XLE/XLI above entry → flag=0 by definition). Daily-summary places no new stops (no new positions). Telegram silent unless macro-urgent (no acute trigger pre-open).
+
+### Sources
+- Perplexity citations: polymarket.com WTI week of Jun 8 2026; robinhood.com WTI Jun 8 prediction; barchart.com WIM26; markets.businessinsider.com Premarket (S&P futures 7,416 +0.21%); investing.com S&P 500 futures (7,399.75); barchart.com ETM26; tradingeconomics.com VIX (16.06); optioncharts.io $VIX (15.78 Jun 4 close); cboe.com VIX historical; barchart.com VIM26; ycharts.com 30Y Treasury (5.01% Jun 5, 4.97% prior); fred.stlouisfed.org DGS30 (4.97% Jun 4); tradingeconomics.com 30Y Bond Yield (5.02% Jun 8); kiplinger.com Economic Calendar this week (CPI Wed Jun 10, PPI Thu Jun 11); bls.gov BLS schedule (CPI May 2026 Jun 10 08:30 ET, PPI Jun 11, Employment Situation Jun next Jul 3); investing.com Earnings Calendar; kiplinger.com Next Week Earnings (Jun 8–12); ii.co.uk earnings season Q1 2026 (FactSet 28.4% growth, MDT PMO); earningswhispers.com Jun 8 2026 (MDT/CPB/GHM/AVO/MTN); ftportfolios.com sector subsectors YTD; novelinvestor.com Annual S&P sector returns; schwab.com Sector Views (Jun 5 trailing-6m: XLE 35.3% leader, XLK 18.7%, XLB 13.6%, XLI 13.1%, XLP 9.9%, XLU 2.3% laggard); ssga.com Sector Tracker (Jun 6); spglobal.com S&P 500 Momentum Index; xtb.com Wall Street earnings season; stocktitan.net Best Performing Stocks Jun 2026 (STI/LASE/JLHL micro-cap pumps — not eligible); wallstreetzen.com 5 Stocks to Watch Wk 6/8 (AMRX/WK strong-buy); benzinga.com Top Momentum Stocks Jun 7; zacks.com Best Growth Stocks Jun 2026 (BE/SITM/STX); jpmorgan.com 2026 Market Outlook (AI supercycle + DM/EM positive); invesco.com diversification catalyst (Fed cut 25 bps last week per source); marketbeat.com CAT News Today (CAT trading lower, supportive flow incl. AI/data-center demand); tikr.com CAT Q1 2026 (8% jump post-EPS $5.54 beat); stocktitan.net CAT virtual shareholder meeting Jun 10 8 AM CDT; perplexity.ai/finance/CAT (near all-time-highs bullish confluence); annacoulling.com Sector ETF review Jun 2026 (XLE +26–27%; XLI infrastructure/defense/electrification/data-center capex; XLB cyclical-rotation participant); tickeron.com XLI; ssga.com XLI ($174.20 Jun 5); zacks.com XLI ($173.14 NAV); verifiedinvesting.com NFP May 2026 (+172K vs +80K consensus, freezing labor market); foxbusiness.com US jobs +172K May; tradingeconomics.com NFP (172K vs 85K forecast); bls.gov Employment Situation 2026 M05 (UR 4.3%).
+- Single-stock bars data: `alpaca.sh bars SPY|XLK|XLU|XLF|AVGO|NVDA|GE|MPC 1Day 60-200` (deterministic Python aggregation; SPY 10s -0.70% / 50s +12.29% Mar 25–Jun 5; AVGO 10s -6.96% / 50s +20.99%; NVDA 10s -6.45% / 50s +14.92%; GE 10s +8.70% / 50s +10.60%; MPC 10s +5.47% / 50s +9.02%; XLK 10s +0.95% / 50s +31.84%; XLU 10s -1.44% / 50s -1.99%; XLF 10s +1.10% / 50s +6.00%).
+- Sizing math: no fills today — HOLD. Sizing reference not invoked. `sizing.py decay` not run pre-market (state-only at midday).
+- WebSearch fallback used: **NO** (Perplexity reachable for all mandated queries: oil, SPX futures, VIX, catalysts, earnings, econ calendar, sector momentum, top momentum stocks, CAT/sector ETF news, NFP recap, 30Y yield).
+
