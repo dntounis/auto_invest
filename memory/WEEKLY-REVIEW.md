@@ -327,3 +327,91 @@ First v3 mechanics-validation week. Two clean v3 firsts (Rule 16 rotation + sing
 - **Rule 16 momentum-decay — keep as-is.** First firing executed cleanly per spec (XLP). The 10-session window + 2-consecutive-flag chain + below-entry AND lagging-SPY conjunction caught a true laggard and stayed dormant on XLI when it recovered above entry. No proposed change.
 
 - **Cyclical concentration observation (not a proposed change).** Held book is currently Materials + Energy + Industrials (ETF + stock) = 100% cyclical. Industrials concentration alone is 48% of deployed (XLI $1,916 + CAT $1,808). The book is well-positioned for cyclical leadership but vulnerable to a sustained tech-rally regime. If XLK rotates leading next week, the Rule 11 satellite gate should fire (AVGO/NVDA re-arm path) and naturally diversify out of cyclicals. No rule change proposed — flagged for next week's pre-market to surface explicitly.
+
+## Week ending 2026-06-12
+
+### Stats
+| Metric | Value |
+|--------|-------|
+| Starting portfolio | $9,955.40 |
+| Ending portfolio | $10,078.31 |
+| Week return | +$122.91 (+1.234%) |
+| S&P 500 week | +0.14% (7,383.74 → 7,394.30 per S&P Dow Jones Indices) |
+| Bot vs S&P | +1.09% (beat) |
+| Alpha vs SPX (v3) | **+1.09% (headline)** — 2nd consecutive benchmark-beat week |
+| Core/Satellite P&L (v3) | core +$82.46 / satellite +$14.27 (CAT +$13.64 + GE +$0.63 day-1) |
+| Trades | 1 (W:0 / L:0 / open:5 — GE entry Fri, CAT/XLB/XLE/XLI carryforward) |
+| Win rate | n/a (0 closes this week) |
+| Best trade | XLB +$67.60 unrealized week move (+3.36% week, +4.47% vs entry — Rule 8 ladder fired) |
+| Worst trade | XLE -$7.14 unrealized week move (-0.36% week — only red book contributor) |
+| Profit factor | n/a (0 closes) |
+| daytrade_count | 0 (delta vs prior week: 0 -> 0) |
+| Capital deployment | 87.48% EOD (slightly above v3 75–85% target band post-GE-entry overshoot) |
+
+### Closed Trades
+| Ticker | Entry | Exit | P&L | Notes |
+| ------ | ----- | ---- | --- | ----- |
+| (none — zero closes this week) | | | | |
+
+### Open Positions at Week End
+| Ticker | Entry       | Close    | Unrealized       | Stop                    | Tier      |
+| ------ | ----------- | -------- | ---------------- | ----------------------- | --------- |
+| CAT    | $915.635    | $910.57  | -$10.13 (-0.55%) | $846.432 (trail 10%)    | satellite |
+| GE     | $335.06     | $335.27  | +$0.63 (+0.06%)  | $301.743 (trail 10%)    | satellite |
+| XLB    | $50.08      | $52.32   | +$89.60 (+4.47%) | $48.69015 (trail 7%)    | core      |
+| XLE    | $57.290588  | $57.50   | +$7.12 (+0.37%)  | $55.53 (trail 10%)      | core      |
+| XLI    | $173.713636 | $176.18  | +$27.13 (+1.42%) | $158.949 (trail 10%)    | core      |
+
+### What Worked
+- **Beat the benchmark for the 2nd consecutive week.** Bot +1.234% vs SPX +0.14% → **+1.09% alpha**. The held book's cyclical concentration (Materials/Energy/Industrials core + CAT/GE satellites) absorbed the CPI Wed shock (book -2.04% Wed) and rode the PPI Thu / Fri relief bounce (+1.74% Thu + +0.91% Fri). Critically, the structural cap-and-lag pattern from Weeks 3–5 stayed resolved into Week 7.
+- **First Rule 8 ladder fire of the v3 phase — XLB.** Fri midday XLB unrealized +4.26% crossed the +4% first-tier core threshold → `sizing.py ladder` returned `target_trail_pct=7, scaleouts_due=0` → trail tightened 10% → 7% (new stop order id 9b627571, stop $48.55065, hwm $52.205). Rule 9 check passed (7% > 3% min distance, stop moved up not down). The v3 ladder machinery proved live and idempotent for the first time in 6 weeks of operation.
+- **First Rule 16 decay chain BREAK — CAT.** Wed CPI: CAT flag=1 (10s -5.16% vs SPY -2.63% = -2.54pp lag + below entry). Thu PPI bounce: CAT flag=0 (10s -1.08% vs SPY -3.81% = **+2.72pp outperformance** — chain broken at 1 of 2). Rule 16's 2-consecutive-flag conjunction worked as designed: it caught a true risk-off lag candidate but stayed dormant on the recovery, sparing the satellite from a forced T+1 sell into Thu's biggest day P&L (+4.84% CAT close-to-close). Avoided a -$36 realized loss + a clean +$118.95 → -$36 swing on the held position.
+- **2nd v3 satellite entry executed clean — GE Fri.** 50s-RS matured through the binary cycle (Tue +0.60pp razor-thin → Fri +3.82pp durable confirmation, 3.22pp gain through hot-CPI + friendly-PPI = regime not noise). Passed every prong of the v3 single-stock checklist + Buy-Side Gate (positions 4→5, weekly cap 0→1, 9.98% equity cost basis well under Rule 3, ETF core 67.84% post-fill, satellite 2/2 in Industrials at cap, DTC=0). Limit fill at $335.06 was $5.28/share better than the $340.34 limit — clean execution; price improvement $15.84 total.
+- **Visa-aware machinery flawless for 7th straight week.** DTC held 0/5 all week; CAT trailing stop carryforward unchanged; GE trail placed at 15:00 CT per Rule 13 (order id 8277f3e8); Rule 15 same-day skip protected GE on Fri midday; Rule 14 pre-flight passed every midday (DTC=0). Seven weeks, zero day trades, zero same-day exit risk.
+- **CPI-day stress test passed without intervention.** Wed midday CAT hit 1.14% trail stop cushion + -6.40% vs entry (intraday $855.40 within 1.05% of $846.432 trail stop trigger; within 0.50% of -7% Rule 7 floor). Routine correctly held (Rule 7 stop-loss is intraday-trigger, not midday-action; Rule 16 was 1 of 2). Thu's bounce vindicated the patience: CAT recovered to -1.97% from entry by Thu close.
+
+### What Didn't Work
+- **Capital deployment briefly overshot the 75–85% band.** Post-GE-entry Fri midday hit 87.49% (long_market_value $8,820.65 / equity $10,081.66); EOD settled 87.48%. Rule 5 is a target band not a hard cap, but the overshoot is a function of GE entering on an already 77.43% deployed book — the buy-side gate doesn't check deployment ceiling, only the 45% core floor. The math: 4 ETF positions + 1 satellite (CAT) ≈ 77% deployed; adding GE pushed to 87%. Worth flagging whether buy-side should add a deployment-ceiling check or whether the 75–85% band is treated as a soft target.
+- **XLE the only red contributor.** -$7.14 week unrealized (-0.36%) on Thu's -2.03% oil-softness day; cushion compressed from 4.80% Wed close to 3.43% Fri close — book's tightest. 8 consecutive weeks of XLE in the book; oil-headline asymmetry remains poor and a single -3.4% session trips the trail.
+- **First-week return for GE was day-1 only (+$0.63).** No meaningful contribution to weekly alpha; full read on the satellite gate's quality will need 1–2 weeks of GE position aging. The CAT precedent (CAT -1.30% unrealized week 1, -0.55% week 2) suggests single-stock satellites take time to express their thesis.
+- **CPI-day intraday risk was real, not just narrative.** CAT intraday low $855.40 came within 1.05% of the $846.432 trail-stop trigger and within 0.50% of the -7% Rule 7 floor. The system held, but the v3 single-stock satellite design (15% per-idea stop width for sizing → 10% canonical trail at close) accepts higher idiosyncratic vol exposure than ETF core. On a hotter CPI tail, CAT could have stopped out same-day style via the trail.
+
+### Key Lessons
+- **Rule 8 ladder works as designed.** First fire (XLB +4.26% → 7% trail) was clean per spec: the deterministic `sizing.py ladder` returned the right target, Rule 9 distance check passed, stop moved up not down, replace-stop call succeeded. The ladder is no longer untested in real conditions — confirmed live for 1 trigger.
+- **Rule 16 decay chain BREAK is as important as the chain fire.** Week 6 validated the chain firing (XLP rotation). Week 7 validated the chain breaking (CAT, 1 of 2 → reset). The conjunction logic (below entry AND lagging SPY for 2 consecutive) is what protects the v3 satellite sleeve from over-rotation on transient drawdowns. Without the SPY-relative-strength check, CAT would have stopped out on Wed's CPI absorbing the full -6.40% — Rule 16 correctly distinguished an idiosyncratic-but-recovering position from a structural laggard.
+- **Visa-aware machinery (Rules 13/14/15) bulletproof for 7th consecutive week.** Zero day trades, zero same-day exits, every stop placed at close. The risk lives in strategy selection, not execution.
+- **Cyclical-concentration regime remains favorable.** Bot beat SPX in 2 of last 2 weeks (Week 6: +2.10% NFP-Friday risk-off; Week 7: +1.09% CPI/PPI binary cycle). Held book is positioned for cyclical leadership; a sustained tech rally would re-open the Weeks 4–5 lag. v3 satellite gate has 1 tech idea (XLK) on deferred carry-forward; AVGO/NVDA need RS recovery.
+- **Industrials concentration at 2/2 satellite cap with $4,764.93 = 54% of deployed is a single-sector-kill risk.** Rule 10 (2 consecutive failed Industrials trades → exit all Industrials) would liquidate XLI + CAT + GE in one step. No history of consecutive Industrials losses, but the concentration is structurally high. Worth observing whether the buy-side gate's ≤2 satellites/sector cap is the right ceiling for a single sector at 54% of deployed.
+- **Satellite-sleeve check (v3 spec):** Week 6 core +$3.56 / satellite -$27.27 (satellite UNDERperformed); Week 7 core +$82.46 / satellite +$14.27 (satellite again UNDERperformed core, but absolute green). Only 2 weeks of v3 data — the 3+ consecutive-week threshold for the shrink-satellite proposal is not yet met. Observation continues.
+
+### Adjustments for Next Week
+- **Monday pre-market (Jun 15, Week 8 Day 1, pre-FOMC):** FOMC Jun 16–17 is the week's primary binary (Fed expected to deliver one more 25bp cut in 2026 per pre-CPI consensus; CPI hot print Wed shifted markets back toward hawkish). Pre-market screen should re-evaluate XLK 10s-RS confirmation (Fri's +0.28pp razor-thin needs a Mon session to validate); AVGO/NVDA need RS recovery (1+ sessions); MPC 50s-RS still negative; XLU DEAD path.
+- **Watch XLE.** Book's tightest cushion at 3.43% ($55.53 stop vs $57.50 close). 8 consecutive weeks of XLE in the book; oil-headline asymmetry remains poor. If oil unwinds further into next week, the trail likely fires — Rule 13 keeps it clean. Cushion math: any -3.4% XLE day triggers auto-exit.
+- **Watch XLB Rule 8 ladder progression.** Fri's first-tier fire (+4% core → 7% trail) leaves XLB needing +7% vs entry to trigger the 2nd tier (scale-out 1/3 + 5% trail). XLB at $52.32 needs $53.586 close — within reach on 2-3 strong sessions. The first scale-out would book partial gains, free cash for redeployment, and lock in profits at a tighter trail.
+- **GE week-2 read.** Day-1 +$0.63 (+0.06%); will get meaningful read on 50s-RS regime confirmation by Wed–Thu. Stop cushion is fresh 10% ($301.743 vs $335.27). If GE breaks down before reaching the +6% satellite first-tier ($355.16), Rule 16 decay-flag risk activates if it lags SPY in the 10s window.
+- **4 trades remain in Week 8's fresh v3 budget.** Capital deployment 87.48% — already above the band; no room to add without exiting something. Patience > activity (Rule 12); a scale-out (XLB 2nd-tier ladder) would create capacity.
+- **CAT decay chain reset to 0.** Next midday flag would be 1 of 2 again. The Thu+Fri recovery moved CAT from -6.40% Wed close → -0.55% Fri close — close to flat but not yet to ladder thresholds. Watch the 10-session pos vs SPY into Mon.
+- **No auto-applied strategy mutations** (DECIDED G — rulebook is the safety system). See proposed strategy notes below.
+
+### Overall Grade: B+
+
+Constructive week with the v3 strategy framework firing cleanly. Two more v3 firsts validated: Rule 8 ladder (XLB +4.26% → 7% trail) and Rule 16 decay chain BREAK (CAT 1 of 2 → reset on Thu bounce). 2nd v3 satellite entry (GE) executed clean — 50s-RS regime confirmation through CPI/PPI binary cycle, every gate passed, $5.28/sh price improvement on fill. Beat the benchmark by +1.09% (2nd consecutive week of alpha). Zero rule violations, 7 straight weeks of bulletproof visa-aware execution. **CPI Wed stress test passed without intervention** — CAT intraday $855.40 was within 1.05% of trail trigger + 0.50% of -7% floor; Thu's bounce vindicated patience. Concerns: (a) capital deployment overshot to 87.48% post-GE-entry (buy-side gate has no deployment ceiling); (b) Industrials concentration at $4,764.93 = 54% of deployed with 2/2 satellite slots at cap = single-sector-kill exposure; (c) XLE cushion 3.43% remains tightest in book. Graded B+ to weight the 2 clean v3 firsts (ladder + decay break) + the 2nd alpha week against the structural concentration risk that didn't bite this week but is structurally present.
+
+## Proposed strategy changes (NOT auto-applied — human review required)
+
+- **Add deployment-ceiling check to buy-side gate (v3.1 proposal).** This week's GE entry pushed deployment from 77.43% pre-fill to 87.48% post-fill — outside the v3 75–85% target band. The buy-side gate currently checks the 45% core floor but has no upper bound. Proposal: add `(deployed_capital + position_cost) / equity ≤ 0.85` as a 10th buy-side gate check. If deployment ≥ 85% pre-fill, defer the buy until a scale-out, sell, or equity growth restores headroom.
+- **Rationale:** Capital deployment is a Rule 5 target, but in practice the routine treats it as advisory — there is no enforcement. The 75–85% band exists to keep cash buffer for opportunistic adds and to bound concentration; overshooting to 87% reduces both. The proposed gate enforces what's already in Rule 5.
+- **Evidence:** TRADE-LOG.md 2026-06-12 market-open (post-fill deployment 87.49%), 2026-06-12 midday (still 87.49%), 2026-06-12 EOD (87.48%). All midday/EOD notes flagged it explicitly.
+- **Conviction: MEDIUM.** Mechanically simple to add; downside is it could occasionally block an otherwise-clean trade in tight-cash regimes.
+
+- **Industrials sector-concentration soft cap (observation, no rule change yet).** Industrials at $4,764.93 = 54% of deployed (XLI + CAT + GE) with 2/2 satellite slots at cap. Rule 10 sector-kill would force a 3-position liquidation in one step. The buy-side gate's ≤2 satellites/sector cap is a per-name check; there is no aggregate sector $ cap. Worth one more week of observation before proposing a fix — the elevated concentration may simply reflect that Industrials is the leading cyclical sub-sector (XLI +12% YTD per Vantage / +13.1% trailing 6mo per Schwab). If a different sector takes the lead next week and the screen doesn't naturally rotate, then propose.
+- **Conviction: LOW (observation only).**
+
+- **Rule 8 ladder — keep as-is, first fire was clean.** XLB +4.26% → 7% trail per `sizing.py ladder` worked exactly as specified. No proposed change. Next milestone is the +7% core scale-out tier (XLB $53.586 = 2nd tier trigger).
+
+- **Rule 16 momentum-decay — keep as-is, chain BREAK validated.** CAT 1 of 2 → reset on Thu's +2.72pp SPY outperformance is exactly the protection the conjunction (below entry AND lagging SPY) was designed to provide. The rule held CAT through the CPI shock and was vindicated by the PPI bounce. No proposed change.
+
+- **Satellite-sleeve check (v3 spec):** Week 6 satellite UNDERperformed core (-$27.27 vs +$3.56); Week 7 satellite UNDERperformed core ($14.27 vs $82.46). Only 2 weeks of v3 data — the 3+ consecutive-week threshold for the shrink-satellite proposal is NOT yet met. Continue observation. If Week 8 also shows satellite < core, the shrink proposal lands on Friday Jun 19 weekly-review.
+- **Conviction: deferred — observation continues.**
+
+- **Prior RSP-of-last-resort proposal (Weeks 4–5) — kept on file at LOW conviction.** v3 satellite sleeve has now placed 2 entries in 2 weeks (CAT + GE); capital deployment fully utilized (overshooting, actually). No re-promotion needed.
