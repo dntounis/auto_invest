@@ -2318,3 +2318,54 @@ Watchlist into Mon Jun 22 pre-market re-screen (Friday closed):
 - Bars data: `bash scripts/alpaca.sh bars SPY 1Day 60` (SPY 10s **−1.760%** Jun 3 close 752.30 → Jun 17 close 739.06; 50s **+12.400%** Apr 7 close 657.53 → Jun 17 close 739.06; values shifted vs Wed's −1.217% / +13.872% as Wed −1.25% close added to 10s window and dropped highest 50s bar). No single-stock screen run (3/3 satellite slots full).
 - Sizing math: NOT RUN — zero actionable ideas (`sizing.py size` only invoked when a candidate passes gates; structural HOLD per (i) 3/3 satellite slots + (ii) 82.58% deployment already at band top + (iii) XLK rejection + (iv) Triple-Witching/Juneteenth derisking).
 - WebSearch fallback used: **NO** (Perplexity reachable for all 9 mandated queries: oil, ES futures, VIX, FOMC/post-FOMC catalyst, BMO earnings, econ calendar, sector momentum, momentum stocks, held-ticker news (BTSG + CAT/GE + XLB/XLI)).
+
+## 2026-06-19 — Pre-market Research (Juneteenth — US markets CLOSED)
+
+### Account
+- Equity: $10,283.16 (= `last_equity`; `change_today=0` across all 5 positions confirms holiday — no session today)
+- Cash: $1,784.94
+- Buying power: $30,934.78
+- Daytrade count: 0 (pattern_day_trader=false; balance_asof 2026-06-18)
+- Positions: 5/6 unchanged from Thu EOD (BTSG 21 @ $64.45 cur $66.25; CAT 2 @ $915.635 cur $985.82; GE 3 @ $335.06 cur $357.64 — note GE cur −$0.11 vs Thu close $357.75 = stale quote refresh, no $ session); XLB 40 @ $50.08 cur $51.81; XLI 11 @ $173.713636 cur $180.91)
+- Open orders: 5 trailing-stop GTC sells unchanged (CAT id 55b20451 trail 7% stop $921.4533 hwm $990.81 — Thu-tightened Rule 8; BTSG id 2cff1c84 trail 10% stop $60.003 hwm $66.67; GE id 76cc4aee trail 7% stop $339.171 hwm $364.70; XLI id 1f9174d4 trail 7% stop $170.1156 hwm $182.92; XLB id 9b627571 trail 7% stop $49.5783 hwm $53.31). **All 5 positions stop-armed entering the Juneteenth-Sat-Sun-Mon-AM gap.**
+- ETF core $4,062.41 / deployed $8,498.22 = **47.78%** ≥ 45% floor ✓ (frozen at Thu EOD)
+- Capital deployment **82.64%** (long_market_value $8,498.22 / equity $10,283.16) — frozen at Thu EOD, cleanly inside v3 75–85% band
+- Sector book: Materials (XLB $2,072.40 = 24.39% deployed); Industrials (XLI $1,990.01 + CAT $1,971.64 + GE $1,072.92 = $5,034.57 = **59.24%** of deployed; **2/2 Industrials satellite slots at cap**); Healthcare (BTSG $1,391.25 = 16.37%); Energy 0.
+- Satellite slots: **3/3 FULL** (CAT/GE/BTSG).
+- Trades this week: **1/5** (Week 8 closes today with 4 unused — Friday is a holiday so no further activity; trades reset Mon Jun 22 as Week 9 begins).
+
+### Market Context
+- **🚨 US equity markets CLOSED today (Friday Jun 19) for Juneteenth Federal Holiday.** NYSE / Nasdaq / OTC all closed. CME futures partial schedule (early close prior session; no regular cash session). No price discovery for held book today.
+- **No pre-market research run** — Perplexity queries skipped (no oil, ES futures, VIX, catalysts, earnings, econ-calendar, sector momentum, momentum-stocks, or held-ticker news pulls). Cost-saving: no signal to gather for a non-trading day. Next research pull: Mon Jun 22 pre-market (covers Fri-equivalent macro tape + weekend news flow).
+- **No `alpaca.sh bars` pull** — would return Thu Jun 18 close as latest bar; no new info vs Thu EOD snapshot. Re-pull Mon Jun 22 pre-market with SPY 60-bar + any new satellite candidate.
+- **Carry-forward macro state from Thu EOD:** Post-FOMC hawkish-Warsh regime intact; VIX 18.44 → 17.10 AM compression observed but cone unresolved; Initial Claims Jun 18 presumed within consensus (no observable book dislocation through Thu print); Triple Witching OpEx passed cleanly. **Weekend news risk:** geopolitical (Israel/Iran ceasefire stability, Russia/Ukraine, China-Taiwan), Fed-speak (blackout cleared Wed presser — any unscheduled speaker on a Saturday note Monday); no scheduled US macro data Fri-Sat-Sun; next major US release **PCE Tue Jun 23**? (Calendar typically Fri-monthly — Juneteenth shifted to Mon Jun 22 if affected; confirm at Mon pre-market). Mon Jun 22 pre-market also covers any Fed-speak from the 19th–21st block.
+
+### Single-stock satellite screen (v3 — alpaca.sh bars + RS vs SPY)
+- **Not run** — markets closed today. Satellite slots **3/3 FULL** (CAT/GE/BTSG) — even if a slot opens via a Mon Jun 22 midday scale-out, re-screen at that pre-market. Carryforward watchlist preserved unchanged: VECO (defer for 50-DMA pullback ~$57 or multi-session base); DELL/STX/BE/SITM/ASX (Zacks Best-Growth Jun 17 — semis/AI-power); NVDA/AVGO (Tech satellite — gated on XLK 10s-RS repair).
+
+### Trade Ideas
+**ZERO actionable ideas — US markets closed for Juneteenth.** Decision is structural HOLD by holiday, not by gating.
+- No `market-open` order placement possible today (no session). The `market-open` cron should short-circuit on holiday detection (NYSE calendar).
+- No `midday` re-eval needed (Rule 7 hard-close / Rule 8 ladder / Rule 15 same-day / Rule 16 decay all require an intraday price feed — frozen at Thu close until Mon AM).
+- No `daily-summary` Rule 13 stops to place (no positions opened today → no stops needed).
+- Telegram: silent unless a weekend geopolitical event breaks (no urgent macro release scheduled).
+
+### Risk Factors
+- **3-day market gap (Fri+Sat+Sun)** before Mon Jun 22 open. Held book carries gap risk. Mitigation: **all 5 positions stop-armed** (Thu EOD locked); position cap (Rule 3 20%) limits worst single-name gap-down loss; risk-parity sizing limits sector concentration risk per name. **Worst-case 3-day gap-down scenario:** simultaneous −10% gap across all 5 positions = $850 unrealized loss = −8.3% phase reversal — extreme tail. Realistic gap risk: 1-2% on weekend news = $80–170 hit. Acceptable per Rule 12 (patience > activity).
+- **XLB stop cushion 4.31%** (book's tightest, Thu close) — Materials sector most fragile to weekend rate-news; Mon AM gap-down >4.3% fires Rule 6 trailing stop and exits XLB 40 shares. Pre-emptive action NOT warranted (Rule 9 — never tighten within 3%; Thu's 7% trail is the right answer).
+- **Industrials 59.24% concentration** (XLI + CAT + GE) — single largest book risk. Sector-news weekend tail (e.g. CAT-specific guidance leak, GE-Aerospace incident, broader industrial regulation) could compound across 3 names. 2/2 satellite slots locked.
+- **CAT 6.53% stop cushion** post-Rule 8 tightening to 7% trail — second-tightest after XLB; +7.66% unrealized comfortably above first ladder threshold but next ladder tier (+10%) requires another ~+2.2% to trigger scale-out 1/3 + trail 5%.
+- **Single-day equity HWM** — phase P&L +$283.49 = +2.83%. Locking it across a 3-day gap raises the asymmetric-loss-mitigation value of all 5 stops being armed.
+
+### Decision
+**HOLD — US markets closed for Juneteenth.** No research run, no trade ideas, no orders. Held book is fully stop-armed entering the 3-day gap.
+
+Rationale: (1) **NYSE/Nasdaq closed Fri Jun 19 for Juneteenth Federal Holiday** — no session, no price discovery, no order placement possible; (2) Account state frozen at Thu EOD ($10,283.16 equity, 5/6 positions, all stop-armed); (3) **Perplexity queries skipped** — no signal value for a non-trading day; weekend news flow + Mon AM tape covered by Mon Jun 22 pre-market routine; (4) **Phase P&L +$283.49 / +2.83% HWM locked across the gap** via 5/5 stops armed (CAT/GE/XLB/XLI on 7% trail; BTSG on 10% trail).
+
+Next live session: **Mon Jun 22 pre-market 06:00 CT** — re-screen XLK 10s-RS for post-FOMC repair (currently rejected −4.72pp Wed AM), held-book monitor (XLB 4.31% cushion remains book's single most fragile point), Industrials 59.24% concentration unchanged, Week 9 begins (5 fresh trade slots).
+
+### Sources
+- **No Perplexity / WebSearch queries run** — US markets closed for Juneteenth Federal Holiday. Skipping cost-saves Perplexity budget for a non-trading day; weekend news flow covered by Mon Jun 22 pre-market.
+- **No `alpaca.sh bars` pull** — would return Thu Jun 18 close as latest bar; no new info vs Thu EOD snapshot.
+- Account state: `alpaca.sh account` + `positions` + `orders` confirmed `change_today=0` across all 5 names + `equity == last_equity == $10,283.16` + 5 trailing-stop GTC sells unchanged from Thu EOD = holiday verified.
+- WebSearch fallback used: **NO** (no queries attempted).
