@@ -46,6 +46,16 @@ Append a STOP PLACED row to TRADE-LOG.md per stop placed:
 - Links to BUY: pm-YYYY-MM-DD-TICKER
 ```
 
+**Rule 17 failure handling (v3.1).** If a `trailing-stop` / `replace-stop` call returns
+non-2xx after 3 retries (retry with a short backoff; 504/5xx are the observed failure):
+- Send URGENT: `bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — STOP PLACEMENT FAILED for TICKER QTYsh trail N% after 3 retries. Position is UNPROTECTED. Will retry first thing next routine (Rule 17)."`
+- Append a marker row to TRADE-LOG.md:
+  ```
+  ### YYYY-MM-DD — STOP-PLACEMENT-FAILED: TICKER QTY TRAIL
+  - N consecutive Alpaca write-path failures (HTTP <code>); position unprotected; Rule 17 retry pending.
+  ```
+- Continue the routine (do not abort the snapshot/commit). The marker is cleared when a later `STOP PLACED` row for TICKER lands.
+
 ## Step 5 — Heartbeat check (DECIDED J)
 ```
 LAST_TG=$(grep "^last_telegram: " memory/HEARTBEAT.md | sed 's/last_telegram: //')

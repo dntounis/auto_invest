@@ -6,6 +6,20 @@ You are running the **pre-market research workflow** locally. Resolve today's da
 
 This is a v1 paper-only research run. **No orders execute.** The Alpaca wrapper refuses state-changing subcommands.
 
+## STEP 0 — Rule 17: clear any pending stop-placement failure (FIRST action)
+
+Before any research or env checks, tail `memory/TRADE-LOG.md` for a
+`STOP-PLACEMENT-FAILED TICKER QTY TRAIL` row that has **no later `STOP PLACED`** row
+for the same ticker. If one exists, retry the placement as the very first action:
+```
+bash scripts/alpaca.sh trailing-stop TICKER QTY TRAIL
+```
+- On success: append a `STOP PLACED` row (clears the marker) and send a non-URGENT
+  Telegram note "Rule 17 retry succeeded — TICKER now protected".
+- On failure after 3 retries: send URGENT Telegram instructing manual placement via the
+  Alpaca UI, leave the marker open, and continue the routine.
+If no unresolved marker exists, proceed to STEP 1.
+
 ## Step 1 — Read memory for context
 - `memory/PROJECT-CONTEXT.md`
 - `memory/TRADING-STRATEGY.md`
