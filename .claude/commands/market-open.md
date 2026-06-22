@@ -45,6 +45,8 @@ Additional gate checks per idea:
 - Position cost ≤ available cash
 - **(v3, satellite only)** ETF-core market value stays ≥ 45% of deployed equity after the fill (skip + log if breached)
 - **(v3, satellite only)** ≤ 2 satellite names in this idea's GICS sector after the fill
+- **(v3.1, all ideas)** Sector concentration cap: compute `deployed_after = long_market_value + position_cost` and `sector_after = (sum of this sector's existing position market values) + position_cost`. If `sector_after / deployed_after > 0.50`, skip + log "sector cap: TICKER sector would be X% of deployed (> 50%)".
+- **(v3.1, all ideas)** Deployment ceiling: if `(long_market_value + position_cost) / equity > 0.85`, skip + log "deployment ceiling: post-fill X% > 85% — deferring add".
 - Instrument is a stock (not option/crypto/forex/futures)
 
 ## Step 4 — Rank, take top N

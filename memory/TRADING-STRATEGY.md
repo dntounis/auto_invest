@@ -13,6 +13,7 @@ Beat the S&P 500 over the challenge window. Stocks only — no options, ever.
 - **ETF core:** ≥45% of *deployed* equity, 2–3 sector ETFs (leading-quadrant rotation). Market-tracking ballast.
 - **Single-stock satellites:** ≤3 names, remainder of deployed equity. Alpha sleeve.
 - Max 5–6 total positions. Max 2 satellite names per GICS sector.
+- **No single GICS sector may exceed 50% of deployed equity** (ETF core + satellites combined) — an aggregate-dollar cap on top of the per-name ≤2-satellites/sector limit, enforced forward-looking by the buy-side gate *(v3.1)*.
 - ETF core may never fall below 45% of deployed — market-open refuses a satellite buy that would breach this.
 
 ## Hard Rules (non-negotiable)
@@ -44,6 +45,8 @@ Before placing any buy order, every one of these must pass. If any fail, the tra
 - Position cost ≤ available cash
 - ETF core stays ≥ 45% of deployed equity after this fill (if the idea is a satellite)
 - ≤ 2 satellite names in the idea's GICS sector after this fill
+- **Sector concentration cap (v3.1):** after this fill, no single GICS sector (ETF core + satellites combined) exceeds **50% of deployed** equity. Formula: `(sector_mv_existing + position_cost) / (long_market_value + position_cost) ≤ 0.50`. Applies to **every** idea (core and satellite). Skip + log if it would breach. Forward-looking only — does not force a sell of existing concentration; that unwinds via Rule 8 scale-outs / Rule 16 rotation.
+- **Deployment ceiling (v3.1):** after this fill, capital deployment stays within the Rule 5 band: `(long_market_value + position_cost) / equity ≤ 0.85`. Skip + log if it would overshoot; defer the add until a scale-out, sell, or equity growth restores headroom.
 - `daytrade_count` leaves room (PDT: 3/5 rolling business days under $25k)
 - A specific catalyst is documented in today's `RESEARCH-LOG.md` entry
 - The instrument is a stock (not an option, not anything else)

@@ -97,6 +97,8 @@ For each idea in today's RESEARCH-LOG entry, run the Buy-Side Gate from
 - Position cost ≤ available cash
 - **(v3, satellite only)** If this idea's `tier` is `satellite`: ETF-core market value after this fill stays ≥ 45% of deployed equity (sum of all position market values from `positions`). Skip + log if it would breach the core floor.
 - **(v3, satellite only)** If this idea's `tier` is `satellite`: ≤ 2 satellite names (existing + pending) in this idea's GICS sector after the fill. Skip + log if it would make 3.
+- **(v3.1, all ideas)** Sector concentration cap: compute `deployed_after = long_market_value + position_cost` and `sector_after = (sum of this sector's existing position market values) + position_cost`. If `sector_after / deployed_after > 0.50`, skip + log "sector cap: TICKER sector would be X% of deployed (> 50%)".
+- **(v3.1, all ideas)** Deployment ceiling: if `(long_market_value + position_cost) / equity > 0.85`, skip + log "deployment ceiling: post-fill X% > 85% — deferring add".
 - `account.daytrade_count` MUST be ≤ 1 to allow new entries (Rule 14 buffer).
   WHY: a buy today could trigger a stop-fired sell tomorrow, bumping DTC by 1; a
   buffer of 1 keeps us well below the FINRA PDT threshold of 4 day trades in 5
