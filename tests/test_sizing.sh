@@ -72,4 +72,41 @@ out=$(python3 scripts/sizing.py decay --unrealized-pct -2 --pos-ret-10d 2 --spy-
 assert_contains "$out" '"flag": 0'
 assert_contains "$out" '"rotate": 0'
 
+# --- scaleout ---
+# none owed: due == done → no sell
+start_test "scaleout: none due → sell 0"
+out=$(python3 scripts/sizing.py scaleout --cur-qty 9 --scaleouts-due 0 --scaleouts-done 0 2>&1)
+assert_contains "$out" '"sell_qty": 0'
+assert_contains "$out" '"reason": "none_due"'
+
+# standard 1/3 on a 9-share lot
+start_test "scaleout: 9 shares, 1 due → sell 3"
+out=$(python3 scripts/sizing.py scaleout --cur-qty 9 --scaleouts-due 1 --scaleouts-done 0 2>&1)
+assert_contains "$out" '"sell_qty": 3'
+assert_contains "$out" '"reason": "ok"'
+
+# the CAT bug case: 2-share satellite, floor(2/3)=0 → min-1-share rule sells 1, leaves 1
+start_test "scaleout: 2 shares, 1 due → sell 1 (min-1, leaves runner)"
+out=$(python3 scripts/sizing.py scaleout --cur-qty 2 --scaleouts-due 1 --scaleouts-done 0 2>&1)
+assert_contains "$out" '"sell_qty": 1'
+assert_contains "$out" '"reason": "ok"'
+
+# 3-share lot: floor(3/3)=1, leaves 2
+start_test "scaleout: 3 shares, 1 due → sell 1 (leaves 2)"
+out=$(python3 scripts/sizing.py scaleout --cur-qty 3 --scaleouts-due 1 --scaleouts-done 0 2>&1)
+assert_contains "$out" '"sell_qty": 1'
+assert_contains "$out" '"reason": "ok"'
+
+# 1-share lot: owed but can't leave a runner → sub_unit, defer to trail
+start_test "scaleout: 1 share, 1 due → sell 0 (sub_unit)"
+out=$(python3 scripts/sizing.py scaleout --cur-qty 1 --scaleouts-due 1 --scaleouts-done 0 2>&1)
+assert_contains "$out" '"sell_qty": 0'
+assert_contains "$out" '"reason": "sub_unit"'
+
+# second scale-out already logged: due 2, done 1 → still owes 1, 6 shares → sell 2
+start_test "scaleout: 6 shares, 2 due 1 done → sell 2"
+out=$(python3 scripts/sizing.py scaleout --cur-qty 6 --scaleouts-due 2 --scaleouts-done 1 2>&1)
+assert_contains "$out" '"sell_qty": 2'
+assert_contains "$out" '"reason": "ok"'
+
 print_summary
