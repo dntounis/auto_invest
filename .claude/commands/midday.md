@@ -46,7 +46,21 @@ Determine each position's `tier` (`core`|`satellite`) from its BUY row `Tier:` f
 
 1. ≤ -7% → hard-close (Rule 7). Exclusive.
 2. **Profit ladder (Rule 8, v3):** `LADDER_JSON=$(python3 scripts/sizing.py ladder --tier "$TIER" --unrealized-pct "$UPCT")`.
-   - Scale-out: if `scaleouts_due` > count of `SCALE-OUT` rows already logged for this position → `bash scripts/alpaca.sh scale-out TICKER $((CUR_QTY/3))` (SELL; re-check DTC first).
+   - **Scale-out (deterministic — v3.1):** count existing `SCALE-OUT` rows for this
+     position in TRADE-LOG.md → `SO_DONE`. Then ask the sizer for the qty (never
+     compute it inline):
+     ```
+     SO_JSON=$(python3 scripts/sizing.py scaleout --cur-qty "$CUR_QTY" \
+         --scaleouts-due "$SCALEOUTS_DUE" --scaleouts-done "$SO_DONE")
+     ```
+     - `reason == "ok"` (sell_qty ≥ 1): this is a SELL — re-check Rule 14 `DTC` (< 2),
+       then `bash scripts/alpaca.sh scale-out TICKER $SELL_QTY`. Log a `SCALE-OUT` row.
+     - `reason == "sub_unit"`: a scale-out is owed but the lot is too small to trim and
+       still leave a runner (e.g. a 2-share $900 satellite where 1/3 < 1 share, but the
+       min-1-share rule already applies at qty ≥ 2, so `sub_unit` only hits qty 1).
+       **Do NOT sell.** Log `SCALE-OUT-DEFERRED TICKER reason=sub_unit` (STEP 6) and rely
+       on the same-tier trail-tighten below to capture the gain. No `DTC` impact.
+     - `reason == "none_due"`: scale-out already logged for this tier — no action.
    - Tighten: if `target_trail_pct` non-null AND < current open stop trail (never raise, never < 3%) → `replace-stop OID TICKER QTY $target_trail_pct`.
 3. **Momentum-decay rotation (Rule 16, v3):** `POS_RET` from `bash scripts/alpaca.sh bars TICKER 1Day 11`, `SPY_RET` from `bash scripts/alpaca.sh bars SPY 1Day 11`, `PRIOR_FLAG` from the latest DECAY-FLAG row for TICKER. `DECAY_JSON=$(python3 scripts/sizing.py decay --unrealized-pct "$UPCT" --pos-ret-10d "$POS_RET" --spy-ret-10d "$SPY_RET" --prior-flag "$PRIOR_FLAG")`. Always log a DECAY-FLAG row. If `rotate==1` and DTC < 2 → `close TICKER` (ROTATE-EXIT). Core ETF also rotates if its sector left the leading quadrant.
 4. Sector-kill (Rule 10): scan most recent 20 EXIT rows OR last 30 calendar days (whichever is shorter); if this position's sector has 2 consecutive losses (negative `Realized P&L`, same `Sector:` tag, no winner between them) → close all actionable positions in that sector in a batch. Evaluate sector-kill ONCE per unique sector.
@@ -55,7 +69,7 @@ Determine each position's `tier` (`core`|`satellite`) from its BUY row `Tier:` f
 ## Step 5 — Execute
 ```
 bash scripts/alpaca.sh close TICKER                                  # hard-close / sector-kill / rotation
-bash scripts/alpaca.sh scale-out TICKER PARTIAL_QTY                  # Rule 8 ladder partial (1/3)
+bash scripts/alpaca.sh scale-out TICKER $SELL_QTY   # $SELL_QTY from sizing.py scaleout (reason==ok only)
 bash scripts/alpaca.sh replace-stop ORDER_ID TICKER QTY NEW_TRAIL    # tighten
 ```
 After each individual sell, refresh DTC:
@@ -90,6 +104,11 @@ For each scale-out (v3):
 ### YYYY-MM-DD — SCALE-OUT: TICKER qty=N (1/3 of M)
 - Tier: <core|satellite> | Trigger: Rule 8 ladder, +X% (scale-out #K of 2) | Realized P&L on slice: $X
 ```
+
+For each deferred (sub-unit) scale-out, append instead (no sell occurred):
+
+### YYYY-MM-DD — SCALE-OUT-DEFERRED: TICKER reason=sub_unit
+- Tier ladder owed a scale-out but qty too small to leave a runner; trail tightened instead.
 
 For each momentum-decay evaluation (v3 — state for next midday):
 ```
