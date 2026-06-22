@@ -118,6 +118,7 @@ TRADE-LOG.md (the `Tier:` field). Default to `core` if the field is absent.
      position in TRADE-LOG.md → `SO_DONE`. Then ask the sizer for the qty (never
      compute it inline):
      ```
+     Parse `scaleouts_due` from the `LADDER_JSON` computed above → `SCALEOUTS_DUE`.
      SO_JSON=$(python3 scripts/sizing.py scaleout --cur-qty "$CUR_QTY" \
          --scaleouts-due "$SCALEOUTS_DUE" --scaleouts-done "$SO_DONE")
      ```
@@ -175,7 +176,7 @@ For each scheduled action:
 # Hard-close, sector-kill, or momentum-decay rotation (full exit)
 bash scripts/alpaca.sh close TICKER
 
-# Scale-out partial (Rule 8 ladder) — sell 1/3 of current qty
+# Scale-out partial (Rule 8 ladder) — qty from sizing.py scaleout (min-1-share)
 bash scripts/alpaca.sh scale-out TICKER $SELL_QTY   # $SELL_QTY from sizing.py scaleout (reason==ok only)
 
 # Tighten stop (Rule 8 ladder)
@@ -213,7 +214,7 @@ For each stop tightening, append a STOP UPDATE row:
 
 For each scale-out partial sell, append a SCALE-OUT row (v3):
 ```
-### YYYY-MM-DD — SCALE-OUT: TICKER qty=N (1/3 of M)
+### YYYY-MM-DD — SCALE-OUT: TICKER qty=N (scale-out slice, M before)
 - Tier: <core|satellite>
 - Trigger: Rule 8 ladder, unrealized +X% (scale-out #K of 2)
 - Realized P&L on slice: $X (X.X%)

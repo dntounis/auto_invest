@@ -50,6 +50,7 @@ Determine each position's `tier` (`core`|`satellite`) from its BUY row `Tier:` f
      position in TRADE-LOG.md → `SO_DONE`. Then ask the sizer for the qty (never
      compute it inline):
      ```
+     Parse `scaleouts_due` from the `LADDER_JSON` computed above → `SCALEOUTS_DUE`.
      SO_JSON=$(python3 scripts/sizing.py scaleout --cur-qty "$CUR_QTY" \
          --scaleouts-due "$SCALEOUTS_DUE" --scaleouts-done "$SO_DONE")
      ```
@@ -69,7 +70,7 @@ Determine each position's `tier` (`core`|`satellite`) from its BUY row `Tier:` f
 ## Step 5 — Execute
 ```
 bash scripts/alpaca.sh close TICKER                                  # hard-close / sector-kill / rotation
-bash scripts/alpaca.sh scale-out TICKER $SELL_QTY   # $SELL_QTY from sizing.py scaleout (reason==ok only)
+bash scripts/alpaca.sh scale-out TICKER $SELL_QTY   # qty from sizing.py scaleout (min-1-share) (reason==ok only)
 bash scripts/alpaca.sh replace-stop ORDER_ID TICKER QTY NEW_TRAIL    # tighten
 ```
 After each individual sell, refresh DTC:
@@ -101,7 +102,7 @@ For each stop tightening, append a STOP UPDATE row:
 
 For each scale-out (v3):
 ```
-### YYYY-MM-DD — SCALE-OUT: TICKER qty=N (1/3 of M)
+### YYYY-MM-DD — SCALE-OUT: TICKER qty=N (scale-out slice, M before)
 - Tier: <core|satellite> | Trigger: Rule 8 ladder, +X% (scale-out #K of 2) | Realized P&L on slice: $X
 ```
 
