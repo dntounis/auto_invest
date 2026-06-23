@@ -13,6 +13,7 @@ Beat the S&P 500 over the challenge window. Stocks only — no options, ever.
 - **ETF core:** ≥45% of *deployed* equity, 2–3 sector ETFs (leading-quadrant rotation). Market-tracking ballast.
 - **Single-stock satellites:** ≤3 names, remainder of deployed equity. Alpha sleeve.
 - Max 5–6 total positions. Max 2 satellite names per GICS sector.
+- **No single GICS sector may exceed 50% of deployed equity** (ETF core + satellites combined) — an aggregate-dollar cap on top of the per-name ≤2-satellites/sector limit, enforced forward-looking by the buy-side gate *(v3.1)*.
 - ETF core may never fall below 45% of deployed — market-open refuses a satellite buy that would breach this.
 
 ## Hard Rules (non-negotiable)
@@ -34,6 +35,7 @@ Beat the S&P 500 over the challenge window. Stocks only — no options, ever.
 14. **Pre-flight `daytrade_count` check before every sell.** *(v2, visa-aware)* Before placing any sell order — midday hard-close, sector-kill, weekly-review-proposed close, manual `/trade` invocation — the routine MUST read `account.daytrade_count` from Alpaca. If `daytrade_count >= 2`, abort the sell, send a Telegram URGENT alert, and require human review. PDT triggers at 4 in 5 rolling business days; the 2-buffer leaves room for one accidental day trade without immediately blocking all sells. v3 (live) keeps this rule.
 15. **Midday hard-close (-7%) and sector-kill skip positions opened today.** *(v2, visa-aware)* Closing a position the same day it was opened is a day trade. Rule 7 (-7% hard close) and Rule 10 (sector-kill on 2 consecutive failures) only act on positions whose entry timestamp is at least one trading day old. A fresh position rides out T stop-less — accepted risk per Rule 13.
 16. **Momentum-decay rotation (v3, visa-aware).** At midday, a held position is flagged when it is BOTH below entry AND lagging SPY over the trailing 10 sessions (`scripts/sizing.py decay`). On the *second consecutive* flagged midday, rotate out (T+1 sell). ETFs additionally rotate if the sector exits the leading quadrant. Never acts on a same-day position (Rule 15); aborts if `daytrade_count ≥ 2` (Rule 14). The flag state for each position is recorded in TRADE-LOG.md so the next midday can detect consecutiveness.
+17. **Stop-placement-failure escalation (Rule 17, v3.1, operational, visa-neutral).** If a Rule 13 trailing-stop placement fails after 3+ Alpaca write-path retries (any HTTP code — 504s observed 2026-06-16), the routine MUST: (a) send a Telegram **URGENT** alert naming the unprotected ticker, qty, and intended trail; (b) append a `STOP-PLACEMENT-FAILED TICKER QTY TRAIL` row to TRADE-LOG.md; (c) NOT mark the position protected. The next scheduled routine MUST, as its FIRST action before any gating or research, scan for an unresolved `STOP-PLACEMENT-FAILED` marker (one with no later `STOP PLACED` for that ticker) and retry the placement. If the retry also fails after 3+ attempts, escalate with URGENT Telegram instructing manual stop placement via the Alpaca UI. This rule never places or cancels a sell — it is day-trade-neutral.
 
 ## Buy-Side Gate
 Before placing any buy order, every one of these must pass. If any fail, the trade is skipped and the reason is logged. *(In v1: pre-market filters trade ideas through this gate. v2's market-open enforces it before orders.)*
@@ -43,6 +45,8 @@ Before placing any buy order, every one of these must pass. If any fail, the tra
 - Position cost ≤ available cash
 - ETF core stays ≥ 45% of deployed equity after this fill (if the idea is a satellite)
 - ≤ 2 satellite names in the idea's GICS sector after this fill
+- **Sector concentration cap (v3.1):** after this fill, no single GICS sector (ETF core + satellites combined) exceeds **50% of deployed** equity. Formula: `(sector_mv_existing + position_cost) / (long_market_value + position_cost) ≤ 0.50`. Applies to **every** idea (core and satellite). Skip + log if it would breach. Forward-looking only — does not force a sell of existing concentration; that unwinds via Rule 8 scale-outs / Rule 16 rotation.
+- **Deployment ceiling (v3.1):** after this fill, capital deployment stays within the Rule 5 band: `(long_market_value + position_cost) / equity ≤ 0.85`. Skip + log if it would overshoot; defer the add until a scale-out, sell, or equity growth restores headroom.
 - `daytrade_count` leaves room (PDT: 3/5 rolling business days under $25k)
 - A specific catalyst is documented in today's `RESEARCH-LOG.md` entry
 - The instrument is a stock (not an option, not anything else)

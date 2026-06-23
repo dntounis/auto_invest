@@ -114,10 +114,22 @@ TRADE-LOG.md (the `Tier:` field). Default to `core` if the field is absent.
    ```
    LADDER_JSON=$(python3 scripts/sizing.py ladder --tier "$TIER" --unrealized-pct "$UPCT")
    ```
-   - **Scale-out:** if `scaleouts_due` > the number of `SCALE-OUT` rows already logged
-     for this position in TRADE-LOG.md, sell 1/3 of the *current* qty:
-     `bash scripts/alpaca.sh scale-out TICKER $((CUR_QTY/3))`. This is a SELL — the
-     Rule 14 `DTC` pre-flight (STEP 2) must have passed; re-check `DTC` before the sell.
+   - **Scale-out (deterministic — v3.1):** count existing `SCALE-OUT` rows for this
+     position in TRADE-LOG.md → `SO_DONE`. Then ask the sizer for the qty (never
+     compute it inline):
+     ```
+     Parse `scaleouts_due` from the `LADDER_JSON` computed above → `SCALEOUTS_DUE`.
+     SO_JSON=$(python3 scripts/sizing.py scaleout --cur-qty "$CUR_QTY" \
+         --scaleouts-due "$SCALEOUTS_DUE" --scaleouts-done "$SO_DONE")
+     ```
+     - `reason == "ok"` (sell_qty ≥ 1): this is a SELL — re-check Rule 14 `DTC` (< 2),
+       then `bash scripts/alpaca.sh scale-out TICKER $SELL_QTY`. Log a `SCALE-OUT` row.
+     - `reason == "sub_unit"`: a scale-out is owed but the lot is too small to trim and
+       still leave a runner (e.g. a 2-share $900 satellite where 1/3 < 1 share, but the
+       min-1-share rule already applies at qty ≥ 2, so `sub_unit` only hits qty 1).
+       **Do NOT sell.** Log `SCALE-OUT-DEFERRED TICKER reason=sub_unit` (STEP 6) and rely
+       on the same-tier trail-tighten below to capture the gain. No `DTC` impact.
+     - `reason == "none_due"`: scale-out already logged for this tier — no action.
    - **Tighten:** if `target_trail_pct` is non-null AND strictly less than the current
      open stop's `trail_percent` (never raise a stop's trail, never within 3% of price —
      Rule 9): `bash scripts/alpaca.sh replace-stop OID TICKER QTY $target_trail_pct`.
@@ -164,8 +176,8 @@ For each scheduled action:
 # Hard-close, sector-kill, or momentum-decay rotation (full exit)
 bash scripts/alpaca.sh close TICKER
 
-# Scale-out partial (Rule 8 ladder) — sell 1/3 of current qty
-bash scripts/alpaca.sh scale-out TICKER PARTIAL_QTY
+# Scale-out partial (Rule 8 ladder) — qty from sizing.py scaleout (min-1-share)
+bash scripts/alpaca.sh scale-out TICKER $SELL_QTY   # $SELL_QTY from sizing.py scaleout (reason==ok only)
 
 # Tighten stop (Rule 8 ladder)
 bash scripts/alpaca.sh replace-stop EXISTING_ORDER_ID TICKER QTY NEW_TRAIL_PCT
@@ -202,11 +214,16 @@ For each stop tightening, append a STOP UPDATE row:
 
 For each scale-out partial sell, append a SCALE-OUT row (v3):
 ```
-### YYYY-MM-DD — SCALE-OUT: TICKER qty=N (1/3 of M)
+### YYYY-MM-DD — SCALE-OUT: TICKER qty=N (scale-out slice, M before)
 - Tier: <core|satellite>
 - Trigger: Rule 8 ladder, unrealized +X% (scale-out #K of 2)
 - Realized P&L on slice: $X (X.X%)
 ```
+
+For each deferred (sub-unit) scale-out, append instead (no sell occurred):
+
+### YYYY-MM-DD — SCALE-OUT-DEFERRED: TICKER reason=sub_unit
+- Tier ladder owed a scale-out but qty too small to leave a runner; trail tightened instead.
 
 For each momentum-decay evaluation, append a DECAY-FLAG row (v3 — state for the next midday):
 ```

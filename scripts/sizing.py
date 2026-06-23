@@ -59,6 +59,19 @@ def cmd_decay(a):
     return {"flag": flag, "rotate": rotate}
 
 
+def cmd_scaleout(a):
+    # Deterministic partial-sell qty for a Rule 8 scale-out tier.
+    # none_due: every owed scale-out already logged.
+    # sub_unit: owed but cur_qty < 2, so no qty leaves a runner -> defer to trail.
+    # ok: min(max(1, floor(cur_qty/3)), cur_qty-1) -> >=1 share, never the whole lot.
+    if a.scaleouts_due <= a.scaleouts_done:
+        return {"sell_qty": 0, "reason": "none_due"}
+    if a.cur_qty < 2:
+        return {"sell_qty": 0, "reason": "sub_unit"}
+    qty = min(max(1, math.floor(a.cur_qty / 3)), a.cur_qty - 1)
+    return {"sell_qty": qty, "reason": "ok"}
+
+
 def main():
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="mode", required=True)
@@ -86,6 +99,12 @@ def main():
     d.add_argument("--prior-flag", type=int, choices=[0, 1], required=True,
                    dest="prior_flag")
     d.set_defaults(func=cmd_decay)
+
+    so = sub.add_parser("scaleout")
+    so.add_argument("--cur-qty", type=int, required=True, dest="cur_qty")
+    so.add_argument("--scaleouts-due", type=int, required=True, dest="scaleouts_due")
+    so.add_argument("--scaleouts-done", type=int, required=True, dest="scaleouts_done")
+    so.set_defaults(func=cmd_scaleout)
 
     args = p.parse_args()
     print(json.dumps(args.func(args)))
