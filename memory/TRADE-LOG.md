@@ -1032,3 +1032,13 @@ Pre-market Decision: HOLD / TRADE-READY (conditional TRADE per rationale); three
 - daytrade_count delta: 0 -> 0
 - Rule violations: none. Capital deployment fell below 75% floor Thu+Fri (intentional/expected per Rule 8 scale-out design — Rule 5 is a target band, not a hard floor; Rule 8 scale-outs by design unwind concentration into cash, expected re-arm next week). Pre-market routine did not run/log Fri Jun 26 (documentation gap, not a rule violation — operational cadence flagged in proposed Rule 18 below).
 - Notes: **First concurrent v3 satellite scale-outs** (CAT + GE both crossed +10% 2nd-stock-tier on PCE-day Thu; both executed cleanly via `sizing.py ladder` + `sizing.py scaleout` + `replace-stop` + market-sell chain). **First v3 satellite runner full trail-stop exit** (CAT 1sh Fri at +8.58% via 6% trail from HWM $1057.07). **Full CAT trade closed +$213.10 / +11.64% over 22 sessions** — textbook Rule 8 ladder + Rule 6 trail-out chain. **Industrials concentration self-resolved 59.55% → 43.75%** organically through the ladder. Visa-aware machinery flawless for 9th consecutive week (DTC=0; all exits T+22 / T+13 / T+21 swing).
+
+## 2026-06-29 — Market-Open Run (Day 46, Monday, Week 10 Day 1)
+
+- Pre-market Decision: TRADE — 1 idea armed (pm-2026-06-29-DK satellite Energy), 1 deferred (pm-2026-06-29-KLIC by ETF-core 45% floor post-DK fill).
+- Account snapshot (08:31 CT): equity $10,446.79 / cash $4,202.31 / long_mv $6,244.48 / daytrade_count 0 / positions BTSG GE XLB XLI (4/6) / trades-this-week 0/5 (Week 10 fresh budget).
+- DK buy-side gate (pm forward-check): ALL PASS (positions 5/6, weekly 1/5, 20% cap ✓, cash ✓, ETF-core 50.96% ✓, sector cap 21.58% ✓, deployment 76.28% ✓, DTC 0 ✓, single-stock RS/DMA 4/4 ✓, stock-only ✓, catalyst ✓).
+- **DK SKIPPED — stale-open phantom quote (IEX-only "V" venue, 100/100 size, spread unreasonable).** Three quote polls 08:31/08:33/08:35 CT all showed ask $56.28-$58.71 / bid $41.89-$42.94 (30%+ spread). Prior session close $47.82 (`alpaca.sh bars DK 1Day 3`: Jun 25 $47.17 / Jun 26 $47.82 / Jun 29 open-bar $49.43). Per Step 5a stale-quote fallback: bid $42.94 is -10.2% below prior close (far outside MAX_ENTRY_SLIPPAGE_PCT 0.10%), so prior-close limit fallback is not viable → "spread is unreasonable" skip clause triggered. No order placed.
+- KLIC was deferred at pre-market (would breach ETF-core 45% floor post-DK fill); since DK didn't fill, KLIC remains deferred — re-screen in Tue Jun 30 pre-market.
+- Telegram: 1 SKIP message sent (DK reason + 0 orders).
+- Net: **0 orders attempted, 0 filled, 0/5 weekly cap consumed.** Cash $4,202.31 unchanged. No book changes from this routine. Rule 13 stop-placement task at daily-summary T 15:00 CT has nothing to add today.
