@@ -42,12 +42,22 @@ LADDERS = {
 
 def cmd_ladder(a):
     tiers = LADDERS[a.tier]
-    target_trail = None
+    # scaleouts_due tracks the current-price tier — never realize gains the
+    # position no longer holds.
     scaleouts = 0
     for trigger, trail, so in tiers:
         if a.unrealized_pct >= trigger:
-            target_trail = trail
             scaleouts = so
+    # target_trail may lead the scaleout tier: if the position's high-water-mark
+    # reached a higher tier intraday, ratchet the trail to it (Rule 9 still guards
+    # the 3% floor; a stop never loosens).
+    trail_basis = a.unrealized_pct
+    if a.hwm_pct is not None:
+        trail_basis = max(a.unrealized_pct, a.hwm_pct)
+    target_trail = None
+    for trigger, trail, so in tiers:
+        if trail_basis >= trigger:
+            target_trail = trail
     return {"tier": a.tier, "target_trail_pct": target_trail,
             "scaleouts_due": scaleouts}
 
@@ -89,6 +99,7 @@ def main():
     l.add_argument("--tier", choices=["etf", "stock"], required=True)
     l.add_argument("--unrealized-pct", type=float, required=True,
                    dest="unrealized_pct")
+    l.add_argument("--hwm-pct", type=float, default=None, dest="hwm_pct")
     l.set_defaults(func=cmd_ladder)
 
     d = sub.add_parser("decay")

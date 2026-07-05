@@ -109,4 +109,29 @@ out=$(python3 scripts/sizing.py scaleout --cur-qty 6 --scaleouts-due 2 --scaleou
 assert_contains "$out" '"sell_qty": 2'
 assert_contains "$out" '"reason": "ok"'
 
+# --- ladder HWM-aware (v3.2) ---
+# backward compat: no --hwm-pct → identical to today (stock +14.71 → trail 6, 1 scaleout)
+start_test "ladder: no hwm-pct unchanged (stock +14.71)"
+out=$(python3 scripts/sizing.py ladder --tier stock --unrealized-pct 14.71 2>&1)
+assert_contains "$out" '"target_trail_pct": 6'
+assert_contains "$out" '"scaleouts_due": 1'
+
+# the CAT case: current +12, HWM +15.45 → trail from +15 tier (4), scaleouts from +12 tier (1)
+start_test "ladder: hwm lifts trail tier, scaleouts stay on current (CAT case)"
+out=$(python3 scripts/sizing.py ladder --tier stock --unrealized-pct 12 --hwm-pct 15.45 2>&1)
+assert_contains "$out" '"target_trail_pct": 4'
+assert_contains "$out" '"scaleouts_due": 1'
+
+# hwm below current → max() ignores it, behaves as current
+start_test "ladder: hwm below current is ignored (stock +15 hwm +10)"
+out=$(python3 scripts/sizing.py ladder --tier stock --unrealized-pct 15 --hwm-pct 10 2>&1)
+assert_contains "$out" '"target_trail_pct": 4'
+assert_contains "$out" '"scaleouts_due": 1'
+
+# etf: trail tier can lead the scaleout tier (current +5 → 0 scaleouts, hwm +8 → trail 5)
+start_test "ladder: etf trail leads scaleouts (current +5, hwm +8)"
+out=$(python3 scripts/sizing.py ladder --tier etf --unrealized-pct 5 --hwm-pct 8 2>&1)
+assert_contains "$out" '"target_trail_pct": 5'
+assert_contains "$out" '"scaleouts_due": 0'
+
 print_summary
