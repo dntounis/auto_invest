@@ -52,6 +52,25 @@ done
 
 ---
 
+## STEP 0 — Rule 18: cadence sweep (FIRST action, v3.2)
+
+Before pulling state, resolve `DATE=$(TZ=America/Chicago date +%Y-%m-%d)` and verify today's
+prior routines logged. On a US market holiday (no session) skip this sweep — the routines
+correctly no-op.
+- **pre-market** → `memory/RESEARCH-LOG.md` MUST have a `$DATE` entry.
+- **market-open** → `memory/TRADE-LOG.md` MUST have a `market-open $DATE` row.
+- **midday** → `memory/TRADE-LOG.md` MUST have a `$DATE — Midday Run` row.
+For each missing routine:
+```
+bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — MISSING ROUTINE: <name> did not log today. Investigate cron. (Rule 18)"
+```
+and append a placeholder to that routine's log:
+```
+### $DATE — MISSING ROUTINE: <name> (Rule 18 cadence guardrail)
+- No <name> entry found for $DATE at daily-summary sweep; cron skip suspected. Investigate.
+```
+Then continue to STEP 1. If all three logged, proceed silently.
+
 ## STEP 1 — Read memory for continuity
 
 - Tail of `memory/TRADE-LOG.md` — find the most recent EOD snapshot to extract

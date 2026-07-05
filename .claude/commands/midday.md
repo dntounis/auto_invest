@@ -45,7 +45,18 @@ Drop positions where `entry_date == today` (Rule 15). Drop positions held in Alp
 Determine each position's `tier` (`core`|`satellite`) from its BUY row `Tier:` field (default `core`). Hard-close (1) is exclusive; ladder (2) may scale-out AND tighten; decay (3) only fires on losers below entry.
 
 1. ≤ -7% → hard-close (Rule 7). Exclusive.
-2. **Profit ladder (Rule 8, v3):** `LADDER_JSON=$(python3 scripts/sizing.py ladder --tier "$TIER" --unrealized-pct "$UPCT")`.
+2. **Profit ladder (Rule 8, v3):**
+   ```
+   # HWM-gain from the position's open trailing-stop order (the same order you read for
+   # OID/QTY/trail_percent). hwm is the peak price Alpaca tracked since the stop was placed.
+   # HWM_GAIN = (hwm - avg_entry_price) / avg_entry_price * 100
+   # If the position has no open trailing stop yet (no hwm), omit --hwm-pct entirely.
+   LADDER_JSON=$(python3 scripts/sizing.py ladder --tier "$TIER" --unrealized-pct "$UPCT" --hwm-pct "$HWM_GAIN")
+   ```
+   `--hwm-pct` makes `target_trail_pct` reflect the highest tier the position reached
+   intraday (catching a post-midday spike that reversed), while `scaleouts_due` stays on
+   the current-price `$UPCT` (v3.2). When no open stop exists, drop `--hwm-pct` — the call
+   is backward-compatible and behaves exactly as before.
    - **Scale-out (deterministic — v3.1):** count existing `SCALE-OUT` rows for this
      position in TRADE-LOG.md → `SO_DONE`. Then ask the sizer for the qty (never
      compute it inline):
