@@ -47,7 +47,7 @@ Run `bash scripts/perplexity.sh "<query>"` for each:
 - "VIX level today"
 - "Top stock market catalysts today $DATE"
 - "Earnings reports today before market open"
-- "Economic calendar today (CPI/PPI/FOMC/jobs data)"
+- "US economic calendar next 5 trading days: NFP jobs report, CPI, PPI, Core PCE, FOMC decision, FOMC minutes, Powell press conference — with dates"
 - "S&P 500 sector momentum YTD"
 - "Top momentum stocks today with bullish catalysts (earnings beat, guidance raise, analyst upgrade)"
 - News on each currently-held ticker
@@ -56,6 +56,13 @@ Run `bash scripts/perplexity.sh "<query>"` for each:
 - `bash scripts/alpaca.sh bars TICKER 1Day 200` → confirm last close > 50-DMA and > 200-DMA.
 - `bash scripts/alpaca.sh bars SPY 1Day 60` → candidate 10-/50-session returns vs SPY (relative strength positive). (60 bars covers the 50-session lookback, which needs 51 closes.)
 - Reject candidates failing the liquidity filter (thin volume / wide spread).
+- **Macro-window (v3.2):** from the economic-calendar result, determine whether any Tier-1
+  binary (NFP, CPI, PPI, Core PCE, FOMC decision/minutes, Powell presser) falls on T+1 or
+  T+2 (the next two trading sessions after today's entry). Tag the idea line
+  `macro-window: clear` if the nearest such binary is ≥ T+3, else
+  `macro-window: <BINARY> T+N`. Do NOT propose a satellite whose macro-window is not clear
+  (screen it out like a failed DMA/RS check, and note why). Core ETF ideas are exempt —
+  always tag them `macro-window: n/a (core)`.
 
 If `perplexity.sh` exits 3, fall back to native `WebSearch` and **flag the fallback in the research-log entry** ("Sources: WebSearch fallback used for queries: ..."). If `alpaca.sh bars` is unavailable, degrade the satellite screen to catalyst + liquidity only and flag it.
 
@@ -67,9 +74,9 @@ Use the schema documented at the top of `RESEARCH-LOG.md`. Include:
 - **Market context:** oil, indices, VIX, today's releases, sector momentum
 - **2–4 actionable trade ideas, ranked by R:R descending** (tie-break: ticker ascending), each tagged `tier: core` (sector ETF) or `tier: satellite` (single stock). One numbered line per idea using this exact format:
   ```
-  1. **ID:** `pm-YYYY-MM-DD-TICKER` — **tier:** core|satellite, TICKER, catalyst, entry $X, stop $X (stop width N% → risk-parity sizing), target $X, R:R X:1, planned trail percent: N
+  1. **ID:** `pm-YYYY-MM-DD-TICKER` — **tier:** core|satellite, TICKER, catalyst, entry $X, stop $X (stop width N% → risk-parity sizing), target $X, R:R X:1, planned trail percent: N, macro-window: clear|<BINARY> T+N|n/a (core)
   ```
-  Each idea must satisfy the buy-side gate in `TRADING-STRATEGY.md` (≤6 positions, ≤5 trades/week, ≤20% equity, ETF core ≥45% of deployed, ≤2 satellites/sector, momentum aligned). Skip ideas that fail. Rank core + satellite together by R:R. On a TRADE day, include ≥1 satellite idea unless none pass the checklist (then note why). Default trail 10 for core ETFs; satellites set their own stop width (typically 12–15%).
+  Each idea must satisfy the buy-side gate in `TRADING-STRATEGY.md` (≤6 positions, ≤5 trades/week, ≤20% equity, ETF core ≥45% of deployed, ≤2 satellites/sector, momentum aligned, macro-window clear for satellites). Skip ideas that fail. Rank core + satellite together by R:R. On a TRADE day, include ≥1 satellite idea unless none pass the checklist (then note why). Default trail 10 for core ETFs; satellites set their own stop width (typically 12–15%).
 - **Risk factors:** macro, sector, idiosyncratic
 - **Decision:** TRADE or HOLD (default HOLD — patience > activity)
 - **Sources:** Perplexity citations + any WebSearch fallback flags

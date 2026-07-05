@@ -48,6 +48,7 @@ Before placing any buy order, every one of these must pass. If any fail, the tra
 - ≤ 2 satellite names in the idea's GICS sector after this fill
 - **Sector concentration cap (v3.1):** after this fill, no single GICS sector (ETF core + satellites combined) exceeds **50% of deployed** equity. Formula: `(sector_mv_existing + position_cost) / (long_market_value + position_cost) ≤ 0.50`. Applies to **every** idea (core and satellite). Skip + log if it would breach. Forward-looking only — does not force a sell of existing concentration; that unwinds via Rule 8 scale-outs / Rule 16 rotation.
 - **Deployment ceiling (v3.1):** after this fill, capital deployment stays within the Rule 5 band: `(long_market_value + position_cost) / equity ≤ 0.85`. Skip + log if it would overshoot; defer the add until a scale-out, sell, or equity growth restores headroom.
+- **Macro-binary proximity (v3.2, satellite only):** no Tier-1 macro binary (NFP, CPI, PPI, Core PCE, FOMC decision, FOMC minutes, Powell press conference) is scheduled on **T+1 or T+2** — the two trading sessions after the entry day (T+0). If one is, skip the satellite buy and log it. ETF-core (`tier: core`) adds bypass this check — broad-market exposure absorbs macro binaries. Rationale: a fresh single-stock satellite needs >2 sessions to build trailing-stop cushion before a full-day macro tape reversal (evidence: KLIC entered T+2 before NFP, exited −5.89%). Asymmetric protection — accepted that it may skip an occasional winner.
 - `daytrade_count` leaves room (PDT: 3/5 rolling business days under $25k)
 - A specific catalyst is documented in today's `RESEARCH-LOG.md` entry
 - The instrument is a stock (not an option, not anything else)
@@ -72,6 +73,7 @@ Before documenting any trade idea in `RESEARCH-LOG.md`:
 - Adequate liquidity: average daily volume and a tight quoted spread (also guards against stale-open quotes)?
 - Specific catalyst documented (earnings/guidance/upgrade/sector tailwind)?
 - Per-idea stop width set (drives risk-parity sizing); R:R ≥ 2:1?
+- Is the entry clear of a Tier-1 macro binary on T+1/T+2? *(v3.2 — NFP/CPI/PPI/PCE/FOMC; ETF core exempt)*
 
 ## Strategy Update Cadence
 This file is updated **only by the Friday weekly-review routine** (v3), and only if a rule has proven itself for 2+ weeks or failed badly. The pre-market and daily-summary routines read this file but do not modify it.
