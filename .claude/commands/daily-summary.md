@@ -14,7 +14,7 @@ prior routines logged. On a US market holiday (no session) skip this sweep — t
 correctly no-op.
 - **pre-market** → `memory/RESEARCH-LOG.md` MUST have a `$DATE` entry.
 - **market-open** → `memory/TRADE-LOG.md` MUST have a `market-open $DATE` row.
-- **midday** → `memory/TRADE-LOG.md` MUST have a `$DATE — Midday` row.
+- **midday** → `memory/TRADE-LOG.md` MUST have a `$DATE — Midday Run` row.
 For each missing routine:
 ```
 bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — MISSING ROUTINE: <name> did not log today. Investigate cron. (Rule 18)"

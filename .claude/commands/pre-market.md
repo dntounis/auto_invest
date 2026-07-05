@@ -20,8 +20,15 @@ bash scripts/alpaca.sh trailing-stop TICKER QTY TRAIL
   Alpaca UI, leave the marker open, and continue the routine.
 
 **Rule 18 (v3.2) — verify the prior session's daily-summary logged.** Also as a first
-action, confirm `memory/TRADE-LOG.md` contains an `EOD Snapshot` row for the most recent
-prior trading day (skip if that day was a US market holiday). If it is missing, send
+action, resolve the prior trading day in `MMM DD` format:
+`PRIOR_MMMDD=$(TZ=America/Chicago date -v-1d +'%b %d')` (fall back to plain
+prior-calendar-day; this check is best-effort — skip weekends/holidays where the
+prior session's snapshot is simply the most recent one). Confirm
+`memory/TRADE-LOG.md` contains a `## <MMM DD> — EOD Snapshot` header whose date is
+the prior trading day (headers use `MMM DD`, e.g. `Jul 02` — NOT ISO). Equivalent
+robust check: confirm the most-recent `— EOD Snapshot` header in TRADE-LOG is dated
+the prior trading session; if the newest EOD snapshot predates it, the prior
+daily-summary is missing. If it is missing, send
 `bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — MISSING ROUTINE: daily-summary did not log for <prior_date>. Investigate cron. (Rule 18)"` and append a
 `### <prior_date> — MISSING ROUTINE: daily-summary (Rule 18)` placeholder to TRADE-LOG.md.
 Then continue.

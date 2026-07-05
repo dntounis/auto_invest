@@ -17,7 +17,7 @@
 - **Visa-aware Rules 13/14/15 are byte-unchanged by this plan.** Zero day trades by construction must still hold.
 - **Test harness:** `bash tests/test_sizing.sh` (no pytest). Assertions use `start_test` + `assert_contains "$out" '"key": value'`.
 - **`sizing.py ladder` backward compatibility:** existing callers pass only `--tier` and `--unrealized-pct`. `--hwm-pct` MUST be optional and, when omitted, produce byte-identical output to today. `scaleouts_due` MUST remain computed from `--unrealized-pct` (current price) only — never from HWM. Only `target_trail_pct` may use the HWM basis.
-- **Macro-binary gate scope:** applies to `tier: satellite` ideas ONLY. `tier: core` (ETF) adds bypass it (broad-market exposure absorbs macro binaries). Block if a Tier-1 binary (NFP, CPI, PPI, Core PCE, FOMC decision, FOMC minutes, Powell press conference) falls on **T+1 or T+2** — the two trading sessions after the entry day (entry = T+0). Clear if the nearest such binary is ≥ T+3.
+- **Macro-binary gate scope:** applies to `tier: satellite` ideas ONLY. `tier: core` (ETF) bypass it (broad-market exposure absorbs macro binaries). Block if a Tier-1 binary (NFP, CPI, PPI, Core PCE, FOMC decision, FOMC minutes, Powell press conference) falls on **T+1 or T+2** — the two trading sessions after the entry day (entry = T+0). Clear if the nearest such binary is ≥ T+3.
 - **Rule 18 and the macro gate are day-trade-neutral** — neither places nor cancels an order.
 - **CRITICAL deployment caveat:** routine PROMPT edits in `routines/*.md` do NOT auto-propagate to the cloud — the operator must manually re-paste each changed routine into the Anthropic Routines UI. `scripts/sizing.py` and `memory/TRADING-STRATEGY.md` DO auto-deploy (cloud clones `main`). `.claude/commands/*.md` local mirrors must stay byte-identical to their `routines/*.md` twin in the shared logic body.
 
@@ -274,7 +274,7 @@ git commit -m "feat(v3.2): Rule 18 cadence guardrail (day-sweep + yesterday-EOD 
 
 ## Task 4: Macro-binary-proximity buy-side gate
 
-**Why:** KLIC (Tue Jun 30) passed all 10 gate prongs but entered T+2 before Thu NFP; the print's tape reversal hit its trail for −$122.24. Fresh single-stock satellites need >2 sessions of cushion before a Tier-1 macro binary. Add an 11th gate that blocks a satellite buy when a Tier-1 binary falls on T+1 or T+2. ETF-core adds bypass (broad-market exposure absorbs the binary). This is asymmetric protection, accepted to occasionally skip a winner (documented: BTSG would have been skipped and went +7%).
+**Why:** KLIC (Tue Jun 30) passed all 10 gate prongs but entered T+2 before Thu NFP; the print's tape reversal hit its trail for −$122.24. Fresh single-stock satellites need >2 sessions of cushion before a Tier-1 macro binary. Add an 11th gate that blocks a satellite buy when a Tier-1 binary falls on T+1 or T+2. ETF-core bypass (broad-market exposure absorbs the binary). This is asymmetric protection, accepted to occasionally skip a winner (documented: BTSG would have been skipped and went +7%).
 
 **Files:**
 - Modify: `memory/TRADING-STRATEGY.md` — Buy-Side Gate list (11th check) + Single-stock satellite checklist (auto-deploys)
@@ -290,7 +290,7 @@ git commit -m "feat(v3.2): Rule 18 cadence guardrail (day-sweep + yesterday-EOD 
 Insert into the `## Buy-Side Gate` list after the v3.1 deployment-ceiling bullet:
 
 ```markdown
-- **Macro-binary proximity (v3.2, satellite only):** no Tier-1 macro binary (NFP, CPI, PPI, Core PCE, FOMC decision, FOMC minutes, Powell press conference) is scheduled on **T+1 or T+2** — the two trading sessions after the entry day (T+0). If one is, skip the satellite buy and log it. ETF-core (`tier: core`) adds bypass this check — broad-market exposure absorbs macro binaries. Rationale: a fresh single-stock satellite needs >2 sessions to build trailing-stop cushion before a full-day macro tape reversal (evidence: KLIC entered T+2 before NFP, exited −5.89%). Asymmetric protection — accepted that it may skip an occasional winner.
+- **Macro-binary proximity (v3.2, satellite only):** no Tier-1 macro binary (NFP, CPI, PPI, Core PCE, FOMC decision, FOMC minutes, Powell press conference) is scheduled on **T+1 or T+2** — the two trading sessions after the entry day (T+0). If one is, skip the satellite buy and log it. ETF-core (`tier: core`) bypass this check — broad-market exposure absorbs macro binaries. Rationale: a fresh single-stock satellite needs >2 sessions to build trailing-stop cushion before a full-day macro tape reversal (evidence: KLIC entered T+2 before NFP, exited −5.89%). Asymmetric protection — accepted that it may skip an occasional winner.
 ```
 
 Also add to the `### Single-stock satellite checklist (v3)` section a line:
@@ -352,7 +352,7 @@ Confirm the gate would have blocked KLIC: entry Tue Jun 30 (T+0), NFP Thu Jul 2 
 
 ```bash
 git add memory/TRADING-STRATEGY.md routines/pre-market.md routines/market-open.md .claude/commands/pre-market.md .claude/commands/market-open.md
-git commit -m "feat(v3.2): macro-binary-proximity gate (satellites, T+1/T+2 block)" -m "Validated: KLIC would be blocked (NFP T+2); ETF-core adds bypass." -m "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
+git commit -m "feat(v3.2): macro-binary-proximity gate (satellites, T+1/T+2 block)" -m "Validated: KLIC would be blocked (NFP T+2); ETF-core bypass." -m "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ```
 
 ---
