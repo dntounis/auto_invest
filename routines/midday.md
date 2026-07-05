@@ -112,8 +112,16 @@ TRADE-LOG.md (the `Tier:` field). Default to `core` if the field is absent.
 
 2. **Profit ladder** (Rule 8, v3) — for winners, get the ladder targets:
    ```
-   LADDER_JSON=$(python3 scripts/sizing.py ladder --tier "$TIER" --unrealized-pct "$UPCT")
+   # HWM-gain from the position's open trailing-stop order (the same order you read for
+   # OID/QTY/trail_percent). hwm is the peak price Alpaca tracked since the stop was placed.
+   # HWM_GAIN = (hwm - avg_entry_price) / avg_entry_price * 100
+   # If the position has no open trailing stop yet (no hwm), omit --hwm-pct entirely.
+   LADDER_JSON=$(python3 scripts/sizing.py ladder --tier "$TIER" --unrealized-pct "$UPCT" --hwm-pct "$HWM_GAIN")
    ```
+   `--hwm-pct` makes `target_trail_pct` reflect the highest tier the position reached
+   intraday (catching a post-midday spike that reversed), while `scaleouts_due` stays on
+   the current-price `$UPCT` (v3.2). When no open stop exists, drop `--hwm-pct` — the call
+   is backward-compatible and behaves exactly as before.
    - **Scale-out (deterministic — v3.1):** count existing `SCALE-OUT` rows for this
      position in TRADE-LOG.md → `SO_DONE`. Then ask the sizer for the qty (never
      compute it inline):
