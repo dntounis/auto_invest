@@ -54,7 +54,7 @@ done
 
 ---
 
-## STEP 0 — Rule 17: clear any pending stop-placement failure (FIRST action)
+## STEP 0 — Rules 17 + 18: pending-stop retry + cadence check (FIRST action)
 
 Before any research or env checks, tail `memory/TRADE-LOG.md` for a
 `STOP-PLACEMENT-FAILED TICKER QTY TRAIL` row that has **no later `STOP PLACED`** row
@@ -66,6 +66,13 @@ bash scripts/alpaca.sh trailing-stop TICKER QTY TRAIL
   Telegram note "Rule 17 retry succeeded — TICKER now protected".
 - On failure after 3 retries: send URGENT Telegram instructing manual placement via the
   Alpaca UI, leave the marker open, and continue the routine.
+
+**Rule 18 (v3.2) — verify the prior session's daily-summary logged.** Also as a first
+action, confirm `memory/TRADE-LOG.md` contains an `EOD Snapshot` row for the most recent
+prior trading day (skip if that day was a US market holiday). If it is missing, send
+`bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — MISSING ROUTINE: daily-summary did not log for <prior_date>. Investigate cron. (Rule 18)"` and append a
+`### <prior_date> — MISSING ROUTINE: daily-summary (Rule 18)` placeholder to TRADE-LOG.md.
+Then continue.
 If no unresolved marker exists, proceed to STEP 1.
 
 ## STEP 1 — Read memory for context
