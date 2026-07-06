@@ -1244,3 +1244,21 @@ Pre-market Decision: HOLD / TRADE-READY (conditional TRADE per rationale); three
 ### 2026-07-06 — STOP UPDATE: XLI trail 7% -> 5%
 - Trigger: Rule 8 profit ladder, tier=core (etf), hwm-gain +7.33% (reached +7% ETF tier); current-price scaleouts_due 0 → tighten-only
 - New stop order ID: 4b207f64-d23a-453e-9cee-75fd7cdb345c (replaces 1f9174d4; stop $176.06825, hwm $185.335, trail_percent 5, qty 11)
+
+### 2026-07-06 — STOP PLACED: XLP trail 10%
+- Order ID: bd483924-0ebe-44ff-bb41-ccfec28d02de
+- Trigger reason: routine placement at market close (Rule 13)
+- Links to BUY: pm-2026-07-06-XLP
+
+## Jul 06 — EOD Snapshot (Day 52, Monday)
+**Portfolio:** $10,455.51 | **Cash:** $2,056.68 (19.67%) | **Day P&L:** +$67.39 (+0.649%) | **Phase P&L:** +$455.51 (+4.555%)
+
+| Ticker | Shares | Entry       | Close   | Day Chg | Unrealized P&L | Stop                  |
+| ------ | ------ | ----------- | ------- | ------- | -------------- | --------------------- |
+| BTSG   | 21     | $64.45      | $71.27  | +3.245% | +$143.22       | $66.4721 (trail 6%)   |
+| GE     | 2      | $335.06     | $379.26 | +0.461% | +$88.40        | $359.9918 (trail 6%)  |
+| XLB    | 40     | $50.08      | $52.09  | +0.154% | +$80.40        | $49.5783 (trail 7%)   |
+| XLI    | 11     | $173.713636 | $185.56 | +0.897% | +$130.31       | $176.567 (trail 5%)   |
+| XLP    | 24     | $84.306667  | $84.12  | -1.024% | -$4.48         | $75.708 (trail 10%)   |
+
+**Notes:** Day 52 v3 paper, **TRADING_ENABLED=true** — Week 11 Day 1 (Mon, post-Independence-Day-weekend, full session). Equity **$10,455.51** (+$67.39 / +0.649% day vs Fri EOD $10,388.12; **phase P&L +$455.51 / +4.555%** — new fresh EOD phase HWM, surpasses prior Week-9 EOD HWM +$449.80 by +$5.71; still below Thu Jun 25 intraday phase peak +$577.73 by -$122.22). Pre-market plan today: **TRADE — 1 actionable idea pm-2026-07-06-XLP (core, Consumer Staples)**; market-open placed 1 limit BUY (XLP 24sh @ $84.60), **filled at avg $84.306667** (cost $2,023.36, entry_date today). Midday took **2 money-moving actions** — Rule 8 profit-ladder trail tightens on BTSG (7%→6%, hwm-gain +11.81%) and XLI (7%→5%, hwm-gain +7.33%); no sells (DTC untouched 0/5). Rule 7 hard-close none (all held names above entry); Rule 16 decay none (all above entry); Rule 10 no doomed sectors. **1 position opened today (XLP), 0 closed** → **1 trailing stop placed at close** (XLP 10% trail, stop $75.708 hwm $84.12, order bd483924, Rule 13 — queued in GTC book at 16:00 ET close, cannot fire same-day). Positions 5/6: BTSG (Healthcare) / GE (Industrials) / XLI (Industrials) / XLB (Materials) / XLP (Consumer Staples). Sector book: **Industrials (XLI $2,041.16 + GE $758.52 = $2,799.68 = 33.34% of deployed $8,398.83)**, **Materials (XLB $2,083.60 = 24.81%)**, **Healthcare (BTSG $1,496.67 = 17.82%)**, **Consumer Staples (XLP $2,018.88 = 24.04%)** — all ≤ 50% cap ✓. ETF core (XLB + XLI + XLP) $6,143.64 / deployed $8,398.83 = **73.15%** ≥ 45% floor ✓. Capital deployment **80.33%** ($8,398.83 / $10,455.51) — **back inside v3 75–85% target band** (XLP entry restored deployment from Fri's 60.72% carry-forward). Satellite slots Industrials 1/2 (GE), Healthcare 1/2 (BTSG), Tech 0/2; 2/3 sat slots used, 1 open. PDT room intact (daytrade_count 0/5, pattern_day_trader=false, balance_asof 2026-07-02). Rule 17: no unresolved STOP-PLACEMENT-FAILED markers (all 5 held-book stops armed — XLP now protected). **Trades this week: 1 BUY (XLP Mon Jul 6)** — Week-11 budget 1/5 used, 4 slots remain. Heartbeat: last_telegram 2026-07-06T17:06:16Z → ~6h ago, well under 48h → no heartbeat prefix. **Tue Jul 7 pre-market (6:00 CT)** re-screens sat slot 3 with fresh liquidity + Fed-calendar re-check (Jul 14 CPI + Jul 15 PPI + Jul 29 FOMC upcoming); watchlist re-arm triggers: XLI first scale-out at +7% ($185.87 — $0.31 or +0.17% away, imminent); BTSG first scale-out at +10% ($70.895 — already crossed, hwm $70.715 → next midday scale-out eval); GE next scale-out at +25% ($418.83, +10.42% away); XLB first +4% ETF-tighten at $52.08 (crossed intraday, at $52.09 close → next midday tighten eval); XLP first +4% ETF-tighten at $87.68 (+4.24% away).
