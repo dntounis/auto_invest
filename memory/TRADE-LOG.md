@@ -1215,3 +1215,32 @@ Pre-market Decision: HOLD / TRADE-READY (conditional TRADE per rationale); three
 **Rule 17 check:** no unresolved STOP-PLACEMENT-FAILED markers. **Rule 14 buffer:** daytrade_count 0 ≤ 1 ✓ (no sells this routine). **Trades this week:** 1 BUY placed (XLP pending); Week-11 budget 1/5 used, 4 slots remain.
 
 **Next live evaluation:** today midday — Rule 8 ladder (XLI +6.71% approaching first ETF scale-out +7% $185.87; XLB +3.30% below first +4% tighten $52.08; BTSG +10.58% above first stock scale-out +10% $70.895 → possible scale-out; GE SO_DONE=1 next +25% $418.83); daily-summary T 15:00 CT — Rule 13 places trailing stop on XLP if filled.
+
+## 2026-07-06 — Midday Run (Day 52, Monday, Week 11 Day 1)
+**Decision:** 2 money-moving actions — Rule 8 profit-ladder trail tightens on BTSG and XLI (no sells).
+
+**Account state:** equity $10,400.48, cash $2,056.68, long_mkt_value $8,343.80, portfolio_value $10,400.48. daytrade_count field NOT surfaced in paper /account response (same cosmetic quirk as market-open; pattern_day_trader=false, no sells this routine → Rule 14 moot). Positions 5/6: BTSG/GE/XLB/XLI (prior-day, actionable) + XLP (entered TODAY → Rule 15 READ-ONLY, skipped). Open orders: 4 GTC trailing stops (BTSG/GE/XLB/XLI); XLP has no stop yet (daily-summary places it per Rule 13).
+
+**Rule 15 filter:** XLP entry_date=2026-07-06 == today → non-actionable (READ-ONLY). Actionable set = BTSG/GE/XLB/XLI (4).
+
+**Rule 7 hard-close:** none — all 4 actionable are winners (BTSG +9.29%, GE +12.62%, XLB +2.96%, XLI +6.60%).
+
+**Rule 8 profit ladder (sizing.py, v3.2 hwm-aware):**
+- BTSG (stock, up +9.29%, hwm-gain +11.81%): ladder→ target_trail 6%, scaleouts_due 0; scaleout(qty 21, due 0, done 0)→ none_due. 6% < current 7% → **TIGHTEN 7%→6%**.
+- GE (stock, up +12.62%, hwm-gain +14.30%, SO_DONE=1): ladder→ target_trail 6%, scaleouts_due 1; scaleout→ none_due (already scaled Jun 25). target 6% == current 6% → no tighten. **No action.**
+- XLB (etf, up +2.96%, hwm-gain +6.45%): ladder→ target_trail 7%, scaleouts_due 0; none_due. target 7% == current 7% → **No action.**
+- XLI (etf, up +6.60%, hwm-gain +7.33%): ladder→ target_trail 5%, scaleouts_due 0; none_due. 5% < current 7% → **TIGHTEN 7%→5%**.
+
+**Rule 16 momentum-decay:** all 4 actionable above entry → not flag-eligible; no DECAY-FLAG rows.
+
+**Rule 10 sector-kill:** no 2-consecutive same-sector losses in current sectors (Healthcare/Industrials/Materials). Recent losses: KLIC (IT, Jul 2), no Industrials/Healthcare/Materials consecutive losses. No kill.
+
+**Actions executed:** 2 stop tightens (not sells → no DTC impact).
+
+### 2026-07-06 — STOP UPDATE: BTSG trail 7% -> 6%
+- Trigger: Rule 8 profit ladder, tier=satellite (stock), hwm-gain +11.81% (reached +10% second stock tier intraday); current-price scaleouts_due 0 → tighten-only
+- New stop order ID: 612289a2-a14d-4f0f-b49b-768aefbb54fc (replaces 29d6e33a; stop $66.263608, hwm $70.4932 re-anchored on replace, trail_percent 6, qty 21)
+
+### 2026-07-06 — STOP UPDATE: XLI trail 7% -> 5%
+- Trigger: Rule 8 profit ladder, tier=core (etf), hwm-gain +7.33% (reached +7% ETF tier); current-price scaleouts_due 0 → tighten-only
+- New stop order ID: 4b207f64-d23a-453e-9cee-75fd7cdb345c (replaces 1f9174d4; stop $176.06825, hwm $185.335, trail_percent 5, qty 11)
