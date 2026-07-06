@@ -1198,3 +1198,20 @@ Pre-market Decision: HOLD / TRADE-READY (conditional TRADE per rationale); three
 - daytrade_count delta: 0 -> 0
 - Rule violations: none. Capital deployment fell to 60.72% EOD Thu+Fri (below 75% floor, intentional/expected per Rule 6 mechanics — trail-stops unwind concentration into cash; Rule 12 patience overlay deferred Fri Jul 3 re-arm to Mon Jul 6). Fri Jul 3 was a full market holiday (NYSE/Nasdaq closed for Independence Day observance) — paper routine ran with feed-frozen data (change_today=0, balance_asof 2026-07-02).
 - Notes: **First losing week of a 4-week alpha streak** (W6 +2.10% / W7 +1.09% / W8 +1.10% / W9 +3.60% / W10 **-2.38%**). **First v3 Tech-satellite trade + first v3 satellite to close for a loss** (KLIC round-trip Tue→Thu). **First Rule 6 fire on a fresh-sat entry-window position** — spec-compliant execution, contained loss inside risk-parity ~2% envelope. **Core-satellite architecture asymmetric drawdown protection validated** — core sleeve +1.09% per-capital dampened ~40% of sat drawdown. **Visa-aware machinery flawless for 10th consecutive week** (DTC 0/5 throughout; KLIC T+2 swing exit; Rule 15 same-day skip protected KLIC Tue midday; Rule 14 pre-flight passed every routine).
+
+## 2026-07-06 — Market-Open Run (Day 52, Monday, Week 11 Day 1)
+**Decision:** TRADE — 1 actionable idea `pm-2026-07-06-XLP` (core, Consumer Staples).
+
+**Account state at open:** equity $10,433.02, cash $4,080.04 (39.11%), buying_power $34,108.50, long_mkt_value $6,352.98, daytrade_count 0/5 (field not surfaced; carry-forward, no sells since Fri; pattern_day_trader=false; balance_asof 2026-07-02). Positions 4/6 (BTSG/GE/XLB/XLI). Open orders: 4 GTC trailing stops unchanged (BTSG hwm ratcheted $71.11 stop $66.1323, GE $359.9918, XLB $49.5783, XLI $173.0637). Idempotency: no existing XLP BUY → proceed.
+
+**Buy-side gate — XLP (core):** positions after fill 5/6 ✓ · Week-11 trades 1/5 ✓ · cost $2,028.48 ≤ 20% equity ($2,086.60) ✓ · cost ≤ cash $4,080.04 ✓ · sector-conc Consumer Staples $2,028.48 / deployed $8,381.46 = 24.2% ≤ 50% ✓ · deployment after $8,381.46 / $10,433.02 = 80.3% ≤ 85% ✓ · macro-binary core-exempt (FOMC Minutes T+1 blocks satellites only) ✓ · daytrade_count 0 ≤ 1 ✓ · catalyst documented ✓ · ETF ✓. **PASSES.**
+
+**Sizing (sizing.py, risk-parity 2% / stop-frac 0.10):** live_ask $84.52, equity $10,433.02 → shares 24, cost $2,028.48, pct_equity 19.44%, clamped none. Limit price = round($84.52 × 1.001, 2) = $84.60 (MAX_ENTRY_SLIPPAGE_PCT 0.10).
+
+**Actions:** 1 limit BUY placed — XLP 24sh @ $84.60 day-TIF (order id 7256cbdf). Polled 12× / 60s → still `new` (unfilled at end of run); left working, fills or cancels at close. No trailing stop placed (Rule 13 — daily-summary at close).
+
+- PENDING 2026-07-06 XLP: limit order placed @ $84.60 (24sh, order id 7256cbdf), not yet filled as of market-open run
+
+**Rule 17 check:** no unresolved STOP-PLACEMENT-FAILED markers. **Rule 14 buffer:** daytrade_count 0 ≤ 1 ✓ (no sells this routine). **Trades this week:** 1 BUY placed (XLP pending); Week-11 budget 1/5 used, 4 slots remain.
+
+**Next live evaluation:** today midday — Rule 8 ladder (XLI +6.71% approaching first ETF scale-out +7% $185.87; XLB +3.30% below first +4% tighten $52.08; BTSG +10.58% above first stock scale-out +10% $70.895 → possible scale-out; GE SO_DONE=1 next +25% $418.83); daily-summary T 15:00 CT — Rule 13 places trailing stop on XLP if filled.
