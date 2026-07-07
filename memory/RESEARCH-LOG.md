@@ -3089,3 +3089,45 @@ Ranked R:R-descending. **Satellites screened out today by macro-window** (FOMC M
 - `alpaca.sh account` + `positions` + `orders` — equity $10,421.87, cash $4,080.04, buying_power $34,077.28, long_mkt_value $6,341.83, deployment 60.85%, 4/6 positions, 4 GTC trailing stops armed unchanged; balance_asof 2026-07-02 (dtc field not surfaced this run → 0/5 carry-forward, no sells since).
 - `alpaca.sh bars XLE 1Day 5` (Jul 2 close $53.22, 5-day downtrend $53.84→$53.22 → screened out, Rule 11) + `bars XLP 1Day 3` (Jul 2 close $84.99, +2.0% breakout day on higher volume → top idea).
 - **WebSearch fallback used: NO** — Perplexity ran cleanly across all mandated queries. `alpaca.sh bars` available; satellite DMA/RS screen not run this session because macro-window (FOMC Minutes T+1) blanket-blocks all satellites — screened at the macro gate before per-name DMA/RS, documented above.
+
+## 2026-07-07 — Pre-market Research (Day 53, Tuesday, Week 11 Day 2)
+
+### Account
+- Equity: $10,455.20
+- Cash: $2,056.68 (19.67%)
+- Buying power: $31,742.57
+- Daytrade count: 0/5 (field not surfaced in paper /account; carry-forward — no sells since Fri; pattern_day_trader=false, balance_asof 2026-07-02)
+- Positions: 5/6 — BTSG +10.58%, GE +12.34%, XLB +3.79%, XLI +6.77%, XLP +0.31% | Open orders: 5 GTC trailing stops (all held names protected)
+- Deployment: $8,398.52 / $10,455.20 = **80.33%** (inside v3 75–85% band)
+
+### Market Context
+- WTI / Brent oil: WTI front-month (CLN26) ~$74.82, Aug (CLQ26) ~$69.32 — data conflicting, front ~$69–75 zone, **soft** (down sharply from Q2 peaks on rising inventories/soft demand); Brent ~$71.61 (Jul 3 ref)
+- S&P 500 futures: **-0.15%** at 7,580.25; Nasdaq-100 futures **-0.62%** (29,756) — AI-semis-led weakness
+- VIX: **~15.6–15.9** (Jul 3 close 15.81, Jul 6 spot 15.57) — calm regime
+- Today's catalysts: **weak June NFP +57k** (vs 117k cons.) → Fed-pause expectations, growth→value/defensive rotation; **AI-semiconductor selloff** (MU -5.5%, AMD -4.3%, INTC -5.3%) on overvaluation/profit-booking; **quarter-end pension rebalancing + record opex** → intraday volatility; May trade balance 8:30 ET
+- Earnings before open: **non-event day** — no noteworthy BMO reports (HELE $0.01 only minor); EPAC/PENG report AMC
+- Economic calendar: **FOMC Minutes Wed Jul 8 7:00 PM ET** (June cycle) = **T+1 Tier-1 binary**; then CPI + NFP **Tue Jul 14**, PPI **Wed Jul 15**; FOMC decision Jul 29, Core PCE Jul 30 (both far out)
+- Sector momentum YTD: **Energy leading (+22%)**; **Consumer Staples (XLP) + Industrials (XLI) also Leading**; **Real Estate (XLRE) + Utilities (XLU) Improving** (rate-cut beneficiaries on soft jobs); **Healthcare Weakening**; **Tech / Financials / Consumer Discretionary Lagging**. Rotation growth→value/defensive intact.
+
+### Trade Ideas
+*Satellites screened OUT today — **FOMC Minutes T+1 (Jul 8)** fails the macro-window gate; no single-stock candidate proposed. Both ideas below are core ETFs (macro-exempt), aligned with the defensive/rate-cut rotation and DMA-confirmed uptrends (bars): XLRE last $44.29 > 50-DMA $44.00 > 200-DMA $41.67; XLU last $45.30 > 50-DMA $44.80 > 200-DMA $44.14. Ranked by R:R (tie 2:1 → ticker ascending).*
+
+1. **ID:** `pm-2026-07-07-XLRE` — **tier:** core, XLRE, Real Estate "Improving" quadrant + rate-cut tailwind on soft June jobs, above 50/200-DMA, entry $44.29, stop $39.86 (stop width 10% → risk-parity sizing), target $53.15, R:R 2:1, planned trail percent: 10, macro-window: n/a (core)
+2. **ID:** `pm-2026-07-07-XLU` — **tier:** core, XLU, Utilities "Improving" quadrant + defensive rate-cut beneficiary, above 50/200-DMA, entry $45.30, stop $40.77 (stop width 10% → risk-parity sizing), target $54.36, R:R 2:1, planned trail percent: 10, macro-window: n/a (core)
+
+**Buy-side gate — deployment blocker (both ideas):** current deployment 80.33%; max add to stay ≤85% cap = 0.85×$10,455.20 − $8,398.52 = **~$488**. A risk-parity/20%-cap core entry is ~$2,000 → would push deployment to ~99–100%, **breaching the 85% band**. Both ideas therefore **fail the deployment gate today** and are held as watchlist — actionable only if a Rule 8 ladder scale-out or a stop-out frees ≥~$1,500 cash. Position count (5/6 ✓), week-11 trades (1/5 ✓), ≤20% cap (✓), ETF-core-floor (73%+ ✓), sector-conc (both new sectors, ✓), momentum-aligned (✓) all otherwise pass.
+
+### Risk Factors
+- **Macro/event:** FOMC Minutes T+1 (Jul 8) + CPI/NFP double-header Jul 14 + PPI Jul 15 — event-heavy window; soft-jobs read cuts both ways (dovish vs. growth-scare)
+- **Flows:** quarter-end pension rebalancing + record opex today → elevated intraday chop; July seasonally weak for momentum (avg 5-yr momentum-factor ~-5%)
+- **Sector:** AI-semi selloff bleeding into broad Tech/Nasdaq; Energy leadership fragile on soft oil; Healthcare (BTSG's sector) Weakening
+- **Idiosyncratic:** BTSG raised FY26 revenue+EBITDA guidance (Q1 rev $3.61B +25.6% YoY) — positive; secondary offering (KKR sellers, $58.75) + $60M buyback overhang noted, not a fundamental risk
+- **Portfolio:** near-full deployment (80.3%) leaves negligible dry powder; new risk best added only after ladder trims
+
+### Decision
+**HOLD** — no meaningful deployment room (80.3%, ~$488 to cap), satellites macro-blocked by FOMC Minutes T+1, and quarter-end/opex volatility + AI-semi selloff + weak-momentum seasonality all favor patience. Existing book already expresses the defensive/value rotation (XLP, XLI, XLB, GE, BTSG). Watchlist re-arms on any ladder scale-out (XLI/BTSG near next tiers) freeing cash → XLRE then XLU become executable. Patience > activity.
+
+### Sources
+- Perplexity citations: Barchart/Forbes/CME (oil); Markets Insider/MarketWatch (SPX futures); FRED/Cboe (VIX); jobs-data & opex catalysts feed; Nasdaq/Kiplinger (earnings — non-event); NY Fed/BLS/Guggenheim (econ calendar); StockCharts RRG-style sector momentum; BrightSpring Q1/guidance release (BTSG)
+- Alpaca bars: XLRE + XLU 200×1Day (DMA confirmation)
+- WebSearch fallback used: no
