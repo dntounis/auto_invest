@@ -3215,3 +3215,46 @@ Ranked R:R-descending. **Satellites screened out today by macro-window** (FOMC M
 - Perplexity citations: Investing.com/TradingEconomics/OilPrice (oil); Barchart/Markets Insider/Yahoo (SPX futures); YCharts/Cboe/Investing.com (VIX); WallStreetZen/Yahoo/MarketWatch (catalysts — AI-semi selloff, Warsh, Iran); Kiplinger/Investing.com (earnings — PEP/none-held); BLS/MarketWatch/CME (econ calendar — CPI Jul 14, PPI Jul 15); LinkedIn/Investing.com sector-rotation (sector momentum); StockTitan/Zacks (momentum screen — STRL/CVE/MU/WDC); StockTitan/BrightSpring IR + BofA (BTSG)
 - Alpaca bars: STRL + CVE + XLRE + XLU + XLE 200×1Day, SPY 60×1Day (DMA + relative-strength confirmation)
 - WebSearch fallback used: no
+
+## 2026-07-10 — Pre-market Research (Day 56, Friday, Week 11 Day 5)
+
+### Account
+- Equity: $10,290.81
+- Cash: $3,271.46 (31.79%)
+- Buying power: $32,740.03 (regt $13,562.27)
+- Daytrade count: 0/5 (field not surfaced in paper /account — cosmetic quirk again; no routine sells since Wed's GE stop-out + Thu's BTSG scale-out, both aged/partial not day trades; pattern_day_trader=false, balance_asof 2026-07-09)
+- Positions: 4/6 — BTSG +12.18% ($72.30 vs $64.45, 14sh), XLB +0.36% ($50.26 vs $50.08, 40sh), XLI +4.26% ($181.11 vs $173.71, 11sh), XLP −0.93% ($83.52 vs $84.31, 24sh) | Open orders: 4 GTC trailing stops (all held names protected — BTSG $67.5108/6% hwm $71.82, XLB $49.5783/7% hwm $53.31, XLI $176.567/5% hwm $185.86, XLP $77.3622/10% hwm $85.958)
+- Deployment: LMV $7,019.35 / $10,290.81 = **68.21%** (**7pts below the v3 75% floor** — under-invested after Wed GE stop-out + Thu BTSG scale-out freed cash; headroom to 85% cap now $1,727.84, the widest yet)
+- ETF core (XLB+XLI+XLP $6,007.15) / deployed $7,019.35 = **85.58%** ≥45% floor ✓ | Sector book: Materials 28.64% / Consumer Staples 28.56% / Industrials 28.38% / Healthcare 14.42% — all ≤50% ✓ | Satellite slots: BTSG (Healthcare) 1/2, Industrials 0/2 (GE vacated Jul 8), Tech 0/2 → 1/3 used, 2 open
+
+### Market Context
+- WTI / Brent oil: WTI ~$72.27 front-month (~$71.4 spot), Brent ~$74 — **pulling back** from Jul 9 close $73.56 on **U.S.-Iran de-escalation** ("Blue Sky" narrative lowering headline inflation risk); supply-shock premium fading
+- S&P 500 futures: **soft** — ES Sep ~7,577.75, −0.14% premarket (prev close 7,588.75), pressured by Trump remarks; Nasdaq lagging (semis), Dow/Russell 2000 firmer (breadth into cyclicals/value)
+- VIX: **~16.8** (Jul 9 close 15.84, real-time derived ~16.8) — calm regime (a stale MarketWatch 20.95 quote is dated Feb — ignored)
+- Today's catalysts: **FOMC Minutes today 2:00 PM ET** (T+0, June cycle) — the day's focal event; **AI-capex narrative + semi selloff continues** (semis −11.4% MTD July, IT −3.3% YTD) → growth→value/defensive rotation intact; **new Fed chair Warsh's inflation focus** has markets pricing a possible **September rate HIKE** (hawkish tilt into next week's CPI/PPI); U.S.-Iran de-escalation relieving oil/vol
+- Earnings before open: **DAL** (Delta) reports Q2 today but the call is **10:00 AM ET — AFTER open, not BMO**; est ~$1.43 EPS; **not held**. No held-name earnings (BTSG Q2 = Jul 31). Non-event for the book
+- Economic calendar: **FOMC Minutes TODAY Fri Jul 10 2:00 PM ET** (T+0, after this run); then **CPI Tue Jul 14** + **PPI Wed Jul 15**; FOMC decision Jul 28–29, Core PCE ~Jul 30. **T+1 = Mon Jul 13, T+2 = Tue Jul 14 → nearest Tier-1 binary is CPI at T+2** → satellite macro-window **NOT CLEAR** today (any satellite entered today would sit through CPI within 2 sessions → screened out per v3.2 macro-window rule)
+- Sector momentum YTD: **Energy +23.3% > Materials (XLB) +17.4% > Consumer Staples (XLP) +15.6% > Industrials (XLI) +14.1%** leading; **Utilities (XLU) + Real Estate (XLRE) "Improving"** (rate-cut beneficiaries); **Tech −3.3% / Financials −6.9% Lagging**; Healthcare Weakening. Book (XLB/XLI/XLP + BTSG) stays aligned to the value/cyclical/defensive leadership and insulated from the AI-semi drawdown
+
+### Trade Ideas
+*No single-stock satellite proposed today: **macro-window NOT CLEAR (CPI at T+2)** screens out all satellites, and independently the July momentum leaders (MU +267% YTD, CRDO Zacks#1, TSM, WDC, MCHP, CRNX +116% biotech) all live in the **breaking-down semi/tech/biotech complex** → follow-sector-momentum reject. The vacated Industrials satellite slot stays open. Core ETF ideas below are macro-exempt, DMA-confirmed "Improving"-quadrant uptrends (bars: XLRE last $44.23 >50-DMA $44.06 >200-DMA $41.72, RS10 −3.15; XLU last $45.13 >50-DMA $44.77 >200-DMA $44.20, RS10 −3.42/RS50 −7.06 — trend intact, near-term RS soft). **XLE re-screened and rejected again**: last $54.82 **below** 50-DMA $56.50 (RS50 −8.11) — oil bounce still hasn't reclaimed trend. Ranked by R:R (tie 2:1 → ticker ascending).*
+
+1. **ID:** `pm-2026-07-10-XLRE` — **tier:** core, XLRE, Real Estate "Improving" quadrant + rate-cut-beneficiary tailwind, above 50/200-DMA (uptrend intact; RS10 −3.15 soft), entry $44.23, stop $39.81 (stop width 10% → risk-parity sizing), target $53.07, R:R 2:1, planned trail percent: 10, macro-window: n/a (core)
+2. **ID:** `pm-2026-07-10-XLU` — **tier:** core, XLU, Utilities "Improving" quadrant + defensive rate-cut beneficiary, above 50/200-DMA (uptrend intact; RS10 −3.42 soft), entry $45.13, stop $40.62 (stop width 10% → risk-parity sizing), target $54.16, R:R 2:1, planned trail percent: 10, macro-window: n/a (core)
+
+**Buy-side gate — deployment-ceiling still blocks both (headroom improving):** deployment 68.21%; max add to stay ≤85% cap = 0.85×$10,290.81 − $7,019.35 = **$1,727.84**. A full risk-parity core clip (2% equity risk / 10% stop = 20% cap) ≈ **$2,058** → would push deployment to **~88%**, breaching the 85% ceiling. Both ideas therefore **fail the deployment gate** and stay watchlisted (spec: skip + log; defer until a scale-out/stop-out/equity-growth restores headroom). **Sub-floor note:** deployment 68.21% is 7pts under the 75% floor — a partial re-deploy is desirable, but deterministic risk-parity sizing produces a full ~$2,058 clip that overshoots the ceiling, so no clean full-size add exists today (same structural tension as Jul 7–9). Headroom is now the widest yet ($1,728 vs $1,233 Thu, $514 Wed): a full core entry becomes executable once a **Rule 8 scale-out or stop-out trims LMV by just ≥~$330** (→ 0.85×equity − LMV ≥ $2,058) — much closer than prior sessions. Other gates pass: position count 4/6 ✓, Week-11 trades 1/5 ✓ (4 slots remain), ≤20% cap ✓, ETF-core-floor (85.6% ✓), sector-conc (both new sectors ✓), momentum-aligned ✓, macro n/a (core) ✓.
+
+### Risk Factors
+- **Macro/event:** FOMC Minutes today 2:00 PM ET (June cycle) → possible hawkish/dovish surprise into the weekend; **CPI Tue Jul 14 (T+2) + PPI Wed Jul 15 (T+3)** double-header — a hot print could jolt the value/cyclical trade; Warsh's inflation focus + Sep-hike pricing raises hawkish tail risk
+- **Sector/tech:** AI-semi selloff deepening (semis −11.4% MTD) risks a broader de-risking day that would still pressure cyclicals; book has zero direct tech exposure (insulated) but not immune to a broad-tape flush
+- **Energy:** U.S.-Iran de-escalation is deflating the oil premium (two-sided — relieves inflation but caps Energy leadership); XLE below 50-DMA says the tape doesn't trust the bounce
+- **Idiosyncratic:** BTSG held winner +12.18% (BofA Buy PT $77 Jul 2; FY26 rev guide raised to $14.98B midpoint; Q2 Jul 31) — but consensus PT ~$65.67 now ~8% *below* spot → mean-reversion watch; KKR secondary overhang non-fundamental
+- **Portfolio:** below-floor deployment (68.21%) leaves the book under-invested vs. the 75–85% target, but the only clean adds are deployment-ceiling-gated → dry powder waits for a small ladder trim (~$330 LMV)
+
+### Decision
+**HOLD** — no satellite passes (macro-window NOT clear: CPI at T+2 screens all satellites out, and the momentum leaders are semi/tech/biotech sector-rejects), and both core ideas (XLRE, XLU) remain deployment-ceiling-gated: a full risk-parity clip (~$2,058) overshoots the 85% cap (→~88%) despite the sub-floor 68.21% deployment. The book already expresses the winning value/cyclical/defensive rotation and is insulated from the AI-semi drawdown. Watchlist re-arms — XLRE then XLU in R:R order — the moment a Rule 8 scale-out (XLI/BTSG near next tiers) or a stop-out trims LMV by just ≥~$330 (headroom is the widest yet). Today is also Week-11 weekly-review day (Fri 16:00 CT). Patience > activity.
+
+### Sources
+- Perplexity citations: Oilprice/CME/MarketWatch (oil — WTI ~$72, de-escalation pullback); Markets Insider/Yahoo/CNBC (ES Sep ~7,578, −0.14%); Investing.com/Cboe/Yahoo (VIX ~16.8, Jul 9 close 15.84); WallStreetZen/Barchart (catalysts — AI-capex, semi selloff −11.4% MTD, Warsh Sep-hike pricing, Iran de-escalation); Delta IR/Kiplinger (earnings — DAL 10am AFTER open, not held); BLS/Econoday/CME (econ calendar — FOMC Minutes Jul 10 2pm, CPI Jul 14, PPI Jul 15); sector-rotation YTD (Energy +23.3% > Materials +17.4% > Staples +15.6% > Industrials +14.1%); Zacks/StockTitan momentum screen (MU/CRDO/TSM/WDC/MCHP/CRNX); StockTitan/BrightSpring IR + BofA (BTSG)
+- Alpaca bars: XLRE + XLU + XLE 200×1Day, SPY 60×1Day (DMA + relative-strength confirmation)
+- WebSearch fallback used: no
