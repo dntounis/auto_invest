@@ -729,3 +729,94 @@ First losing week of a 4-week streak of green + benchmark-beat weeks (W6-W9), sn
 - **Prior pre-market cadence guardrail (W9 HIGH) — no fresh evidence this week.** Fri Jul 3 pre-market DID run and log (RESEARCH-LOG.md 2026-07-03 entry present, TRADE-LOG.md 2026-07-03 market-open + midday + EOD rows all present). Zero cadence gaps Week 10. Proposal remains on file at HIGH; the Fri Jul 3 clean run is one data point in favor of continued discipline, not evidence the guardrail is unnecessary. Recommend the human still apply the proposal for durability.
 
 - **Prior sub-unit scale-out qty inconsistency (W9 HIGH) — no evidence Week 10 (no scale-outs fired; no held-book position crossed a scale-out tier).** Proposal remains on file at HIGH; would land on the next week where a scale-out fires on a 2sh position (BTSG at +10% would be 21sh → sell_qty=7, no issue; GE at +25% would be 2sh → sell_qty=1 via `sizing.py scaleout`, no issue; XLI at +7% ETF-tier would be 11sh → sell_qty=4 via ceiling(11/3)=4, no issue this week).
+
+## Week ending 2026-07-10
+
+### Stats
+| Metric | Value |
+|--------|-------|
+| Starting portfolio | $10,388.12 (Week 10 ending EOD) |
+| Ending portfolio | $10,322.99 (account.equity) |
+| Week return | -$65.13 (-0.627%) |
+| S&P 500 week | +0.861% (Jul 2 close 7,483.24 → Jul 10 close 7,547.64; Jul 3 Independence Day holiday) |
+| Bot vs S&P | **-1.49% (lagged)** — 2nd consecutive negative-alpha week (W10 -2.38% / W11 -1.49%) |
+| Alpha vs SPX (v3) | **-1.49% (headline)** — rolling W6→W11 cum alpha now +4.02pp (W6 +2.10 / W7 +1.09 / W8 +1.10 / W9 +3.60 / W10 -2.38 / W11 -1.49) |
+| Core/Satellite P&L (v3) | core -$75.26 (-1.23% of ~$6.1K core capital) / satellite +$10.18 (+0.46% of ~$2.2K satellite capital) — **satellite OVERperformed core** (drag was the ETF core this week) |
+| Trades | 1 BUY (XLP Mon Jul 6) — realized exits 3: W:2 / L:1 / open:3 (BTSG/XLB/XLI carryforward) |
+| Win rate | 67% (2 winning exits / 3 closed) |
+| Best trade | BTSG +10.09% realized (Jul 9 scale-out slice, 7sh @ $70.95 vs $64.45) |
+| Worst trade | XLP -0.34% realized (Jul 10 Rule 16 rotate-exit, 24sh @ $84.02 vs $84.306667) |
+| Profit factor | 13.60 (gains $93.56 / losses $6.88) |
+| daytrade_count | 0 (delta vs prior week: 0 -> 0) — **11 consecutive weeks of zero day trades** |
+| Capital deployment | 48.78% EOD ($5,035.94 / $10,322.99) — **well BELOW the v3 75–85% band**; ~$5.3K cash (51.2%) after GE stop-out + BTSG scale-out + XLP rotation freed cash into a deployment-gated week |
+| Phase P&L | +$322.99 (+3.230%) — off Fri Jun 26 EOD phase HWM +$449.80 |
+| Trading sessions | 5 (Mon Jul 6 – Fri Jul 10) |
+
+### Closed Trades
+| Ticker | Entry       | Exit     | P&L                | Notes |
+| ------ | ----------- | -------- | ------------------ | ----- |
+| GE     | $335.06     | ~$359.09 | +$48.06 (+7.17%)   | Final 2sh tranche stopped out Wed Jul 8 13:33 UTC via GTC 6% trailing stop (auto-fill, not routine-driven). T+26 aged position from 2026-06-12 → not a day trade; freed ~$718 cash + vacated Industrials satellite slot. A clean satellite runner win. |
+| BTSG   | $64.45      | $70.95   | +$45.50 (+10.09%)  | Rule 8 scale-out #1 of 2 (7sh of 21) Thu Jul 9 midday — crossed +10% first stock tier (unrealized +10.23%, hwm-gain +11.19%). Partial exit; 14sh runner continues at 6% trail. T+23 aged, not a day trade. |
+| XLP    | $84.306667  | $84.02   | -$6.88 (-0.34%)    | Rule 16 momentum-decay ROTATE-EXIT (full 24sh) Fri Jul 10 midday — 2nd consecutive DECAY-FLAG (below entry AND lagging SPY 10-sessions: -0.35% on-cost vs SPY +2.65%). Cut dead-money laggard 5 sessions after Mon re-entry; freed ~$2,016 cash. T+4 aged, not a day trade. Rule 16's 3rd phase fire. |
+
+### Open Positions at Week End
+| Ticker | Entry       | Close    | Unrealized        | Stop                 | Tier      |
+| ------ | ----------- | -------- | ----------------- | -------------------- | --------- |
+| BTSG   | $64.45      | $71.43   | +$97.72 (+10.83%) | $67.7317 (trail 6%)  | satellite |
+| XLB    | $50.08      | $50.90   | +$32.80 (+1.64%)  | $49.5783 (trail 7%)  | core      |
+| XLI    | $173.713636 | $181.73  | +$88.18 (+4.62%)  | $176.567 (trail 5%)  | core      |
+
+daytrade_count: 0 (11 consecutive weeks). Positions 3/6; ETF core (XLB+XLI $4,035.03) / deployed $5,035.05 = **80.14%** ≥ 45% floor ✓. Satellite slots: BTSG (Healthcare) 1/2, 2 open. All 3 held-book GTC trailing stops armed; Rule 17 clean.
+
+### What Worked
+- **Three clean, disciplined exits — 2 wins + 1 tiny controlled loss, all T+4-or-later swing exits (zero day-trade risk).** GE's final tranche trail-stopped out at +7.17% (auto-fill on the GTC 6% trail, exactly per Rule 6); BTSG scale-out fired the +10% first stock tier for +10.09% on the slice (Rule 8 ladder machinery — replace-stop to free qty, market scale-out, stop re-placed at 6% for the 14sh runner); XLP's Rule 16 rotation cut a dead-money laggard at -0.34% before it could deepen. Every visa-aware guard held (DTC 0/5, no same-day exits, all aged positions).
+- **Rule 16 momentum-decay rotation fired correctly for the 3rd phase time.** XLP logged DECAY-FLAG=1 Thu Jul 9 (fresh flag, prior_flag=0 from the Jul 6 re-entry consecutiveness reset) then a 2nd consecutive flag Fri Jul 10 (below entry AND lagging SPY 10-sessions +0.08% vs +2.65%) → rotate=1 → clean exit. The rule did its job: freed $2,016 of capital tied up in a non-participating position for redeployment into leadership next week.
+- **Satellite sleeve OVERperformed core again (+0.46% vs -1.23% per-capital).** BTSG (+$47.04 week delta incl. scale-out) carried the book while the ETF core (XLB/XLI gave back unrealized on a choppy tape, XLP round-tripped flat-to-down) was the drag. The core-satellite architecture stayed bidirectionally protective — this week the alpha sleeve was the buffer, not the drag.
+- **Zero rule violations for the 11th consecutive week; visa-aware machinery flawless.** DTC held 0/5 all week; every sell (GE auto-trail, BTSG scale-out, XLP rotation) was on an aged position (T+4 to T+26); Rule 14 pre-flight passed every routine; Rule 17 first-action scan clean across all 5 sessions. Eleven weeks, zero day trades, 56 trading days.
+
+### What Didn't Work
+- **2nd consecutive negative-alpha week (-1.49%) — the deployment-gate/full-clip deadlock left the bot underdeployed through a rising tape.** SPX rose +0.86% while the bot fell -0.63%. Root cause is structural, not execution: every day Jul 7–10 pre-market surfaced 2 clean core-ETF ideas (XLRE, XLU — both "Improving"-quadrant DMA-confirmed uptrends passing all other gates) but market-open HOLD'd all 5 sessions because a full risk-parity/20%-cap core clip (~$2,058) would breach the 85% deployment ceiling given the available headroom ($514–$1,730). The all-or-nothing full-clip sizing meant incremental cash could not be deployed, so as GE/BTSG/XLP exits freed cash, deployment fell from 80% → **48.78%** and stayed underdeployed into the SPX gain. This is a 4-session recurring deadlock (see proposed change below).
+- **Ended the week 51% cash / 48.78% deployed — the lowest deployment of the v3 phase — with no forcing function to redeploy.** The v3 mandate is 75–85% deployed; the bot spent the back half of the week 7–26 points below the floor. Cash isn't free when SPX is grinding up.
+- **The ETF core was the P&L drag (-$75.26).** XLB (-$44.40 week delta) and XLI (-$23.98) both gave back unrealized gains on a choppy, rotation-heavy tape, and XLP round-tripped for a small realized loss. The two remaining core positions are still net-green on-cost (XLB +1.64%, XLI +4.62%) but neither reached its next ladder tier, so the ladder stayed dormant and no locks tightened.
+
+### Key Lessons
+- **The deployment ceiling + full-clip sizing can deadlock the book into underdeployment.** When freed cash arrives in tranches smaller than one full risk-parity clip, an all-or-nothing entry rule refuses every add and cash piles up. This is now a clear multi-session pattern (Jul 7–10, four consecutive HOLDs on the identical deployment blocker) that cost ~1.5pp of alpha this week and left the book at 48.8% deployed. A partial/fractional-clip mechanism sized to available headroom would let the bot stay inside the 75–85% band without breaching the 85% ceiling — see proposed change.
+- **Rule 16 is validated as a capital-recycling tool, not just a loss-cutter.** XLP was only -0.35% on-cost — not a loss worth a Rule 7 hard-close — but it was dead money lagging SPY for 2 straight sessions. Rotating it out freed $2,016 that a full-clip core add can now consume next week. The rule correctly distinguishes "small loser" from "non-participating capital."
+- **Satellite variance cuts both ways but the sleeve remains additive.** After W10's -2.54% sat week, W11 flipped back to sat +0.46% vs core -1.23%. Over the last 3 weeks (W9 over, W10 under, W11 over) the satellite sleeve is not on a consecutive-underperformance streak — the shrink-sat trigger stays reset.
+- **Visa-aware machinery is a solved problem (11 weeks / 56 days, zero day trades).** As in prior weeks, the residual risk lives in strategy selection (deployment timing, core-vs-leadership positioning) and rule design (the full-clip deadlock), not execution discipline.
+
+**Satellite-sleeve check (v3 spec):** W9 sat +4.01% vs core -0.04% (sat OVER); W10 sat -2.54% vs core +1.09% (sat UNDER); **W11 sat +0.46% vs core -1.23% (sat OVER).** The 3+ consecutive-week UNDERperformance shrink-sat trigger is NOT met (only 1 under in the last 3, and W11 is a fresh over). No shrink-sat proposal this week.
+
+### Adjustments for Next Week
+- **Mon Jul 13 (Week 12 Day 1) opens with ~$5.3K cash and 48.8% deployment — a re-arm priority.** The deployment gate now clears easily (a full ~$2,058 core clip lands deployment at ~68%, well inside the band). Re-arm XLRE then XLU in R:R order; re-screen the 2 open satellite slots. But: **CPI Tue Jul 14 (T+1) + PPI Wed Jul 15 (T+2)** block fresh single-stock satellites via the v3.2 macro-proximity gate — core ETF adds are exempt and are the right first move to restore deployment.
+- **Watch XLI.** Close $181.73 = +4.62% on-cost — first ETF scale-out at +7% ($185.87, +2.28% away). Would trim ~4sh, free ~$740, tighten trail to 5% (already at 5% — a state mark).
+- **Watch BTSG.** Close $71.43 = +10.83% on-cost — next ladder tier +15% ($74.12, +3.77% away, trail-only tighten to 4%). Runner path; 14sh after Thu scale-out.
+- **Watch XLB.** Close $50.90 = +1.64% on-cost — first +7% ETF scale-out at $53.59 (+5.28% away). Flat-flat pattern persists; the sole tier-1-locked core position.
+- **Macro calendar:** CPI Tue Jul 14, PPI Wed Jul 15, FOMC Jul 28–29. Satellites stay macro-gated early week; core adds are the deployment-restoration lever.
+- **No auto-applied strategy mutations** (DECIDED G). See proposed change below.
+
+### Overall Grade: C+
+
+A quiet, disciplined, slightly-red week (-0.63% absolute, -1.49% alpha) whose story is **underdeployment**, not losses. The three exits were all clean — GE trail-stopped for +7.17%, BTSG scale-out for +10.09%, XLP rotated out at -0.34% before it could deepen — and the visa-aware/rule machinery was flawless for the 11th straight week (zero violations, zero day trades). But for the 2nd consecutive week the bot lagged a rising SPX, and this week the cause is a concrete, recurring rule-design deadlock: the 85% deployment ceiling combined with all-or-nothing full-clip sizing refused every core-ETF add for 4 straight sessions while exits kept freeing cash, dragging deployment to 48.8% — the lowest of the phase — through an SPX grind higher. Execution earns a B; the strategy-design drag and 2nd alpha miss pull it to **C+**. Rolling cum alpha remains positive at +4.02pp and phase P&L is +3.23%, but the deployment deadlock needs a fix (proposed below) before it costs a 3rd week.
+
+## Proposed strategy changes (NOT auto-applied — human review required)
+
+- **Partial/fractional core-ETF clip sizing to fill deployment headroom (v3.2 proposal, NEW THIS WEEK — MEDIUM conviction).** For **ETF-core (`tier: core`) ideas only**, when a full risk-parity/20%-cap clip (~$2,058) would breach the 85% deployment ceiling but the idea passes every other buy-side gate, allow market-open to place a **reduced clip sized to the available deployment headroom**, down to a minimum viable size (proposed floor: the greater of ~$800 or ~8% of equity) to avoid dust positions. Skip only if headroom is below that floor. Satellites are excluded (their idiosyncratic vol wants full risk-parity sizing or nothing).
+- **Rationale:** The current all-or-nothing full-clip rule deadlocked the book for 4 consecutive sessions (Jul 7–10): 2 clean core ideas (XLRE, XLU) passed every gate but were refused every day because headroom ($514–$1,730) never reached a full ~$2,058 clip, so freed cash from GE/BTSG/XLP exits piled up and deployment fell to 48.78% — 26pts below the v3 75% floor — through a +0.86% SPX week. A partial clip sized to headroom would have kept the book inside the 75–85% band and captured broad-market beta, directly addressing the -1.49% alpha miss without breaching the ceiling or the ETF-core floor.
+- **Evidence:** TRADE-LOG.md 2026-07-07/08/09/10 market-open rows (all HOLD, all citing the deployment-ceiling blocker with identical XLRE/XLU ideas); Jul 10 EOD deployment 48.78%; Wk11 alpha -1.49% while SPX +0.86%.
+- **Conviction: MEDIUM.** Clear, mechanically-precise 4-session evidence this week; the fix is bounded (core-only, min-clip floor prevents over-trading/dust) and stays within existing ceilings. Recommend the human apply this before Week 12 if the cash carry persists, as the deadlock is likely to recur while positions keep laddering out into cash.
+
+- **Satellite-sleeve check (v3 spec) update.** W9 sat +4.01% / core -0.04% (sat OVER); W10 sat -2.54% / core +1.09% (sat UNDER); W11 sat +0.46% / core -1.23% (sat OVER). 3+ consecutive-week UNDERperformance shrink-sat trigger NOT met. No shrink-sat proposal. Observation continues.
+- **Conviction: deferred — no consecutive-under streak.**
+
+- **Prior macro-binary-proximity gate (W10 LOW → codified as v3.2).** The proposed 11th buy-side gate is now in the rulebook (Buy-Side Gate "Macro-binary proximity (v3.2, satellite only)"). It worked as designed this week — Fri Jul 10 pre-market screened all satellites out on CPI-at-T+2. Closing as RESOLVED (already implemented in v3.2).
+- **Conviction: CLOSED (already implemented in v3.2).**
+
+- **Prior Rule 8 +15% trail-only tier state-machine gap (W9 MEDIUM) — no evidence Week 11 (no held-book runner crossed +15% intraday without prior scale-outs; BTSG at +10.83% is below the +15% tier). Keep on file at MEDIUM.**
+
+- **Prior pre-market/market-open cadence guardrail (W9 HIGH, now Rule 18) — fresh evidence Week 11 (Jul 8).** Rule 18 tripped correctly on Wed Jul 8 when market-open ran a HOLD but only touched HEARTBEAT.md and never wrote its Market-Open TRADE-LOG row (HOLD-path logging gap). Daily-summary's sweep caught it, sent the URGENT Telegram, and appended a MISSING-ROUTINE placeholder; the Jul 9 market-open row explicitly closes the gap. The guardrail is validated in production. **Residual code fix recommended:** market-open's HOLD path must always append its TRADE-LOG row even on 0 orders (Jul 9/10 rows already do this — confirm the fix is durable in the routine, not one-off).
+- **Conviction: HIGH (guardrail validated; underlying HOLD-path logging fix recommended for durability).**
+
+- **Prior sub-unit scale-out qty inconsistency (W9 HIGH) — no adverse evidence Week 11 (BTSG 21sh → sell 7 via ceiling(21/3) worked cleanly). Keep on file at HIGH for the 2sh-position case (GE at +25% would have been 2sh → sell 1; GE exited via trail before reaching that tier).**
+
+- **Prior RSP-of-last-resort (W4-W5 LOW) — remains LOW.** Satellite sleeve deploying effectively (BTSG runner + GE win); no re-promotion.
