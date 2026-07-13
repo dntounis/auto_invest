@@ -1404,3 +1404,13 @@ Pre-market Decision: HOLD / TRADE-READY (conditional TRADE per rationale); three
 - Profit factor: 13.60 (gains $93.56 / losses $6.88)
 - daytrade_count delta: 0 -> 0 (11 consecutive weeks zero day trades)
 - Rule violations: none. (Jul 8 market-open HOLD-path logging gap tripped Rule 18 cadence guardrail — logging artifact, not a trading-rule violation; fixed Jul 9 by writing the HOLD row explicitly.)
+
+### 2026-07-13 — TRADE: XLRE side=buy qty=46
+- Entry: $44.79
+- Tier: core
+- Stop level: pending (placed at daily-summary T 15:00 CT per Rule 13)
+- Sector: Real Estate (SPDR sector ETF)
+- Thesis: Real Estate "Improving"-quadrant rate-cut-beneficiary rotation; uptrend intact above 50-DMA ($44.08) & 200-DMA ($41.74), RS10 −3.13. Restores deployment 48.8%→68.6% after Fri's XLP Rule-16 rotation freed cash.
+- Catalyst: pm-2026-07-13-XLRE (link to RESEARCH-LOG 2026-07-13 entry)
+- Target: $53.34 (R:R 2:1)
+- Realized P&L: n/a (open position)
