@@ -3301,3 +3301,44 @@ Ranked R:R-descending. **Satellites screened out today by macro-window** (FOMC M
 - Perplexity citations: OilPrice/Barchart/Polymarket/Coinbase (oil — WTI ~$71.6–73, Iran threat, Brent >$77 intraweek); Markets Insider/MarketWatch/Yahoo/Investing.com (ES Sep ~7,588 −0.42%); YCharts/Cboe/Investing.com/CNBC (VIX ~15–16, Jul 10 close 15.03); CNBC "week ahead Jul 13-17"/Kiplinger/WallStreetZen (catalysts — Q2 earnings kickoff, banks Tue, ASML/TSM, Warsh testimony, AI-over-oil narrative); Kiplinger/EarningsWhispers/Investing.com (earnings — FAST Mon BMO, banks/NFLX/UNH Tue); MarketWatch/CNBC/BLS/CME (econ calendar — CPI Tue Jul 14, PPI+FOMC minutes Wed Jul 15, FOMC Jul 28-29); LinkedIn/Investing.com sector-rotation (Energy +23.3% > Materials +17.4% > Staples +15.6% > Industrials +14.1%; XLRE/XLU "Improving"); Zacks/StockTitan/Benzinga momentum screen (MU/CRDO/CRNX/WDC/MCHP/TSM); StockTitan/BrightSpring IR/UBS/BofA (BTSG Q2 Jul 31, PTs $85/$77)
 - Alpaca bars: XLRE + XLU + XLE 200×1Day, SPY 60×1Day (DMA + relative-strength confirmation)
 - WebSearch fallback used: no
+
+## 2026-07-14 — Pre-market Research (Day 58, Tuesday, Week 12 Day 2)
+
+### Account
+- Equity: $10,257.12
+- Cash: $3,227.57 (31.47%)
+- Buying power: $32,593.03 (regt $13,484.69; non-marginable $6,742.34)
+- Daytrade count: 0/5 (field not surfaced in paper /account — persistent cosmetic quirk; no routine sells since Fri Jul 10's XLP rotation; pattern_day_trader=false, balance_asof 2026-07-13)
+- Positions: 4/6 — BTSG +7.78% ($69.46 vs $64.45, 14sh), XLB +0.68% ($50.42 vs $50.08, 40sh), XLI +3.83% ($180.37 vs $173.71, 11sh), XLRE −0.20% ($44.70 vs $44.79, 46sh) | Open orders: 4 GTC trailing stops (all held names protected — BTSG id 79f4e88e $67.868/6% hwm $72.20, XLB id 9b627571 $49.5783/7% hwm $53.31, XLI id 4b207f64 $176.567/5% hwm $185.86, XLRE id 16d5a6b2 $40.23/10% hwm $44.70)
+- Deployment: LMV $7,029.55 / $10,257.12 = **68.53%** (**~6pts below the v3 75% floor** after Mon's XLRE add; headroom to 85% cap = 0.85×$10,257.12 − $7,029.55 = **$1,689.00**, short of a full ~$2,012 core clip by ~$323 → the deployment-ceiling gate re-arms and blocks a second ETF add today)
+- ETF core (XLB+XLI+XLRE $6,057.07) / deployed $7,029.55 = **86.2%** ≥45% floor ✓ | Sector book (of LMV): Real Estate 29.2% / Materials 28.7% / Industrials 28.2% / Healthcare 13.8% — all ≤50% ✓ | Satellite slots: BTSG (Healthcare) 1/2 → 1/3 used, 2 open
+
+### Market Context
+- WTI / Brent oil: **WTI ~$78.6, Brent ~$78.3** — firm; U.S.-Iran tension keeps a supply premium bid. Oil-driven energy costs are an inflation risk feeding straight into today's CPI print
+- S&P 500 futures: **flattish-to-soft** — ES ~7,550 (prediction-market) vs Fri/Mon cash ~7,625; premarket in pre-CPI holding pattern
+- VIX: **~16.4** (Jul 13 close 16.39, +9.05% on the day; open ~16.32) — still a calm/low-vol regime but ticking up into the CPI+PPI gauntlet
+- Today's catalysts: **CPI (June) prints 8:30 ET, pre-open — the week's dominant binary.** Consensus: headline **~3.9% YoY** (down from 4.2%), **MoM −0.1%** (gasoline −10%), **core 2.9% YoY / +0.2% MoM.** Cool <3.8% → rate-cut odds rise (rate-sensitive XLRE/XLU/RE bid); hot ≥4.2% → hawkish tail, pressures rate-sensitive book. Also **Q2 bank earnings BMO** — JPM/WFC/C/BAC/GS (none held); earnings season kicks off with ~22% expected EPS growth
+- Earnings before open: **JPM, WFC, C, BAC, GS** (big banks, BMO) — none held, non-events for the book. No held-name earnings (BTSG Q2 = Jul 31)
+- Economic calendar: **CPI Tue Jul 14 (TODAY, T+0)** → **PPI Wed Jul 15 (T+1)** → **Retail Sales + Philly Fed Thu Jul 16 (T+2)** → **Jobless Claims Fri Jul 17**; **FOMC Jul 28–29** (decision Jul 29), Core PCE ~Jul 30. **T+1 = Wed Jul 15 (PPI), T+2 = Thu Jul 16 (Retail Sales) → nearest Tier-1 binary is PPI at T+1** → satellite macro-window **NOT CLEAR** today (plus CPI is T+0 today) → all satellites screened out per v3.2. Core ETFs are macro-exempt
+- Sector momentum YTD: **Energy leading (~+16–24%) > Info Tech (XLK ~+23%) ≈ Materials (XLB ~high-teens)**; **Utilities (XLU) ~+18% "Improving"/Leading** (rate-cut + AI-power-demand tailwind, RSI ~64) and **Real Estate (XLRE) "Improving"** — both rate-sensitive. **Financials/Tech mixed.** Book (XLB/XLI/XLRE + BTSG) stays aligned to cyclical/rate-cut-beneficiary leadership
+
+### Trade Ideas
+*Single core idea. **XLU** re-screened: last $45.72 >50-DMA $44.76 >200-DMA $44.24 (uptrend intact; RS10 −3.81 / RS50 −4.83 vs SPY — near-term RS soft, trend up). It is the standing top-R:R core watchlist name but is **deployment-ceiling-gated** — see gate. **No single-stock satellite proposed: macro-window NOT CLEAR (CPI T+0 today, PPI at T+1) screens all satellites out**, and independently July's momentum leaders (MU/WDC/ELDN/PENG/semis) sit in the semi/tech/biotech complex → follow-sector-momentum caution. The 2 open satellite slots stay open.*
+
+1. **ID:** `pm-2026-07-14-XLU` — **tier:** core, XLU, Utilities "Improving"/Leading quadrant + defensive rate-cut & AI-power-demand beneficiary, above 50/200-DMA (uptrend intact; RS10 −3.81), entry $45.72, stop $41.15 (stop width 10% → risk-parity sizing ~44sh / $2,012 / 19.6% equity), target $54.86, R:R 2:1, planned trail percent: 10, macro-window: n/a (core)
+
+**Buy-side gate — XLU FAILS the deployment ceiling (v3.1):** headroom to 85% cap = **$1,689.00**; a full risk-parity core clip ≈ **$2,012** (44sh @ $45.72) → deployment would rise to **(7,029.55+2,011.68)/10,257.12 = 88.14%**, **breaching the 85% ceiling** by ~3pts (short of fitting by ~$323 of headroom). Skip + defer per Rule v3.1. All *other* gates would pass (count 4/6→5/6 ✓, Week-12 1/5→2/5 ✓, ≤20% cap 19.6% ✓, ETF-core-floor adds core ✓, Utilities is a new sector ✓, momentum-aligned >50/200-DMA ✓, macro n/a core ✓) — only the ceiling blocks it. XLU **re-arms** when a scale-out/stop-out or equity growth frees ≥~$323 more headroom (nearest triggers: **XLI first scale-out +7% at $185.87** — currently $180.37/+3.85%; **BTSG next ladder +15% at $74.12** — currently $69.46/+7.78%).
+
+### Risk Factors
+- **Macro/event:** **CPI TODAY (T+0, 8:30 ET pre-open)** is the dominant binary — a hot June print (est 3.9% YoY, core +0.2% m/m) would jolt the rate-cut trade and pressure the rate-sensitive core book (XLRE held, XLU watchlisted); **PPI Wed (T+1)** compounds it. A two-day inflation gauntlet is itself a reason to hold risk flat regardless of the deployment gate
+- **Sector/idiosyncratic:** XLRE (held) is the most rate-sensitive book name into CPI — a hawkish surprise is the primary threat; 10% GTC trail ($40.23) caps downside. Oil firm (~$78–79 WTI) on Iran tension is a two-sided inflation input
+- **Idiosyncratic (book):** BTSG held winner +7.78% (UBS Buy PT $85; FY26 rev guide $14.45–15.0B; $60M buyback; Q2 Jul 31) — consensus mean PT ~$70 near spot → limited near-term upside vs. target, non-fundamental; no adverse held-name news. XLB/XLI grinding, small gains
+- **Portfolio:** under-deployed at 68.5% (~6pts below floor) with ~$3.2k cash, but the 85% ceiling blocks a clean full core add today and adding into a CPI+PPI two-day gauntlet is imprudent anyway → patience is the correct posture; deployment re-arms on the next scale-out/stop-out
+
+### Decision
+**HOLD** — no executable idea today. **XLU** is the standing top-R:R core name but a full clip breaches the 85% deployment ceiling (→88.1%), so market-open skips it and it stays watchlisted (re-arms on the next XLI/BTSG scale-out, stop-out, or equity growth freeing ≥~$323 headroom). **No satellite** — macro-window NOT CLEAR (CPI T+0 today, PPI at T+1) and momentum leaders are semi/tech/biotech sector-cautions. Independently, sitting risk flat through today's CPI (T+0) and tomorrow's PPI (T+1) is the prudent posture. Held book (BTSG/XLB/XLI/XLRE) all above stops, ETF-core 86.2% of deployed, sectors ≤50% — no defensive action needed. Watch CPI 8:30 ET closely: a hot print is the main risk to the rate-sensitive book. Patience > activity.
+
+### Sources
+- Perplexity citations: TradingEconomics/Investing.com/IG/Piptheory/BLS (CPI June est 3.9% YoY / −0.1% MoM / core 2.9%, prints 8:30 ET Jul 14); Robinhood-prediction/Investing.com/Barchart (ES ~7,550 vs cash ~7,625, soft); Cboe/Investing.com/YCharts (VIX 16.39 Jul 13 close +9.05%); TwelveData/BusinessInsider/OilPrice (WTI ~$78.6 / Brent ~$78.3, Iran premium); CNBC/FactSet-style bank-earnings preview (JPM/WFC/C/BAC/GS BMO, ~22% EPS growth); MarketWatch/Census/BLS (calendar — CPI Tue, PPI Wed, Retail Sales Thu, Claims Fri, FOMC Jul 28–29); LinkedIn/sector-rotation + Zacks (Energy/Tech/Materials lead, XLU +18% "Improving"/rate-cut+AI-power, XLRE "Improving"); Zacks momentum screen (ELDN/PENG/MU/WDC/semis — sector-caution); StockTitan/BrightSpring IR/UBS (BTSG Q2 Jul 31, PT $85, $60M buyback)
+- Alpaca bars: XLU 200×1Day (last $45.72 >50-DMA $44.76 >200-DMA $44.24), SPY 60×1Day (RS10 −3.81 / RS50 −4.83)
+- WebSearch fallback used: no
