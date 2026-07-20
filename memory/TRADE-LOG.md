@@ -1563,3 +1563,15 @@ Pre-market Decision: HOLD / TRADE-READY (conditional TRADE per rationale); three
 
 ### 2026-07-20 — HOLD: no orders placed
 - market-open 2026-07-20: **pre-market Decision=HOLD → 0 orders placed** (3rd consecutive session; 5th straight AMG-gated day). Explicit HOLD row written to prevent the Rule 18 cadence-guardrail trip (recurring HOLD-path logging gap seen Jul 8/14/16). Single idea `pm-2026-07-20-AMG` (satellite, Financials, Zacks #1, R:R 2:1) — trend/RS/liquidity/macro-window/sector all PASS **but FAILS the deployment ceiling**: book 79.06% deployed (LMV $8,090.96 / equity $10,234.45) with only **~$608 headroom** to 85%; the ~$1,479 risk-parity clip → ~93.5% deployment, breaching by ~$870. AMG additionally still extended (~+7%/10-sessions → chase risk) into a decisively **risk-off tape** (ESU26 ~−1%, NQU26 ~−1.5%, VIX ~18.5 +12%, **Brent broke past $90** on US-Iran/Hormuz escalation) — a poor session to add asset-manager equity beta. **No add, no defensive action:** 4/6 held ETFs (XLB +0.45% / XLI +3.86% / XLRE +1.42% / XLU −0.52%) all above their GTC trails (worst XLU −0.52%), ETF-core 100% of deployed ≥45% floor, sectors evenly balanced ≤26% ≤50%. Satellite sleeve 0/3, all slots open. **Week-13 trades: 0/5 used** (fresh week; Week 12 closed 2/5). Rule 13/14/15 N/A (0 buys, 0 sells). AMG re-arms on next scale-out / stop-out / equity growth freeing ≥~$870 headroom (nearest ladder trigger: XLI first scale-out +7% at $185.87 — currently $181.00/+4.19%). Next: midday T; FOMC Jul 28–29 next Tier-1 binary. Patience > activity.
+
+### 2026-07-20 — MIDDAY: NO-ACTION (Day 62, Monday)
+- Rule 14 DTC: `daytrade_count` field ABSENT from paper account response; 0 sells placed → gate moot (no day-trade risk).
+- Rule 15: 4 actionable (XLB/XLI/XLRE/XLU, all entered before today); 0 same-day skips.
+- Rule 7 hard-close: none — XLB +0.19%, XLI +2.84%, XLRE +0.82%, XLU -1.97% (worst well above -7%).
+- Rule 8 ladder (tier=etf): no scale-outs (all upct < first +4% ETF tier); no tightens — XLB target 7%=cur 7%; XLI target 7% > cur 5% (would loosen, skipped); XLRE/XLU target null.
+- Rule 16 decay: only XLU below entry → 10-session XLU -0.85% vs SPY -0.87% (marginally ahead) → flag=0, rotate=0 (breaks prior 07-17 flag=1 chain).
+- Rule 10 sector-kill: none — recent losses in Consumer Staples/Energy/Info Tech, none in open sectors (Materials/Industrials/Real Estate/Utilities).
+- No memory desync: all 4 held positions have matching BUY rows.
+
+### 2026-07-20 — DECAY-FLAG: XLU flag=0
+- unrealized -1.97% | 10-session pos -0.85% vs SPY -0.87% | prior_flag=1 | rotate=0
