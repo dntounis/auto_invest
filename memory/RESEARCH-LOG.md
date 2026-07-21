@@ -3512,3 +3512,40 @@ Ranked R:R-descending. **Satellites screened out today by macro-window** (FOMC M
 - Perplexity citations: ConvexTrade/CNBC/Investing.com/YCharts (oil — WTI ~$83.5–84.5, Brent broke past $90 on US-Iran/Hormuz; CNBC "Brent breaks past $90"); Markets Insider/Barchart/Robinhood-prediction (ESU26 ~−1.0% / NQU26 ~−1.5%; Markets Insider shows Sep contract ~flat vs prior close 7,497.75); Cboe/FRED/YCharts (VIX ~18.3–18.5, +~12% vs Jul 16 close 16.73); CNBC/marketframework/Schwab (catalysts — Q2 earnings DPZ beat + STLD/ZION/BOKF/JNJ/RYAAY, TSLA/GOOGL Wed, US-Iran → Brent >$90 / XLE +2%, AI-spend anxiety / Nasdaq −2.9% memory-oversupply); earnings-calendar (DPZ/STLD/RYAAY/ZION/BOKF/JNJ/DX pre-open — none held; STLD→XLB read-through); TradingEconomics/Census (calendar — quiet Tue Jul 21 / Wed Jul 22, FOMC Jul 28–29, Core PCE ~Jul 30, NFP Aug 1; **Perplexity mis-dated CPI/PPI to Jul 20 & NFP to Jul 21 — corrected against prior-session consensus**); SSGA/Wespath sector-rotation (Energy ~+24% lead, Materials/Staples/Industrials Leading, Utilities/Real Estate Improving, Tech ~−3% / Financials ~−7 to −8% Lagging); Zacks momentum screen (AMG Zacks #1 beat-and-raise; WDC/MU semis Zacks #1 rejected — chip-rotation risk; FBRX +129% / AOPT parabolic rejected)
 - Alpaca bars: AMG 200×1Day (last $369.83 > 50-DMA $332.09 > 200-DMA $293.61; ret10 +7.32% / ret50 +21.80% → RS10 +7.5% / RS50 +18.8% vs SPY, avgvol20 ~296K sh / ~$109M/day; pulled back from Jul 15 $379.59), SPY 60×1Day (RS baseline: last $743.29, ret10 −0.20% / ret50 +2.96%)
 - WebSearch fallback used: no
+
+## 2026-07-21 — Pre-market Research (Day 63, Tuesday, Week 13 Day 2)
+
+### Account
+- Equity: $10,168.88
+- Cash: $2,143.49
+- Buying power: $31,045.05 (RegT $12,312.37)
+- Daytrade count: not surfaced in paper /account payload (persistent cosmetic quirk; pattern_day_trader=false, trading_blocked=false, balance_asof 2026-07-20 → treated 0/5, <2)
+- Long market value: $8,025.39 → **deployment 78.92%** (v3 75–85% band); headroom to 85% ≈ **$618**, to 80% ≈ $110
+
+### Market Context
+- WTI / Brent oil: WTI ~$82.5 / **Brent $88.87** (−0.4%) — easing back off the $90 spike as US-Iran mediation hopes offset fresh strikes/Houthi threats
+- S&P 500 futures: **ES +0.57% (~7,527)**; NQ +1.4%, Dow +0.36% — **risk-on reversal** on Iran ceasefire hopes + mega-cap earnings anticipation
+- VIX: **17.58 (−5.7%)** — back to low-end of the 16–19 range after Fri expiry pop
+- Today's catalysts: NVDA +6% premarket on AWS $8.2B capex signal; broad semis bid (MRVL/INTC); Eli Lilly failed GLP-1 trial (pharma drag); **GOOGL Q2 after close tonight**, **TSLA after close Wed** — mega-cap earnings week kickoff
+- Earnings before open: none material. Beat-and-raise: **DHR** (Q2 rev $6.3B +5.5%, EPS $1.94, raised FY guide to $8.45–8.60 on early Masimo close)
+- Economic calendar: **quiet 5-day window** — Wed Jul 22 none, Thu Jul 23 Jobless Claims, Fri Jul 24 New Home Sales. Next **Tier-1 binaries: FOMC Jul 29–30 (decision + Powell) + Core PCE ~Jul 30**; NFP Aug 8. → **T+1/T+2 clear of any Tier-1 binary**
+- Sector momentum: **value leadership persists** — Energy / Materials / Industrials / Consumer Staples "Leading"; **Real Estate + Utilities "Improving"**; Tech / Comm Svcs / Discretionary / Financials "Lagging"; Healthcare "Weakening". Held book (XLB Materials, XLI Industrials, XLRE Real Estate, XLU Utilities) all in leading/improving quadrants ✓
+
+### Trade Ideas
+No idea clears the full v3 buy-side gate → **0 actionable**. Candidates screened and rejected:
+1. **ID:** `pm-2026-07-21-DHR` — **tier:** satellite, DHR (Healthcare/life-sci), catalyst beat-and-raise Q2 + FY guide up, R:R n/a — **REJECTED (2 gates): (a) trend filter — last close $201.11 is BELOW its 200-DMA $203.69** (above 50-DMA $182.98 only; RS strong at +5.1pp/10-sess, +13.8pp/50-sess, liquidity fine ~4.3M avg vol) → fails the DMA screen; **(b) deployment ceiling** — a ~$1.3–1.5K risk-parity clip on ~$618 headroom → ~92–93% deployment, breach. macro-window: clear (FOMC ≥T+5). Also Healthcare is the one "Weakening" quadrant. Watchlist only — re-arms if it reclaims 200-DMA on volume AND headroom frees.
+- Other momentum names (DELL, PANW, MU, WDC) sit in the **Lagging Tech** quadrant (momentum-misaligned) and are unconfirmed beat-and-raise → not screened.
+- **Binding constraint remains the deployment ceiling** (~$618 headroom): no core OR satellite add of meaningful size fits without first freeing headroom via a scale-out / stop-out / equity growth. Same gate that has held AMG off since Jul 14.
+
+### Risk Factors
+- Macro: Middle East oil headline risk (Brent still ~$89, Hormuz/Houthi tail); GOOGL/TSLA after-close earnings tonight/Wed could swing broad tape (index-level, not held-name specific)
+- Sector: rate-path sensitivity for XLRE/XLU into FOMC Jul 29–30 (Fed held 3.50–3.75% June); value rotation could stall if tech reasserts on strong mega-cap earnings
+- Idiosyncratic: XLU still −1.97% below entry (weakest sleeve; broke its Jul 17 decay-flag chain Jul 20, flag=0); XLB flat (−0.10%) near entry
+
+### Decision
+**HOLD** — clean book (4/6 core ETFs, all sector-aligned, all above GTC trails; worst XLU −1.97%), no name clears both the DMA screen and the deployment ceiling. Patience > activity. Week-13 budget **0/5 used**. market-open will re-confirm; nearest ladder trigger XLI +7% scale-out at $185.87 (currently +2.99%) — a fill there would free headroom and re-arm satellite screening.
+
+### Sources
+- Perplexity citations: univest.in (oil), Reuters/Investing (ES futures), CBOE/ycharts (VIX), sector-momentum maps, DHR Q2 earnings, momentum scanners (Tapeline/Zacks), sector-ETF outlooks
+- Alpaca `bars` DHR 1Day/200 + SPY 1Day/60 (DMA + RS computed locally)
+- WebSearch fallback used: no
