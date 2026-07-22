@@ -3549,3 +3549,42 @@ No idea clears the full v3 buy-side gate → **0 actionable**. Candidates screen
 - Perplexity citations: univest.in (oil), Reuters/Investing (ES futures), CBOE/ycharts (VIX), sector-momentum maps, DHR Q2 earnings, momentum scanners (Tapeline/Zacks), sector-ETF outlooks
 - Alpaca `bars` DHR 1Day/200 + SPY 1Day/60 (DMA + RS computed locally)
 - WebSearch fallback used: no
+
+## 2026-07-22 — Pre-market Research (Day 64, Wednesday, Week 13 Day 3)
+
+### Account
+- Equity: $10,184.01
+- Cash: $2,143.49 (21.05%)
+- Buying power: $31,087.42 (RegT $12,327.50)
+- Daytrade count: not surfaced in paper /account payload (persistent cosmetic quirk; trading_blocked=false, balance_asof 2026-07-21 → treated 0/5, <2)
+- Long market value: $8,040.52 → **deployment 78.95%** (v3 75–85% band); headroom to 85% ≈ **$616**, to 80% ≈ $107
+- ETF core (XLB+XLI+XLRE+XLU) = **100% of deployed** ≥45% floor ✓ | Sector book (of LMV): Real Estate 25.9% / Materials 25.2% / Utilities 24.6% / Industrials 24.3% — evenly balanced, all ≤50% ✓ | Satellite slots: **0/3 used, all 3 open** | **Week-13 trades: 0/5 used**
+
+### Market Context
+- WTI / Brent oil: **WTI ~$86–88, Brent ~$92–93** (both +~2.5%) — ⚠️ **US-Iran ceasefire COLLAPSED**; Rubio says Iran "not serious" about peace talks → fresh strikes + Red Sea/Hormuz shipping threats re-ignited the supply-shock premium (Brent back above $92 vs Tue's ~$89). Two-sided inflation input into the rate-cut trade
+- S&P 500 futures: **ES ~7,520 (−0.34%), NQ ~29,080 (−0.81%), Dow ~52,369 (−0.14%)** — modest risk-off, chip weakness + caution ahead of the first Big Tech earnings (GOOGL reported last night AMC, TSLA after close tonight)
+- VIX: **~17.0–17.8** (Jul 21 close 17.05, −8.6%) — subdued/low-end despite the oil headline; Reuters notes investors "looking past" the conflict to earnings
+- Today's catalysts: **Big Tech earnings week** (GOOGL last night, TSLA + IBM + ServiceNow AMC tonight) the dominant driver; semis rebounding (MU/SNDK/SOX bid); **US-Iran ceasefire collapse → Brent >$92** the macro overhang (energy/inflation) but contained (VIX 17)
+- Earnings before open: **T, CME, GE Vernova (GEV), Philip Morris (PM)** PMO — **none held**. GEV a possible utility/power read-through (XLU held) but no direct held-name print
+- Economic calendar: **quiet window** — Wed Jul 22 none, Thu Jul 23 Jobless Claims (non-Tier-1), Fri Jul 24 New Home Sales (non-Tier-1). Next **Tier-1 binaries: FOMC Jul 29 (decision + Powell) + Core PCE Jul 30**. → **T+1/T+2 (Thu/Fri) clear of any Tier-1 binary → satellite macro-window CLEAR** (nearest binary FOMC ≥ T+4). *(Perplexity garbled NFP dating again — ignored; NFP is early-month, next Aug.)* Core ETFs macro-exempt
+- Sector momentum YTD: **value/cyclical leadership persists** — Energy (~+22–27%) leads; **Materials (~+13–17%), Consumer Staples (~+11–16%), Industrials (~+13–16%) Leading**; Real Estate + Utilities positive/Improving; **Financials (~−3 to −7%), Tech (~−3 to −4%), Discretionary, Comm Svcs Lagging**. Held book (XLB/XLI/XLRE/XLU) all in leading/improving quadrants ✓
+
+### Trade Ideas
+No idea clears the full v3 buy-side gate → **0 actionable** (HOLD; 4th consecutive session). Screened and rejected:
+
+1. **ID:** `pm-2026-07-22-AMG` — **tier:** satellite, AMG (Financials/asset-manager), catalyst Zacks #1 beat-and-raise — **REJECTED (2 gates now): (a) RS/momentum rolled over** — last $340.58 still > 50-DMA $334.15 > 200-DMA $294.80 (trend intact) BUT **ret10 = −5.32% → RS10 = −5.40pp (now LAGGING SPY over 10 sessions)** after an ~8% two-session drop from Jul 20's ~$369; the required-positive short-term RS has flipped negative → **fails the RS screen** (ret50 +14.38% / RS50 +11.84pp still positive; liquidity fine ~$102M/day). **(b) Deployment ceiling** — a ~$1.5K risk-parity clip on ~$616 headroom → ~93% deployment, breach. macro-window: clear (FOMC ≥T+4). Also Financials is a lagging YTD sector + risk-off oil-shock tape. **Downgraded from watchlist top-name — momentum decay now DQs it independently of headroom.**
+- Other momentum names (**TDK, HGTY, GTEC** small-cap Zacks-momentum; **CORZ, DELL, INDV**) — speculative/thin or Lagging-Tech beta, wrong fit for a defensive core book; not screened.
+- **Binding constraints:** deployment ceiling (~$616 headroom blocks any meaningful add) AND no single name passes trend+RS+sector. Same gate that has held satellites off since Jul 14.
+
+### Risk Factors
+- **Macro/event:** live overhang is **US-Iran ceasefire collapse → Brent >$92** (supply-shock inflation risk that could reprice the rate-cut trade) into a modestly risk-off tape (ES −0.34%, NQ −0.81%, chip-led). VIX subdued at ~17 (market looking past it to earnings). **Big Tech earnings** (GOOGL last night, TSLA tonight) can swing the broad tape (index-level, not held-name). T+1/T+2 non-Tier-1 → next binary **FOMC Jul 29 + Core PCE Jul 30**
+- **Sector/idiosyncratic (book):** all-ETF core, evenly ~25% each. **XLU (−1.70%) & XLRE (+0.92%)** the rate-sensitive sleeves — an oil-driven inflation scare + hawkish-FOMC risk (Jul 29) are two-sided threats; **GEV earnings today** a same-space read-through for XLU. **XLI (+2.34%)** the industrials winner, nearest ladder trigger (first +7% scale-out at $185.87 vs current $177.77). **XLB (+1.09%)** grinding higher. No held-name near its stop (worst XLU −1.70%, well above its −10% trail)
+- **Portfolio:** healthy — deployment 79.0% inside the v3 band, ETF-core 100% of deployed, sectors evenly ≤26%, 0 daytrade risk, 3 satellite + 5 fresh weekly slots open. Only constraint remains the ~$616 ceiling headroom + absence of a passing single-name. No under-deployment pressure
+
+### Decision
+**HOLD** — no executable idea (4th consecutive session). Book is squarely in-band at **79.0%** with only **~$616** headroom to the 85% ceiling → no new clip fits, and — new this session — the standing satellite name **AMG now fails the RS screen** (ret10 −5.32% / RS10 −5.40pp, momentum rolled over after an ~8% two-session drop), so there is no passing single-name even if headroom existed. Tape is modestly **risk-off** (ES −0.34%, NQ −0.81%, chip-led) with a **US-Iran ceasefire collapse pushing Brent >$92**, though VIX stays subdued at ~17 as the market prioritizes Big Tech earnings. **No add, no defensive action:** all 4 held ETFs are above their GTC trails (worst XLU −1.70%), ETF-core is 100% of deployed, sectors evenly balanced ≤26%, macro-window clear. Satellite screening re-arms on the next scale-out / stop-out / equity growth freeing headroom AND a single-name reclaiming positive short-term RS (nearest ladder trigger: XLI +7% scale-out at $185.87 — currently $177.77 / +2.34%; XLRE +4% at $46.58 — +0.92%; XLB +4% at $52.08 — +1.09%; XLU below entry). Watch **Iran/oil escalation** (Brent >$92, Hormuz/Red Sea tail) and **TSLA/IBM AMC + FOMC Jul 29 / Core PCE Jul 30**. Patience > activity.
+
+### Sources
+- Perplexity citations: Convex/CNBC/Fortune/FXLeaders (oil — WTI ~$86–88, Brent ~$92–93, US-Iran ceasefire collapse, Rubio "Iran not serious"); Markets Insider/Reuters (ES −0.34% ~7,520 / NQ −0.81% ~29,080 / Dow −0.14%, chip weakness + Big Tech caution); Cboe/YCharts/FRED (VIX ~17.05, −8.6% from 18.65); Reuters/TradingNews (catalysts — Big Tech earnings GOOGL/TSLA/IBM, semis rebound, Iran oil overhang, "looking past" conflict); ii earnings calendar (T/CME/GEV/PM PMO — none held; GOOGL/TSLA/IBM/ServiceNow AMC); TradingEconomics (calendar — quiet Thu Jobless Claims / Fri New Home Sales, FOMC Jul 29, Core PCE Jul 30; Perplexity NFP dating garbled → ignored); SSGA/sector maps (Energy/Materials/Staples/Industrials Leading, RE/Utilities Improving, Financials/Tech/Disc/Comm Lagging); Zacks momentum screen (AMG beat-and-raise; TDK/HGTY/GTEC small-cap momentum; CORZ/DELL lagging-tech rejected)
+- Alpaca bars: AMG 200×1Day (last $340.58 > 50-DMA $334.15 > 200-DMA $294.80; **ret10 −5.32% / ret50 +14.38% → RS10 −5.40pp / RS50 +11.84pp** vs SPY — short-term RS flipped negative; avgvol20 ~299K sh / ~$102M/day; dropped ~8% from Jul 20 ~$369), SPY 60×1Day (RS baseline: last $748.28, ret10 +0.08% / ret50 +2.55%)
+- WebSearch fallback used: no
