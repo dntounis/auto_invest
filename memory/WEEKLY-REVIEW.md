@@ -906,3 +906,84 @@ A quiet, disciplined, modestly-red week (-1.07% absolute, -0.52% alpha) whose re
 
 - **Satellite-sleeve shrink trigger:** NOT met (W10 under / W11 over / W12 under — no 3-consecutive-under streak; and W12's "under" is a degenerate single-name round-trip on a sleeve that emptied to 0/3). No shrink-sat proposal — the signal is under-utilization, not over-allocation. Observation continues.
 - **Conviction: no proposal (trigger not met; opposite signal noted).**
+
+## Week ending 2026-07-24
+
+### Stats
+| Metric | Value |
+|--------|-------|
+| Starting portfolio | $10,216.76 (Jul 17 EOD snapshot; prior-review account.equity basis $10,212.75) |
+| Ending portfolio | $10,339.05 (account.equity; Jul 24 EOD snapshot portfolio $10,335.79) |
+| Week return | +$122.29 (+1.197%) [snapshot→equity; snapshot→snapshot +$119.03 / +1.165%] |
+| S&P 500 week | ~+0.34% (7,457.69 → 7,483.24 — NOISY/LOW-CONFIDENCE; Jul 17 anchor 7,457.69 corroborated by FRED + Statmuse this week, replacing prior review's 7,533.77 vendor drift; Jul 24 close 7,483.24 single-source. A stray Perplexity "+1.76% week" figure was discarded as internally inconsistent with the daily levels) |
+| Bot vs S&P | **+0.85%** (BEAT) |
+| Alpha vs SPX (v3) | **+0.85% (headline)** — first benchmark BEAT in 4 weeks; ends the 3-week negative-alpha streak (W10 -2.38 / W11 -1.49 / W12 -0.52 → **W13 +0.85**). Rolling W6→W13 cum alpha +4.35pp |
+| Core/Satellite P&L (v3) | core **+$123.04** (all of the week's P&L) / satellite **$0.00** (sleeve 0/3 all week — the beat came from core sector-ETF selection, NOT the alpha sleeve) |
+| Trades | 0 BUYs (6th–10th consecutive HOLD sessions across the week) — realized exits 0: W:0 / L:0 / open:4 (XLB/XLI/XLRE/XLU) |
+| Win rate | n/a (0 closed) |
+| Best trade | n/a (0 closes) |
+| Worst trade | n/a (0 closes) |
+| Profit factor | n/a (0 realized) |
+| daytrade_count | 0 (delta vs prior week: 0 -> 0) — null in paper /account (cosmetic quirk), trading_blocked=false → treated 0; **13 consecutive weeks / 66 trading days zero day trades** |
+| Capital deployment | 79.26% EOD ($8,192.30 / $10,335.79) — **squarely in the v3 75–85% band** all week |
+| Phase P&L | +$339.05 (+3.39%) — **new phase high** (equity basis; EOD-snapshot basis +$335.79 / +3.358%) |
+| Trading sessions | 5 (Mon Jul 20 – Fri Jul 24) |
+
+### Closed Trades
+| Ticker | Entry | Exit | P&L | Notes |
+| ------ | ----- | ---- | --- | ----- |
+| — | — | — | — | No positions closed this week (0 sells, 0 stop-outs, 0 scale-outs). |
+
+### Open Positions at Week End
+| Ticker | Entry       | Close   | Unrealized       | Stop                                             | Tier |
+| ------ | ----------- | ------- | ---------------- | ------------------------------------------------ | ---- |
+| XLB    | $50.08      | $51.06  | +$39.20 (+1.96%) | $49.5783 (7% trail, GTC 9b627571, hwm $53.31)    | core |
+| XLI    | $173.713636 | $182.22 | +$93.61 (+4.90%) | $176.567 (5% trail, GTC 4b207f64, hwm $185.86)   | core |
+| XLRE   | $44.79      | $45.86  | +$49.22 (+2.39%) | $41.517 (10% trail, GTC 16d5a6b2, hwm $46.13)    | core |
+| XLU    | $45.80      | $46.27  | +$20.68 (+1.03%) | $41.9625 (10% trail, GTC fa8eb3f2, hwm $46.625)  | core |
+
+daytrade_count: 0 (13 consecutive weeks; null in paper API, trading_blocked=false → treated 0). Positions 4/6; ETF core = 100% of deployed ($8,192.30) ≥ 45% floor ✓; sectors evenly balanced (Materials/Industrials/Real Estate/Utilities, each ~24.9–25.8%, all ≤50%) ✓. Satellite sleeve 0/3 (all slots open — 2nd consecutive idle week). All 4 held-book GTC trailing stops armed & ratcheted (XLRE + XLU trails stepped up Fri on fresh hwm); Rule 17 clean. All 4 positions closed the week green vs entry — no live DECAY-FLAG (XLU chain reset Fri).
+
+### What Worked
+- **Beat the benchmark (+0.85% alpha) and hit a new phase high (+3.39%) — the best week by both metrics since Week 9.** After 3 straight sub-benchmark weeks the bot out-earned SPX on a modestly-green tape (SPX ~+0.34%; bot +1.20%). All 4 core ETFs finished green vs entry, led by XLI +4.90% and XLRE +2.39% (Friday's rate-sensitive real-estate bid). The beat is genuine but came entirely from **core sector selection**, not the (idle) satellite sleeve.
+- **Zero money-moving rule violations, 13th straight clean visa-aware week.** 0 sells → Rule 14 gate never exercised; all 4 trailing stops armed and ratcheting up on new highs (Rule 6); no -7% breach (Rule 7); Rule 17 first-action scan clean every session; daytrade_count 0/5 all week. **13 consecutive weeks / 66 trading days, zero day trades.**
+- **Rule 16 decay machinery tracked and self-reset correctly.** XLU carried a live flag=1 into Monday (from Fri Jul 17), flag=0 Monday (marginally ahead of SPY), flag=1 Tuesday, then RESET decisively by Thu/Fri as XLU climbed +1.00% above entry. No false rotation fired; the Jul 22 midday cron skip left the chain briefly ambiguous but the Thu/Fri recovery mooted it.
+- **A qualified satellite finally appeared.** SCHW (Financials/brokerage, Zacks Strong Buy) became the **first single-stock name in weeks to clear every momentum/RS/liquidity/macro-window screen** on Friday (trend $101.61 > 50-DMA > 200-DMA; RS10 +1.51pp / RS50 +15.58pp both positive — the exact test AMG/APH/DHR each failed). The screening funnel is working; leadership is re-emerging.
+
+### What Didn't Work
+- **The satellite sleeve stayed 0/3 for a 2nd straight week — and this week it was NOT a screening problem, it was the deployment ceiling.** SCHW passed every gate except one: the v3.1 deployment ceiling (~$603 headroom to 85% vs a ~$1,580 full risk-parity clip → ~94.5% breach). The alpha engine had a clean, qualified name and could not buy it purely for lack of ~$1K of headroom. This is exactly the scenario the W11 partial-clip proposal anticipated — and it is now the single binding constraint on alpha, not screening or quote quality.
+- **Two routine outages this week — one of them genuine.** Market-open's HOLD-path logging gap tripped Rule 18 on Jul 21 AND Jul 24 (now 5–6 recurrences: Jul 8/14/16/20/21/24) — still logging-only, no money-moving action missed. But **Jul 22's midday was a genuine cron skip** (no midday commit existed at all): the Rule 16 XLU decay-chain check did not run that session, leaving the chain state ambiguous for a day. That is a step up in severity from the market-open logging gap — an actual missed evaluation, not just a missing log row.
+- **The alpha engine remains idle; this week's beat masks a structural dependency on core beta.** The book is a 100%-core sector-ETF basket for the 2nd week running. It beat this week on favorable sector selection (Materials/Industrials/Real-Estate/Utilities all green), but a pure-core book is structurally near-beta over time — a good week here doesn't change the design's reliance on satellites for durable alpha. The beat is welcome but not evidence the core-only posture is a winning long-run stance.
+
+### Key Lessons
+- **The binding constraint on alpha has shifted from screening to the deployment ceiling.** For 3 weeks the story was "no satellite clears the RS screen." This week a name (SCHW) did — and the full-clip-vs-headroom deadlock blocked it anyway. The partial-clip mechanism (proposed W11, kept on file W12) is no longer a nice-to-have; it is the specific fix that would have let the qualified SCHW clip on Friday. Elevate.
+- **A benchmark beat from core-only is fragile, not a strategy validation.** W13's +0.85% alpha is real P&L but came from sector-ETF selection on a friendly tape. It should not be read as "the core-only book works" — the core-satellite design still assigns durable alpha to the satellite sleeve, which sat empty. Re-arming a clean satellite (SCHW, if headroom frees) stays the highest-leverage lever.
+- **The operational-bug backlog is now compounding.** The market-open HOLD-path logging fix has been recommended for 3 weeks and never applied; it has now recurred 6 times. This week a *second, distinct* outage (Jul 22 midday genuine cron skip) appeared. Relying on the downstream Rule 18 sweep to paper over upstream cron/logging fragility is getting riskier as the number of distinct failure points grows.
+- **Visa-aware execution stays a solved problem (13 weeks / 66 days, zero day trades).** All residual risk is in strategy selection (satellite re-entry timing, deployment-ceiling handling) and operational cron/logging reliability — none in execution discipline.
+
+**Satellite-sleeve check (v3 spec):** W11 sat +0.46% / core -1.23% (sat OVER); W12 sat -$49.87 / core -$37.30 (sat UNDER); **W13 sat $0.00 (sleeve 0/3, idle) / core +$123.04.** The 3+ consecutive-week UNDERperformance shrink-sat trigger is NOT met (W11 broke it with a sat-over; W13 has no satellite P&L to compare — degenerate, not underperformance). The signal remains the OPPOSITE of shrink-sat: the sleeve is under-utilized (empty 2 weeks), not over-allocated. No shrink-sat proposal.
+
+### Adjustments for Next Week
+- **Mon Jul 27: SCHW is the priority satellite re-entry the moment headroom frees.** It cleared every momentum/RS/liquidity/macro screen Friday and is blocked only by the deployment ceiling (~$1K headroom needed vs a ~$1,580 clip). Nearest capital-freeing catalyst = **XLI first +7% scale-out at $185.87** (Fri close $182.22 / +4.90% — closest ladder tier in the book; a scale-out frees ~$670 and tightens XLI's trail). If the partial-clip mechanism is approved, SCHW can be sized to fit available headroom immediately.
+- **Macro week ahead is heavy: FOMC Jul 28–29 (decision + Powell presser Jul 29) + Core PCE Jul 30.** The v3.2 macro-proximity gate blocks a *fresh satellite* entry on T+1/T+2 of a Tier-1 binary — so a SCHW entry Mon Jul 27 (T+0) puts FOMC on T+2 (Jul 29), which the gate would BLOCK. Practical implication: either enter SCHW Monday only if the T+1/T+2 window is clear (it is not — FOMC is Wed), or **defer SCHW to Thu Jul 30 / Fri Jul 31 after the FOMC+PCE binaries clear.** Rate-sensitive XLU/XLRE are two-sided into the FOMC — watch for decay flags if they roll over post-decision.
+- **Watch XLI (+4.90%, closest ladder tier).** First ETF scale-out at +7% ($185.87) — a fire frees ~$670 and is the most likely organic headroom source for a satellite clip.
+- **Apply the durable market-open HOLD-path logging fix AND investigate the Jul 22 midday cron skip.** Two distinct operational failure points now; the logging fix is trivial and 3-weeks overdue, and the genuine midday skip warrants a cron-config check before it drops a money-moving evaluation on a day that matters.
+- **No auto-applied strategy mutations** (DECIDED G). See proposed changes below.
+
+### Overall Grade: B+
+
+The strongest results-week since Week 9: **beat the benchmark (+0.85% alpha, ending a 3-week negative-alpha streak), new phase high (+3.39%), all 4 core positions green, zero money-moving rule violations, 13th straight zero-day-trade week.** Execution earns an A. Three things hold it to B+: (1) the beat came entirely from **core sector selection** while the satellite alpha engine sat idle for a 2nd week — a friendly-tape core beat, not a strategy validation; (2) a qualified satellite (SCHW cleared every screen) was blocked **solely by the deployment ceiling** — the alpha engine now has a name it cannot buy for lack of ~$1K headroom, making the long-proposed partial-clip mechanism the binding constraint; (3) **two operational outages** this week, including a *genuine* Jul 22 midday cron skip (a missed Rule 16 evaluation, not just a logging gap) on top of the 6th recurrence of the market-open HOLD-path logging bug. Rolling cum alpha is back up to +4.35pp and the phase is at a new high — but the durable win requires fixing the deployment-ceiling headroom problem so a clean satellite like SCHW can actually be bought.
+
+## Proposed strategy changes (NOT auto-applied — human review required)
+
+- **Partial-clip / deployment-headroom sizing mechanism (carryover W11→W12, ELEVATED to HIGH — now BINDING).** When a satellite passes every buy-side gate but a full risk-parity clip would breach the 85% deployment ceiling, market-open should size the clip DOWN to fit available headroom (down to a minimum viable clip, e.g. ≥ some floor % of equity to keep it meaningful) rather than skipping the entry entirely. Rationale: this week SCHW cleared trend/RS/liquidity/macro/sector/quote and was rejected on the deployment ceiling ALONE (~$603 headroom vs a ~$1,580 full clip) — the alpha engine could not buy a fully-qualified name purely for lack of ~$1K headroom. This has now blocked a qualified satellite entry across multiple sessions and is the single binding constraint on the bot's alpha.
+- **Rationale:** For 3 weeks the satellite blocker was screening (no name cleared RS); this week a name cleared and the full-clip-vs-headroom deadlock blocked it anyway. The constraint has moved from selection to sizing — and a partial clip is the specific fix.
+- **Evidence:** TRADE-LOG.md 2026-07-24 market-open/EOD (SCHW cleared every momentum screen, rejected on deployment ceiling only, ~$603 headroom vs ~$1,580 clip); W11 + W12 reviews' identical partial-clip proposal kept on file; book 79% deployed / 100% core / 0-satellite 2 weeks running.
+- **Conviction: HIGH.** Bounded, well-specified change; now backed by a concrete blocked entry (SCHW), not a hypothetical. Recommend applying before a clean satellite window opens (post-FOMC/PCE, ~Jul 30–31).
+
+- **Durable market-open HOLD-path logging fix + midday cron reliability (carryover W11→W12, HIGH — now with a 2nd distinct outage).** (a) Market-open's HOLD/0-order path must ALWAYS append its Market-Open TRADE-LOG row (not only touch HEARTBEAT.md) — recommended 3 weeks running, never applied, now 6 recurrences (Jul 8/14/16/20/21/24). (b) NEW: investigate the **Jul 22 midday genuine cron skip** — no midday commit existed at all, so the Rule 16 decay-chain evaluation did not run that session. This is a distinct, more severe failure than the logging gap (a missed evaluation vs a missing log row).
+- **Rationale:** The logging gap is a durable, trivial-to-fix pattern the guardrail keeps catching; the midday skip is a genuine outage that dropped a real evaluation. Two distinct operational failure points in one week warrant both the trivial code fix and a cron-config review.
+- **Evidence:** TRADE-LOG.md MISSING-ROUTINE rows 2026-07-21 (market-open, logging) + 2026-07-24 (market-open, logging) + 2026-07-22 (midday, genuine cron skip — last commit market-open @ 13:39 UTC, no midday commit); W11 + W12 reviews' identical market-open recommendation.
+- **Conviction: HIGH (operational).** Logging fix is trivial and overdue; the midday cron skip is a new, real reliability gap needing investigation.
+
+- **Satellite re-entry priority signal (carryover W12 — MAINTAINED at MEDIUM).** When the satellite sleeve is 0/N and the bot has trailed the benchmark recently, rank a qualifying satellite entry above a marginal 5th core-ETF add for the same headroom (subject to all gates). W13 note: the sleeve stayed empty a 2nd week, and although the bot BEAT the benchmark this week on core strength, that beat is core-beta-dependent and fragile — the priority signal still holds. Superseded in practice by the partial-clip proposal above (the actual blocker this week was headroom sizing, not ranking). Keep on file; do not elevate independently.
