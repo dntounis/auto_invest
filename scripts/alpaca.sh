@@ -3,7 +3,7 @@
 # Usage: bash scripts/alpaca.sh <subcommand> [args...]
 #
 # Read-only subcommands (always allowed):
-#   account, positions, position SYM, quote SYM, orders [status]
+#   account, dtc, positions, position SYM, quote SYM, orders [status]
 #
 # State-changing subcommands (gated by TRADING_ENABLED="true"):
 #   order '<json>', cancel ORDER_ID, cancel-all, close SYM, close-all
@@ -49,6 +49,24 @@ require_trading_enabled() {
 case "$cmd" in
     account)
         curl -fsS -H "$H_KEY" -H "$H_SEC" "$API/account"
+        ;;
+    dtc)
+        # Rule 14 support (v3.3): emit the day-trade count AND whether it is real.
+        # The paper /account payload omits daytrade_count entirely; routines used to
+        # log "field absent, treated 0" and proceed, which made the visa-critical
+        # Rule 14 gate fail OPEN. Callers must branch on "source".
+        curl -fsS -H "$H_KEY" -H "$H_SEC" "$API/account" | python3 -c '
+import json,sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    d = {}
+v = d.get("daytrade_count")
+if v is None:
+    print(json.dumps({"daytrade_count": None, "source": "unavailable"}))
+else:
+    print(json.dumps({"daytrade_count": int(v), "source": "api"}))
+'
         ;;
     positions)
         curl -fsS -H "$H_KEY" -H "$H_SEC" "$API/positions"
@@ -175,7 +193,7 @@ d['bars'] = bars[-n:]
 print(json.dumps(d))" "$count"
         ;;
     *)
-        echo "Usage: bash scripts/alpaca.sh <account|positions|position|quote|orders|order|cancel|cancel-all|close|close-all|trailing-stop|replace-stop|activities|bars|scale-out> [args]" >&2
+        echo "Usage: bash scripts/alpaca.sh <account|dtc|positions|position|quote|orders|order|cancel|cancel-all|close|close-all|trailing-stop|replace-stop|activities|bars|scale-out> [args]" >&2
         exit 1
         ;;
 esac

@@ -279,5 +279,77 @@ rc=$?
 assert_exit_code 1 "$rc"
 assert_contains "$out" "usage: scale-out"
 
+# Test: dtc is a read-only subcommand — allowed even with the kill switch off
+start_test "dtc is read-only (not blocked by TRADING_ENABLED=false)"
+TMP="$(mktemp -d tests/.tmp/alp.XXXXXX)"
+out=$(
+    cd "$TMP"
+    cp -r "$ROOT/scripts" .
+    rm -f .env
+    export ALPACA_API_KEY="dummy" ALPACA_SECRET_KEY="dummy"
+    export ALPACA_ENDPOINT="https://paper-api.alpaca.markets/v2"
+    export ALPACA_DATA_ENDPOINT="https://data.alpaca.markets/v2"
+    export TRADING_ENABLED="false"
+    bash scripts/alpaca.sh dtc 2>&1
+)
+# Not refused by the kill switch, AND not fallen through to the unknown-subcommand
+# usage branch (which is how this test fails before the case arm exists).
+assert_not_contains "$out" "REFUSED"
+assert_not_contains "$out" "Usage: bash scripts/alpaca.sh"
+
+# Test: dtc appears in the usage line
+start_test "dtc listed in usage"
+TMP="$(mktemp -d tests/.tmp/alp.XXXXXX)"
+out=$(
+    cd "$TMP"
+    cp -r "$ROOT/scripts" .
+    rm -f .env
+    export ALPACA_API_KEY="dummy" ALPACA_SECRET_KEY="dummy"
+    export ALPACA_ENDPOINT="https://paper-api.alpaca.markets/v2"
+    export ALPACA_DATA_ENDPOINT="https://data.alpaca.markets/v2"
+    bash scripts/alpaca.sh bogus-subcommand 2>&1
+)
+assert_contains "$out" "dtc"
+
+# The next two tests mirror the parser embedded in `alpaca.sh dtc` rather than
+# invoking it, because the real subcommand curls Alpaca first and these must run
+# offline with no credentials. The mirrored block is the parser's CONTRACT under
+# test — if you change the parser in alpaca.sh, change it here too. Keep the two
+# byte-identical; that coupling is the point, not an accident.
+
+# Test: the dtc parser reports source=unavailable when the field is absent
+start_test "dtc parser: absent field → source unavailable"
+out=$(echo '{"equity":"10000","cash":"2000"}' | python3 -c '
+import json,sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    d = {}
+v = d.get("daytrade_count")
+if v is None:
+    print(json.dumps({"daytrade_count": None, "source": "unavailable"}))
+else:
+    print(json.dumps({"daytrade_count": int(v), "source": "api"}))
+' 2>&1)
+assert_contains "$out" '"source": "unavailable"'
+assert_contains "$out" '"daytrade_count": null'
+
+# Test: the dtc parser reports source=api when the field is present
+start_test "dtc parser: present field → source api"
+out=$(echo '{"equity":"10000","daytrade_count":3}' | python3 -c '
+import json,sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    d = {}
+v = d.get("daytrade_count")
+if v is None:
+    print(json.dumps({"daytrade_count": None, "source": "unavailable"}))
+else:
+    print(json.dumps({"daytrade_count": int(v), "source": "api"}))
+' 2>&1)
+assert_contains "$out" '"source": "api"'
+assert_contains "$out" '"daytrade_count": 3'
+
 rm -rf tests/.tmp/alp.*
 print_summary
