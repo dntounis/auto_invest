@@ -31,9 +31,11 @@ done
 
 ## IMPORTANT — VISA-AWARE RULES (read before acting)
 
-- **Rule 14 (pre-flight):** Before placing ANY sell, you MUST read
-  `account.daytrade_count` from STEP 2. If it is ≥ 2, ABORT all sell actions,
-  send a Telegram URGENT alert "midday $DATE: aborted sells, daytrade_count=N",
+- **Rule 14 (pre-flight):** Before placing ANY sell, you MUST resolve `DTC` and
+  `DTC_SOURCE` per STEP 2 *(v3.3 — `alpaca.sh dtc`, with a TRADE-LOG-derived
+  fallback; never treat an absent field as 0)*. If `DTC >= 2` OR
+  `DTC_SOURCE == none`, ABORT all sell actions, send a Telegram URGENT alert
+  "midday $DATE: aborted sells, daytrade_count=N source=S",
   commit a no-op note to TRADE-LOG.md, and exit. Do not work around this.
 - **Rule 15 (same-day skip):** A position is "actionable" only if
   `entry_date < today`. Same-day positions (opened earlier today by market-open)
@@ -60,19 +62,41 @@ done
 ## STEP 2 — Pull live paper-account state
 
 ```
-bash scripts/alpaca.sh account     # equity + daytrade_count (CRITICAL for Rule 14)
+bash scripts/alpaca.sh dtc         # day-trade count + source (CRITICAL for Rule 14)
+bash scripts/alpaca.sh account     # equity
 bash scripts/alpaca.sh positions   # current positions with avg_entry_price + market_value
 bash scripts/alpaca.sh orders open # open trailing-stop orders (for replace-stop)
 ```
 
-Capture `account.daytrade_count` as `DTC`. If `DTC >= 2`, jump immediately to
-the abort path described in Rule 14 (skip steps 3–6, write the abort note to
-TRADE-LOG.md, Telegram URGENT, commit, exit).
+**Resolve `DTC` and `DTC_SOURCE` (Rule 14, v3.3 — fail safe, never fail open):**
+
+1. Parse `bash scripts/alpaca.sh dtc`. If `source == "api"`, set `DTC` to
+   `daytrade_count` and `DTC_SOURCE=api`. Done.
+2. If `source == "unavailable"` (the paper endpoint omits the field), derive the
+   count locally: scan `memory/TRADE-LOG.md` over the **last 5 business days** and
+   count tickers that have BOTH a `side=buy` row AND a `side=sell` / `SCALE-OUT` /
+   `ROTATE-EXIT` row dated the **same calendar day**. That count is `DTC`, with
+   `DTC_SOURCE=local`. Rules 13 and 15 make this structurally 0 — if it is **not**
+   0, send a Telegram URGENT ("Rule 14: local day-trade count is N — Rule 13/15 may
+   have been bypassed") and treat it as a genuine DTC.
+3. If TRADE-LOG.md cannot be read at all, set `DTC_SOURCE=none`. **Block every
+   routine-initiated sell**, send Telegram URGENT ("Rule 14: day-trade count
+   unresolvable — sells blocked, manual review required"), and continue with
+   non-sell actions only (stop tightenings are not sells and remain permitted;
+   already-placed GTC stops are unaffected).
+
+Never record "field absent, treated 0". Every routine that evaluates Rule 14 MUST
+log the literal token `Rule 14 DTC: <N> (source=api|local|none)` in its TRADE-LOG
+row so the weekly review can audit whether the gate was genuinely exercised.
+
+If `DTC >= 2` (from any source), jump immediately to the abort path described in
+Rule 14 (skip steps 3–6, write the abort note to TRADE-LOG.md, Telegram URGENT,
+commit, exit).
 
 On DTC abort, append to memory/TRADE-LOG.md:
 ```
-### YYYY-MM-DD — MIDDAY ABORT: daytrade_count=N
-- Reason: Rule 14 pre-flight tripped (DTC >= 2)
+### YYYY-MM-DD — MIDDAY ABORT: daytrade_count=N (source=api|local|none)
+- Reason: Rule 14 pre-flight tripped (DTC >= 2, or source=none)
 - Pending actions skipped: <list of would-be actions>
 - Resolution: manual human review required
 ```

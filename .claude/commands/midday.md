@@ -8,7 +8,7 @@ today's date with `DATE=$(TZ=America/Chicago date +%Y-%m-%d)`.
 This is a v2 paper run. Sells may execute if `TRADING_ENABLED=true`.
 
 ## Visa-aware gates (READ FIRST)
-- **Rule 14 (pre-flight):** Read `account.daytrade_count` (DTC) BEFORE any sell. If `DTC >= 2`, abort all sells; print which sells you would have done; exit. Re-check DTC between sells in a sector-kill loop.
+- **Rule 14 (pre-flight):** Resolve `DTC`/`DTC_SOURCE` via `bash scripts/alpaca.sh dtc` (v3.3, see Step 2) BEFORE any sell — never treat an absent field as 0. If `DTC >= 2` or `DTC_SOURCE == none`, abort all sells; print which sells you would have done; exit. Re-check DTC between sells in a sector-kill loop.
 - **Rule 15 (same-day skip):** Positions with `entry_date == today` are read-only. Do not act on them.
 - **Rule 13 (no new stops):** This routine only TIGHTENS existing stops via `replace-stop`. Daily-summary places new stops at market close.
 
@@ -18,18 +18,24 @@ This is a v2 paper run. Sells may execute if `TRADING_ENABLED=true`.
 
 ## Step 2 — Pull state
 ```
-bash scripts/alpaca.sh account     # capture daytrade_count as DTC
+bash scripts/alpaca.sh dtc         # day-trade count + source (CRITICAL for Rule 14)
+bash scripts/alpaca.sh account     # equity
 bash scripts/alpaca.sh positions   # avg_entry_price + market_value + current_price per position
 bash scripts/alpaca.sh orders open # open trailing-stop orders (for replace-stop trail_percent parse)
 ```
 
-If `DTC >= 2`, abort all sells; print intended actions; exit.
+Resolve Rule 14 via `bash scripts/alpaca.sh dtc` *(v3.3)*: `source=api` → use the
+value; `source=unavailable` → derive locally from TRADE-LOG.md (same-day buy+sell
+pairs over the last 5 business days, `source=local`, structurally 0 under Rules
+13/15 — non-zero is URGENT); unreadable → `source=none`, block all sells + URGENT.
+Never treat an absent field as 0. Log `Rule 14 DTC: <N> (source=...)`.
+If `DTC >= 2` or `source=none`, abort sells.
 
-On DTC >= 2 abort, also write a one-block note to memory/TRADE-LOG.md (locally; not committed):
+On DTC abort, also write a one-block note to memory/TRADE-LOG.md (locally; not committed):
 
 ```
-### YYYY-MM-DD — MIDDAY ABORT: daytrade_count=N
-- Reason: Rule 14 pre-flight tripped (DTC >= 2)
+### YYYY-MM-DD — MIDDAY ABORT: daytrade_count=N (source=api|local|none)
+- Reason: Rule 14 pre-flight tripped (DTC >= 2, or source=none)
 - Pending actions skipped: <list>
 - Resolution: manual human review required
 ```

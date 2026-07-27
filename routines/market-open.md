@@ -131,7 +131,11 @@ For each idea in today's RESEARCH-LOG entry, run the Buy-Side Gate from
 - **(v3.1, all ideas)** Sector concentration cap: compute `deployed_after = long_market_value + position_cost` and `sector_after = (sum of this sector's existing position market values) + position_cost`. If `sector_after / deployed_after > 0.50`, skip + log "sector cap: TICKER sector would be X% of deployed (> 50%)".
 - **(v3.1, all ideas — restated v3.3)** Deployment ceiling: this gate no longer refuses an idea pre-sizing. `HEADROOM` (STEP 2) is passed to the sizer in STEP 5c, which shrinks the clip to fit. Here, only skip the idea outright if `HEADROOM <= 0` — log "deployment ceiling: already at X% — no headroom, 0 buys". After sizing, STEP 5c re-asserts `(long_market_value + position_cost) / equity <= 0.85` as a belt-and-braces check and skips + logs if it somehow fails.
 - **(v3.2, satellite only)** Macro-binary proximity: read the idea's `macro-window:` tag. If `tier` is `satellite` AND the tag names a Tier-1 binary on T+1/T+2 (anything other than `clear`), skip + log "macro-binary gate: TICKER blocked by <BINARY> at T+N". `tier: core` ideas (tag `n/a (core)`) bypass this check.
-- `account.daytrade_count` MUST be ≤ 1 to allow new entries (Rule 14 buffer).
+- Resolve `DTC` / `DTC_SOURCE` via `bash scripts/alpaca.sh dtc` using the same
+  three-source procedure as midday STEP 2 *(v3.3)*. `DTC` MUST be ≤ 1 to allow new
+  entries (Rule 14 buffer). If `DTC_SOURCE == none`, allow buys but log the
+  degraded state — a buy cannot itself create a day trade (Rule 13 defers the stop
+  to market close), so this gate fails safe on the buy side.
   WHY: a buy today could trigger a stop-fired sell tomorrow, bumping DTC by 1; a
   buffer of 1 keeps us well below the FINRA PDT threshold of 4 day trades in 5
   rolling business days even if a same-day stop fires unexpectedly (rare but
