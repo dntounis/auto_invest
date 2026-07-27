@@ -56,6 +56,39 @@ done
 
 ---
 
+## STEP 0 — Rule 18: clear pending catch-ups (FIRST action, v3.3)
+
+Before reading research or gating any idea, scan the tail of `memory/TRADE-LOG.md`
+for **unresolved** `CATCH-UP PENDING` rows — a `CATCH-UP PENDING: TICKER` row with no
+later `CATCH-UP CLEARED: TICKER` row for the same ticker. These are sells that a
+missed midday owed and that daily-summary deferred rather than execute at the
+closing bell.
+
+For each unresolved row, in order:
+
+1. **Re-evaluate against live state.** Pull `bash scripts/alpaca.sh positions`. If the
+   ticker is no longer held (its GTC trailing stop fired overnight), the sell is moot:
+   write `CATCH-UP CLEARED: TICKER reason=already-exited` and move on.
+2. **Re-check the trigger.** Recompute the condition that raised it (Rule 7
+   `unrealized_pl_pct <= -7`; Rule 16 via `sizing.py decay`; Rule 10 sector-kill).
+   If it no longer holds — the position recovered overnight — write
+   `CATCH-UP CLEARED: TICKER reason=trigger-no-longer-met` and move on. Do not sell.
+3. **Otherwise execute the sell.** Apply the full Rule 14 pre-flight (`DTC`/`DTC_SOURCE`
+   per STEP 3; abort on `DTC >= 2` or `DTC_SOURCE == none`) and the Rule 15 same-day
+   filter (a catch-up position is aged by construction — it was open at yesterday's
+   close — so Rule 15 cannot block it, but verify rather than assume). Then
+   `bash scripts/alpaca.sh close TICKER` (or the sector-kill batch for Rule 10).
+   Write the normal EXIT row, then `CATCH-UP CLEARED: TICKER reason=executed`.
+
+Row format:
+```
+### $DATE — CATCH-UP CLEARED: TICKER reason=<executed|already-exited|trigger-no-longer-met>
+- Resolves the CATCH-UP PENDING row of <original date>.
+```
+
+Send one Telegram per cleared row. If there are no unresolved rows, proceed silently
+to STEP 1.
+
 ## STEP 1 — Read memory for context
 
 - `memory/PROJECT-CONTEXT.md`

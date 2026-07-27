@@ -10,6 +10,14 @@ This is a v2 paper run. **Orders may execute** if `TRADING_ENABLED=true` in your
 local `.env`. Otherwise the wrapper refuses with exit 4 — that's the kill-switch
 working correctly. The cloud routine ALWAYS has TRADING_ENABLED=true in v2.
 
+## Step 0 — Rule 18: clear pending catch-ups (v3.3)
+Scan the TRADE-LOG tail for unresolved `CATCH-UP PENDING: TICKER` rows (no later
+`CATCH-UP CLEARED` for that ticker). For each: if no longer held → clear
+`reason=already-exited`; if the trigger no longer holds → clear
+`reason=trigger-no-longer-met`; else apply the Rule 14 pre-flight and Rule 15 check,
+`bash scripts/alpaca.sh close TICKER`, write the EXIT row, then clear
+`reason=executed`. Telegram once per cleared row. Silent if none.
+
 ## Step 1 — Read memory
 - `memory/PROJECT-CONTEXT.md`
 - `memory/TRADING-STRATEGY.md`

@@ -14,7 +14,9 @@ prior routines logged. On a US market holiday (no session) skip this sweep — t
 correctly no-op.
 - **pre-market** → `memory/RESEARCH-LOG.md` MUST have a `$DATE` entry.
 - **market-open** → `memory/TRADE-LOG.md` MUST have a `market-open $DATE` row.
-- **midday** → `memory/TRADE-LOG.md` MUST have a `$DATE — Midday Run` row.
+- **midday** → `memory/TRADE-LOG.md` MUST have a `- midday $DATE:` row *(v3.3 fix — the
+  old `$DATE — Midday Run` token stopped matching after 2026-07-17; midday's actual
+  guaranteed per-run line is `- midday $DATE: ...`)*.
 For each missing routine:
 ```
 bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — MISSING ROUTINE: <name> did not log today. Investigate cron. (Rule 18)"
@@ -24,7 +26,22 @@ and append a placeholder to that routine's log:
 ### $DATE — MISSING ROUTINE: <name> (Rule 18 cadence guardrail)
 - No <name> entry found for $DATE at daily-summary sweep; cron skip suspected. Investigate.
 ```
-Then continue to STEP 1. If all three logged, proceed silently.
+
+**v3.3 catch-up:** if the missing routine is `midday`, also RUN midday's Step 3+4
+evaluation now. Execute stop tightenings immediately (`replace-stop` — GTC, no fill
+risk, no DTC impact) and always write `DECAY-FLAG` rows (the Rule 16 consecutiveness
+state). Do NOT market-sell at the bell — instead write, per ticker:
+
+```
+### $DATE — CATCH-UP PENDING: TICKER action=<hard-close|rotate-exit|sector-kill>
+- Missed midday $DATE (Rule 18). Sell owed; deferred to next market-open STEP 0.
+- Trigger: <condition>
+```
+
+and send an URGENT Telegram. A missing `market-open` gets a placeholder only — the
+entry window has closed.
+
+Then continue to Step 1. If all three logged, proceed silently.
 
 ## Step 1 — Read memory for continuity
 - Tail of `memory/TRADE-LOG.md` — yesterday's equity (latest EOD snapshot) + today's BUY/EXIT/STOP rows

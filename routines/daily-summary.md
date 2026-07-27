@@ -52,23 +52,57 @@ done
 
 ---
 
-## STEP 0 — Rule 18: cadence sweep (FIRST action, v3.2)
+## STEP 0 — Rule 18: cadence sweep + catch-up (FIRST action, v3.2; recovery added v3.3)
 
 Before pulling state, resolve `DATE=$(TZ=America/Chicago date +%Y-%m-%d)` and verify today's
 prior routines logged. On a US market holiday (no session) skip this sweep — the routines
 correctly no-op.
 - **pre-market** → `memory/RESEARCH-LOG.md` MUST have a `$DATE` entry.
 - **market-open** → `memory/TRADE-LOG.md` MUST have a `market-open $DATE` row.
-- **midday** → `memory/TRADE-LOG.md` MUST have a `$DATE — Midday Run` row.
-For each missing routine:
+- **midday** → `memory/TRADE-LOG.md` MUST have a `- midday $DATE:` row *(v3.3 — corrected
+  from the stale `$DATE — Midday Run` token, which the producer stopped writing after
+  2026-07-17; midday's actual guaranteed per-run line is `- midday $DATE: ...`)*.
+
+For each missing routine, send the alert and write the placeholder as before:
 ```
 bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — MISSING ROUTINE: <name> did not log today. Investigate cron. (Rule 18)"
 ```
-and append a placeholder to that routine's log:
 ```
 ### $DATE — MISSING ROUTINE: <name> (Rule 18 cadence guardrail)
 - No <name> entry found for $DATE at daily-summary sweep; cron skip suspected. Investigate.
 ```
+
+**Then, if the missing routine is `midday`, RUN ITS EVALUATION NOW (v3.3 catch-up).**
+A missed midday is a missed Rule 7 hard-close, a missed Rule 8 ladder step and a
+break in the Rule 16 consecutiveness chain — detection alone let all three lapse on
+2026-07-22. Pull `bash scripts/alpaca.sh positions` and `bash scripts/alpaca.sh orders open`
+early (before STEP 2 if needed) and execute midday's STEP 3 + STEP 4 decision logic
+verbatim — same Rule 15 same-day filter, same `sizing.py ladder` / `scaleout` / `decay`
+calls, same Rule 14 pre-flight (Task 4's `DTC` / `DTC_SOURCE` resolution). Then split
+the outcome by whether it requires a market sell:
+
+- **Stop tightenings (Rule 8 `target_trail_pct`) — EXECUTE NOW.** `bash scripts/alpaca.sh
+  replace-stop OID TICKER QTY $target_trail_pct`. A stop replacement is a GTC order,
+  not a sell: no fill risk at the close, no `DTC` impact, and Rule 9 still applies
+  (only ever tighten, never within 3% of price). Log the normal `STOP UPDATE` row with
+  `(Rule 18 catch-up)` appended to its Trigger line.
+- **`DECAY-FLAG` rows (Rule 16) — ALWAYS WRITE.** This is the state the next midday
+  reads for consecutiveness; skipping it is what left the chain ambiguous on Jul 22.
+  Write the row exactly as midday would.
+- **Market sells (Rule 7 hard-close, Rule 16 `rotate == 1`, Rule 10 sector-kill) —
+  DEFER.** Do NOT sell at the closing bell; fill quality is poor and the order may not
+  complete. Instead write one row per ticker:
+```
+### $DATE — CATCH-UP PENDING: TICKER action=<hard-close|rotate-exit|sector-kill>
+- Missed midday $DATE (Rule 18). Evaluation run at daily-summary; a sell is owed.
+- Trigger: <Rule 7 unrealized -X% | Rule 16 2nd consecutive decay flag | Rule 10 sector S>
+- Deferred to next market-open STEP 0 (closing-bell fill risk). Position is aged → Rule 15 safe.
+```
+  and send `bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — CATCH-UP PENDING: TICKER <action> owed from missed midday; next market-open will execute. (Rule 18)"`.
+
+If `market-open` is the missing routine, no catch-up is possible — the entry window has
+closed. Write the placeholder only.
+
 Then continue to STEP 1. If all three logged, proceed silently.
 
 ## STEP 1 — Read memory for continuity
