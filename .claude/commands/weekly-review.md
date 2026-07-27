@@ -35,9 +35,9 @@ bash scripts/alpaca.sh bars SPY 1Day 10  # benchmark (v3.3)
 | Starting portfolio | EOD snapshot from prior Friday (or Day 0 baseline if week 1) |
 | Ending portfolio | `account.equity` |
 | Week return | (ending - starting) / starting * 100, $ and % |
-| S&P 500 week | **`bash scripts/alpaca.sh bars SPY 1Day 10` (v3.3) — never web search.** `(last_close - prior_review_close) / prior_review_close * 100`. Cite both SPY closes and dates inline. Mark "n/a" rather than substituting a web figure |
+| S&P 500 week | **`bash scripts/alpaca.sh bars SPY 1Day 10` (v3.3) — never web search. Chain from prior WEEKLY-REVIEW.md entry, never re-query.** `prior_review_close` from prior entry's recorded `last_close` (protects against Alpaca's retroactive adjustments). Only `last_close` from fresh bars pull. Bootstrap: if prior entry has no recorded SPY close, take `prior_close` from bars query and note "bootstrapped" in provenance. If target date is holiday or absent in 10 bars, use most recent trading day's close (note date used) or retry with 20 bars. Mark "n/a" only if no trading day found — never substitute a web figure. Report: `X.XX% (SPY $A <prior-date> → $B <last-date>, Alpaca bars)`. |
 | Bot vs S&P | `week_return - spy_week_return`; both legs from Alpaca prices |
-| Alpha vs SPX (v3) | same as Bot vs S&P. **Never revise a prior week's benchmark figure** — footnote instead |
+| Alpha vs SPX (v3) | same as Bot vs S&P. **Never revise a prior week's benchmark figure** — append footnote to CURRENT entry naming the prior week, never edit historical entry |
 | Core/satellite attribution (v3) | P&L of `Tier: core` vs `Tier: satellite` positions (no Tier field = core) |
 | Trades placed | count of BUY rows in TRADE-LOG.md this week |
 | Win rate | (closed winners) / (closed total) |

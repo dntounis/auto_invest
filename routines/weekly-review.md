@@ -96,9 +96,9 @@ Compute from the read-in data:
 | Starting portfolio | EOD snapshot from prior Friday (or Day 0 baseline if week 1) |
 | Ending portfolio | `account.equity` |
 | Week return | `(ending - starting) / starting * 100`, $ and % |
-| S&P 500 week | **From `alpaca.sh bars SPY 1Day 10` (v3.3) — never from web search.** Take the SPY close on the prior review's ending date (`prior_close`) and the most recent SPY close (`last_close`); `spy_week_return = (last_close - prior_close) / prior_close * 100`. Report as `X.XX% (SPY $A → $B, Alpaca bars)`. If the prior review's ending date is not present in the 10 bars (long holiday gap), pull `bars SPY 1Day 20` and retry; only if that also fails, mark "n/a" — do NOT substitute a web-sourced figure |
+| S&P 500 week | **From `alpaca.sh bars SPY 1Day 10` (v3.3) — never from web search. Chain historical closes forward, never re-query.** `prior_close` MUST be read from the prior week's `WEEKLY-REVIEW.md` entry (the SPY close it recorded as `last_close`); only `last_close` comes from the fresh bars pull. *Reason: Alpaca's `adjustment=all` means historical closes mutate retroactively after dividends/splits; republishing a changed figure silently breaks the alpha record.* Bootstrap: if the prior entry has no recorded SPY close, take `prior_close` from bars pull this week and note "bootstrapped from bars query" in provenance. `spy_week_return = (last_close - prior_close) / prior_close * 100`. Report as `X.XX% (SPY $A <prior-date> → $B <last-date>, Alpaca bars)`. If the target date falls on a market holiday or is not in the 10 bars, use the most recent trading day's SPY close at or before that date (note which date was actually used in the provenance line). Retry with `bars SPY 1Day 20` if needed. Mark "n/a" only if no trading day can be found — do NOT substitute a web-sourced figure |
 | Bot vs S&P | `week_return - spy_week_return` (positive = beat the market). Both legs now come from Alpaca prices, so the comparison is internally consistent |
-| Alpha vs SPX (v3) | same as Bot vs S&P — state explicitly as the headline alpha number. **Never revise a prior week's benchmark figure** *(v3.3)*: with a deterministic source there is nothing to reconcile, and silently restating history (as happened to the Jul 17 close, revised 7,533.77 → 7,457.69) makes the rolling alpha series meaningless. If a prior figure looks wrong, add a footnote — do not overwrite it |
+| Alpha vs SPX (v3) | same as Bot vs S&P — state explicitly as the headline alpha number. **Never revise a prior week's benchmark figure** *(v3.3)*: with a deterministic source there is nothing to reconcile, and silently restating history (as happened to the Jul 17 close, revised 7,533.77 → 7,457.69) makes the rolling alpha series meaningless. If a prior figure looks wrong, append a footnote to the CURRENT week's entry naming the prior week it refers to; never edit the historical entry in place. |
 | Core/satellite attribution (v3) | sum realized+unrealized P&L of `Tier: core` positions vs `Tier: satellite` positions this week (read the `Tier:` field on BUY rows; older v2 ETF positions with no Tier field count as core) |
 | Trades placed | count of BUY rows in TRADE-LOG.md this week |
 | Win rate | (closed winners) / (closed total) |
@@ -110,9 +110,11 @@ Compute from the read-in data:
 
 **Benchmark provenance (v3.3).** The `S&P 500 week` figure MUST cite its two SPY
 closes and their dates inline, e.g. `+0.34% (SPY $748.32 Jul 17 → $750.87 Jul 24,
-Alpaca bars)`. A Perplexity or WebSearch index level may be quoted alongside as a
-sanity check, but it is never the number of record; if the two diverge by more than
-0.25pp, note the divergence and keep the Alpaca figure.
+Alpaca bars)` or `+0.34% (SPY $748.32 Jul 17 [bootstrapped from bars query] → $750.87 Jul 24, Alpaca bars)`.
+Caching the prior week's `last_close` and its date — rather than re-querying — shields the alpha
+record from Alpaca's retroactive dividend/split adjustments. A Perplexity or WebSearch index level
+may be quoted alongside as a sanity check, but it is never the number of record; if the two diverge
+by more than 0.25pp, note the divergence and keep the Alpaca figure.
 
 ## STEP 4 — Append week-summary to `memory/TRADE-LOG.md`
 
