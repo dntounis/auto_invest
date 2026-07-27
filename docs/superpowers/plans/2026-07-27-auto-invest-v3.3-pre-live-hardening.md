@@ -442,6 +442,12 @@ out=$(
 )
 assert_contains "$out" "dtc"
 
+# The next two tests mirror the parser embedded in `alpaca.sh dtc` rather than
+# invoking it, because the real subcommand curls Alpaca first and these must run
+# offline with no credentials. The mirrored block is the parser's CONTRACT under
+# test — if you change the parser in alpaca.sh, change it here too. Keep the two
+# byte-identical; that coupling is the point, not an accident.
+
 # Test: the dtc parser reports source=unavailable when the field is absent
 start_test "dtc parser: absent field → source unavailable"
 out=$(echo '{"equity":"10000","cash":"2000"}' | python3 -c '
