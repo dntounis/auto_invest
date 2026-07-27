@@ -18,10 +18,16 @@ working correctly. The cloud routine ALWAYS has TRADING_ENABLED=true in v2.
 
 If today's RESEARCH-LOG entry does not exist (e.g., pre-market was not run locally),
 STOP with message "market-open $DATE: no RESEARCH-LOG entry found — run /pre-market first".
-Do NOT make up trade ideas.
+**Before exiting** *(v3.3)*, append the mandatory Market-Open Run row (Step 7 format)
+to `memory/TRADE-LOG.md`: `- market-open $DATE: 0 orders placed, 0 filled. HALTED at
+Step 1 — no RESEARCH-LOG entry for today. Upstream pre-market failure; no ideas
+evaluated.` Then exit. Do NOT make up trade ideas.
 
 If today's RESEARCH-LOG entry lacks `pm-YYYY-MM-DD-TICKER` IDs, treat it as
-v1-format and STOP — do not synthesize IDs.
+v1-format and STOP — do not synthesize IDs. **Before exiting** *(v3.3)*, append the
+same row, adapted: `- market-open $DATE: 0 orders placed, 0 filled. HALTED at Step 1
+— RESEARCH-LOG entry is v1-format, no pm- IDs. Upstream pre-market failure; no ideas
+evaluated.` Then exit.
 
 ## Step 2 — Pull state
 ```
@@ -30,8 +36,8 @@ bash scripts/alpaca.sh positions
 bash scripts/alpaca.sh orders open
 ```
 
-Then compute once for the run *(v3.3)*: `HEADROOM = (EQUITY * 0.85) - LONG_MARKET_VALUE`.
-If `HEADROOM <= 0`, no buy of any size is permitted — skip all ideas.
+Then compute once for the run *(v3.3)*: `HEADROOM = (EQUITY * 0.85) - LONG_MARKET_VALUE`,
+`COMMITTED_COST = 0`. If `HEADROOM <= 0`, no buy of any size is permitted — skip all ideas.
 
 Idempotency: skip any ticker with an existing today BUY (DECIDED H).
 
@@ -56,7 +62,7 @@ Additional gate checks per idea:
 ## Step 4 — Rank, take top N
 Ideas already ranked R:R-desc by pre-market. Take `min(passing, 5 - trades_this_week)` *(v3 — cap 5)*
 (trades_this_week from TRADE-LOG.md tally read in Step 1). If the result is zero,
-skip to Step 8 with no orders placed.
+skip to Step 7 (still writes the mandatory Market-Open Run row) with no orders placed.
 
 ## Step 5 — Per-idea loop: quote, size, limit
 For each selected idea, execute the following sub-steps **in order**:
@@ -94,15 +100,25 @@ This default prevents division-by-zero in the sizing formula below.
 
 **5c. Compute position size**
 
+Use the idea's **stop width** as `stop-frac` (parse `stop width N%` from the pm idea
+line; fall back to `trail_pct / 100`). Then:
+
 ```
 SIZE_JSON=$(python3 scripts/sizing.py size --equity "$EQUITY" --price "$LIVE_ASK" \
     --stop-frac "$STOP_FRAC" --headroom "$HEADROOM")
 ```
 
 `clamped == "floor_skip"` or `shares < 1` → skip + log. `clamped == "headroom"` →
-clip deliberately shrunk to fit; proceed and log it. Re-assert
-`(LONG_MARKET_VALUE + cost) / EQUITY <= 0.85`. After each order, decrement
-`HEADROOM = HEADROOM - cost`.
+clip deliberately shrunk to fit; proceed and log it.
+
+**Reserve at sizing time, not order-placement time** *(v3.3)*: right after parsing
+a successful `cost` (any outcome other than `floor_skip`), before sizing the next
+idea: `COMMITTED_COST += cost`, `HEADROOM -= cost`. Must happen here — Step 5 sizes
+every idea before Step 6 places any order, so a decrement deferred to order-placement
+time would never fire and two ideas could both consume the same headroom. Re-assert
+`(LONG_MARKET_VALUE + COMMITTED_COST) / EQUITY <= 0.85` (already includes this idea's
+cost). If a later order is rejected/unfilled in Step 6, the reservation is simply
+released for the next session — don't re-size mid-run.
 
 **5d. Compute limit price**
 

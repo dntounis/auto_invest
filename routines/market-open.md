@@ -64,11 +64,28 @@ done
 - Tail of `memory/TRADE-LOG.md` (positions opened today, week's trade count)
 
 If today's RESEARCH-LOG entry does not exist (e.g., pre-market failed to commit),
-STOP, send Telegram alert "market-open $DATE: no RESEARCH-LOG entry found — skipping execution",
-exit. Do NOT make up trade ideas.
+STOP, send Telegram alert "market-open $DATE: no RESEARCH-LOG entry found — skipping execution".
+**Before exiting** *(v3.3)*, append the mandatory Market-Open Run row to
+`memory/TRADE-LOG.md` (same format as STEP 7) recording the halt:
+```
+- market-open $DATE: 0 orders placed, 0 filled. HALTED at STEP 1 — no RESEARCH-LOG
+  entry for today. Upstream pre-market failure; no ideas evaluated. Telegram alert sent.
+```
+Then exit. Do NOT make up trade ideas.
 
 Note on historical RESEARCH-LOG entries: pre-T6 entries do not have `pm-YYYY-MM-DD-TICKER`
 IDs. If today's entry lacks IDs, treat it as v1-format and STOP — do not synthesize IDs.
+Send Telegram alert "market-open $DATE: today's RESEARCH-LOG entry is v1-format
+(no pm- IDs) — skipping execution" *(v3.3 — this path had no alert before; added
+so the row below can truthfully say one was sent)*.
+**Before exiting** *(v3.3)*, append the same mandatory Market-Open Run row to
+`memory/TRADE-LOG.md`, adapting the reason:
+```
+- market-open $DATE: 0 orders placed, 0 filled. HALTED at STEP 1 — RESEARCH-LOG
+  entry is v1-format, no pm- IDs. Upstream pre-market failure; no ideas evaluated.
+  Telegram alert sent.
+```
+Then exit.
 
 ## STEP 2 — Pull live paper-account state
 
@@ -83,11 +100,13 @@ From that payload compute, once, for the whole run *(v3.3)*:
 ```
 DEPLOY_CEILING = 0.85
 HEADROOM = (EQUITY * DEPLOY_CEILING) - LONG_MARKET_VALUE
+COMMITTED_COST = 0
 ```
 
 `HEADROOM` is the dollar room remaining before the Rule 5 deployment ceiling.
-It may be negative (book already over the ceiling) — in that case no buy of any
-size is permitted; skip every idea and log
+`COMMITTED_COST` tracks the running total reserved by ideas already sized in this
+run *(v3.3 — see STEP 5c)*. `HEADROOM` may be negative (book already over the
+ceiling) — in that case no buy of any size is permitted; skip every idea and log
 `deployment ceiling: already at X% — no headroom, 0 buys`.
 
 Idempotency (DECIDED H): if today's orders already include any BUY for a ticker
@@ -110,7 +129,7 @@ For each idea in today's RESEARCH-LOG entry, run the Buy-Side Gate from
 - **(v3, satellite only)** If this idea's `tier` is `satellite`: ETF-core market value after this fill stays ≥ 45% of deployed equity (sum of all position market values from `positions`). Skip + log if it would breach the core floor.
 - **(v3, satellite only)** If this idea's `tier` is `satellite`: ≤ 2 satellite names (existing + pending) in this idea's GICS sector after the fill. Skip + log if it would make 3.
 - **(v3.1, all ideas)** Sector concentration cap: compute `deployed_after = long_market_value + position_cost` and `sector_after = (sum of this sector's existing position market values) + position_cost`. If `sector_after / deployed_after > 0.50`, skip + log "sector cap: TICKER sector would be X% of deployed (> 50%)".
-- **(v3.1, all ideas — restated v3.3)** Deployment ceiling: this gate no longer refuses an idea pre-sizing. `HEADROOM` (STEP 2) is passed to the sizer in STEP 5c, which shrinks the clip to fit. Here, only skip the idea outright if `HEADROOM <= 0` — log "deployment ceiling: already at X% — no headroom". After sizing, STEP 5c re-asserts `(long_market_value + position_cost) / equity <= 0.85` as a belt-and-braces check and skips + logs if it somehow fails.
+- **(v3.1, all ideas — restated v3.3)** Deployment ceiling: this gate no longer refuses an idea pre-sizing. `HEADROOM` (STEP 2) is passed to the sizer in STEP 5c, which shrinks the clip to fit. Here, only skip the idea outright if `HEADROOM <= 0` — log "deployment ceiling: already at X% — no headroom, 0 buys". After sizing, STEP 5c re-asserts `(long_market_value + position_cost) / equity <= 0.85` as a belt-and-braces check and skips + logs if it somehow fails.
 - **(v3.2, satellite only)** Macro-binary proximity: read the idea's `macro-window:` tag. If `tier` is `satellite` AND the tag names a Tier-1 binary on T+1/T+2 (anything other than `clear`), skip + log "macro-binary gate: TICKER blocked by <BINARY> at T+N". `tier: core` ideas (tag `n/a (core)`) bypass this check.
 - `account.daytrade_count` MUST be ≤ 1 to allow new entries (Rule 14 buffer).
   WHY: a buy today could trigger a stop-fired sell tomorrow, bumping DTC by 1; a
@@ -191,13 +210,28 @@ Parse `shares`, `cost` and `clamped` from `SIZE_JSON`.
   would have been $RAW)`.
 - If `clamped == "cap"` or `"none"`: full risk-parity or 16%-capped clip; proceed.
 
-Then re-assert the ceiling: `(LONG_MARKET_VALUE + cost) / EQUITY` MUST be `<= 0.85`.
-If it is not, skip the idea and log "deployment ceiling re-assert failed" — this
-should be unreachable and indicates a headroom computation bug worth a Telegram note.
+**Reserve at sizing time, not order-placement time** *(v3.3)*: immediately after
+parsing a successful `cost` above (any outcome other than `floor_skip`), before
+moving on to size the next idea, reserve it:
+```
+COMMITTED_COST = COMMITTED_COST + cost
+HEADROOM = HEADROOM - cost
+```
+This must happen here, in STEP 5c, and not in STEP 6 — STEP 5 sizes *every*
+idea first ("After all ideas are processed, proceed to STEP 6"), and STEP 6 is
+a separate loop that places orders afterwards. If the reservation were deferred
+to order-placement time, no order would yet exist when idea 2 is sized, so two
+ideas in one session would each be sized against the same, undecremented
+headroom — the exact double-consumption bug this reservation exists to prevent.
 
-**Multi-idea runs:** after each order is placed, decrement
-`HEADROOM = HEADROOM - cost` before sizing the next idea, so two ideas in one
-session cannot each consume the same headroom.
+Then re-assert the ceiling using the running total: `(LONG_MARKET_VALUE +
+COMMITTED_COST) / EQUITY` MUST be `<= 0.85` (note `COMMITTED_COST` already
+includes this idea's cost after the reservation above). If it is not, skip the
+idea and log "deployment ceiling re-assert failed" — this should be
+unreachable and indicates a headroom computation bug worth a Telegram note.
+
+If an order is later rejected or expires unfilled in STEP 6, the reservation
+is simply released for the next session — do not attempt to re-size mid-run.
 
 This keeps the same risk-parity logic (2% equity at risk, clamped to the 16% v3.3
 sizing target and to remaining headroom) deterministic and unit-tested in
