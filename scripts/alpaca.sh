@@ -51,21 +51,27 @@ case "$cmd" in
         curl -fsS -H "$H_KEY" -H "$H_SEC" "$API/account"
         ;;
     dtc)
-        # Rule 14 support (v3.3): emit the day-trade count AND whether it is real.
-        # The paper /account payload omits daytrade_count entirely; routines used to
-        # log "field absent, treated 0" and proceed, which made the visa-critical
-        # Rule 14 gate fail OPEN. Callers must branch on "source".
-        curl -fsS -H "$H_KEY" -H "$H_SEC" "$API/account" | python3 -c '
+        # Rule 14 support (v3.3): always emits one JSON object and always exits 0.
+        # `source` is the sole signal — a curl failure yields source=unavailable, not a
+        # nonzero exit, so a caller running under `set -e` can branch on it instead of
+        # dying at the call site. This is deliberately unlike the other read-only
+        # subcommands, which use the silence+nonzero-exit idiom.
+        resp="$(curl -fsS -H "$H_KEY" -H "$H_SEC" "$API/account" || true)"
+        printf '%s' "$resp" | python3 -c '
 import json,sys
 try:
     d = json.load(sys.stdin)
 except Exception:
     d = {}
 v = d.get("daytrade_count")
-if v is None:
+try:
+    n = int(v)
+except (TypeError, ValueError):
+    n = None
+if n is None:
     print(json.dumps({"daytrade_count": None, "source": "unavailable"}))
 else:
-    print(json.dumps({"daytrade_count": int(v), "source": "api"}))
+    print(json.dumps({"daytrade_count": n, "source": "api"}))
 '
         ;;
     positions)

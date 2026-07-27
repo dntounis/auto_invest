@@ -311,7 +311,7 @@ out=$(
 )
 assert_contains "$out" "dtc"
 
-# The next two tests mirror the parser embedded in `alpaca.sh dtc` rather than
+# The next several tests mirror the parser embedded in `alpaca.sh dtc` rather than
 # invoking it, because the real subcommand curls Alpaca first and these must run
 # offline with no credentials. The mirrored block is the parser's CONTRACT under
 # test — if you change the parser in alpaca.sh, change it here too. Keep the two
@@ -326,10 +326,14 @@ try:
 except Exception:
     d = {}
 v = d.get("daytrade_count")
-if v is None:
+try:
+    n = int(v)
+except (TypeError, ValueError):
+    n = None
+if n is None:
     print(json.dumps({"daytrade_count": None, "source": "unavailable"}))
 else:
-    print(json.dumps({"daytrade_count": int(v), "source": "api"}))
+    print(json.dumps({"daytrade_count": n, "source": "api"}))
 ' 2>&1)
 assert_contains "$out" '"source": "unavailable"'
 assert_contains "$out" '"daytrade_count": null'
@@ -343,13 +347,108 @@ try:
 except Exception:
     d = {}
 v = d.get("daytrade_count")
-if v is None:
+try:
+    n = int(v)
+except (TypeError, ValueError):
+    n = None
+if n is None:
     print(json.dumps({"daytrade_count": None, "source": "unavailable"}))
 else:
-    print(json.dumps({"daytrade_count": int(v), "source": "api"}))
+    print(json.dumps({"daytrade_count": n, "source": "api"}))
 ' 2>&1)
 assert_contains "$out" '"source": "api"'
 assert_contains "$out" '"daytrade_count": 3'
+
+# Test: the dtc parser falls back to unavailable (no traceback) on a
+# non-integer-parseable string value, e.g. "3.0"
+start_test "dtc parser: non-integer-parseable string (3.0) → source unavailable, no traceback"
+out=$(echo '{"daytrade_count":"3.0"}' | python3 -c '
+import json,sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    d = {}
+v = d.get("daytrade_count")
+try:
+    n = int(v)
+except (TypeError, ValueError):
+    n = None
+if n is None:
+    print(json.dumps({"daytrade_count": None, "source": "unavailable"}))
+else:
+    print(json.dumps({"daytrade_count": n, "source": "api"}))
+' 2>&1)
+assert_contains "$out" '"source": "unavailable"'
+assert_contains "$out" '"daytrade_count": null'
+assert_not_contains "$out" "Traceback"
+
+# Test: the dtc parser falls back to unavailable (no traceback) on a
+# non-integer-parseable string value, e.g. "N/A"
+start_test "dtc parser: non-integer-parseable string (N/A) → source unavailable, no traceback"
+out=$(echo '{"daytrade_count":"N/A"}' | python3 -c '
+import json,sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    d = {}
+v = d.get("daytrade_count")
+try:
+    n = int(v)
+except (TypeError, ValueError):
+    n = None
+if n is None:
+    print(json.dumps({"daytrade_count": None, "source": "unavailable"}))
+else:
+    print(json.dumps({"daytrade_count": n, "source": "api"}))
+' 2>&1)
+assert_contains "$out" '"source": "unavailable"'
+assert_contains "$out" '"daytrade_count": null'
+assert_not_contains "$out" "Traceback"
+
+# Test: the dtc parser accepts an integer-string value (Alpaca sometimes
+# stringifies numerics), pinning the coercion behaviour
+start_test "dtc parser: integer-string field (\"3\") → source api"
+out=$(echo '{"daytrade_count":"3"}' | python3 -c '
+import json,sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    d = {}
+v = d.get("daytrade_count")
+try:
+    n = int(v)
+except (TypeError, ValueError):
+    n = None
+if n is None:
+    print(json.dumps({"daytrade_count": None, "source": "unavailable"}))
+else:
+    print(json.dumps({"daytrade_count": n, "source": "api"}))
+' 2>&1)
+assert_contains "$out" '"source": "api"'
+assert_contains "$out" '"daytrade_count": 3'
+
+# Test: dtc's contract is total — a curl failure (bad creds, no network, 5xx)
+# must still exit 0 with a well-formed source=unavailable payload, never let
+# `set -euo pipefail` propagate curl's nonzero status. This is what lets a
+# caller running under its own `set -e` (Task 4's routines) branch on `source`
+# instead of dying at the call site.
+start_test "dtc: curl failure still exits 0 with source=unavailable"
+TMP="$(mktemp -d tests/.tmp/alp.XXXXXX)"
+out=$(
+    cd "$TMP"
+    cp -r "$ROOT/scripts" .
+    rm -f .env
+    # Bogus creds so the real Alpaca endpoint (or any reachable stand-in)
+    # rejects the request — we need an actual curl failure, not a mock.
+    export ALPACA_API_KEY="dummy" ALPACA_SECRET_KEY="dummy"
+    export ALPACA_ENDPOINT="https://paper-api.alpaca.markets/v2"
+    export ALPACA_DATA_ENDPOINT="https://data.alpaca.markets/v2"
+    unset TRADING_ENABLED
+    bash scripts/alpaca.sh dtc 2>&1
+)
+rc=$?
+assert_exit_code 0 "$rc"
+assert_contains "$out" '"source": "unavailable"'
 
 rm -rf tests/.tmp/alp.*
 print_summary
