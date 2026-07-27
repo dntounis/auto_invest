@@ -82,6 +82,9 @@ bash scripts/alpaca.sh positions
 # TRADE-LOG.md (read in STEP 1). Call activities for today only as a sanity
 # check on today's fills:
 bash scripts/alpaca.sh activities  # today only; primary source for week is TRADE-LOG.md
+# Benchmark (v3.3): SPY daily bars are the single source of truth for the weekly
+# S&P comparison. 10 bars covers a 5-session week plus margin for holidays.
+bash scripts/alpaca.sh bars SPY 1Day 10
 ```
 
 ## STEP 3 — Compute the weekly grade card
@@ -93,9 +96,9 @@ Compute from the read-in data:
 | Starting portfolio | EOD snapshot from prior Friday (or Day 0 baseline if week 1) |
 | Ending portfolio | `account.equity` |
 | Week return | `(ending - starting) / starting * 100`, $ and % |
-| S&P 500 week | from Perplexity if available, else mark "n/a" |
-| Bot vs S&P | week_return - S&P 500 week (positive = beat the market) |
-| Alpha vs SPX (v3) | same as Bot vs S&P — state explicitly as the headline alpha number |
+| S&P 500 week | **From `alpaca.sh bars SPY 1Day 10` (v3.3) — never from web search.** Take the SPY close on the prior review's ending date (`prior_close`) and the most recent SPY close (`last_close`); `spy_week_return = (last_close - prior_close) / prior_close * 100`. Report as `X.XX% (SPY $A → $B, Alpaca bars)`. If the prior review's ending date is not present in the 10 bars (long holiday gap), pull `bars SPY 1Day 20` and retry; only if that also fails, mark "n/a" — do NOT substitute a web-sourced figure |
+| Bot vs S&P | `week_return - spy_week_return` (positive = beat the market). Both legs now come from Alpaca prices, so the comparison is internally consistent |
+| Alpha vs SPX (v3) | same as Bot vs S&P — state explicitly as the headline alpha number. **Never revise a prior week's benchmark figure** *(v3.3)*: with a deterministic source there is nothing to reconcile, and silently restating history (as happened to the Jul 17 close, revised 7,533.77 → 7,457.69) makes the rolling alpha series meaningless. If a prior figure looks wrong, add a footnote — do not overwrite it |
 | Core/satellite attribution (v3) | sum realized+unrealized P&L of `Tier: core` positions vs `Tier: satellite` positions this week (read the `Tier:` field on BUY rows; older v2 ETF positions with no Tier field count as core) |
 | Trades placed | count of BUY rows in TRADE-LOG.md this week |
 | Win rate | (closed winners) / (closed total) |
@@ -104,6 +107,12 @@ Compute from the read-in data:
 | Profit factor | sum(gains) / abs(sum(losses)) |
 | daytrade_count delta | `account.daytrade_count` now vs the value recorded in last week's `WEEKLY-REVIEW.md` entry (or 0 on Week 1). If no prior value exists, state "n/a (week 1)" |
 | Rule violations (audit) | scan TRADE-LOG.md for: positions > 20% (Rule 3); missing trailing stops (Rule 6); -7% closes that exceeded -10% (Rule 7 timeout); Rule 13 violations (stop placed before market close); Rule 14 abort events |
+
+**Benchmark provenance (v3.3).** The `S&P 500 week` figure MUST cite its two SPY
+closes and their dates inline, e.g. `+0.34% (SPY $748.32 Jul 17 → $750.87 Jul 24,
+Alpaca bars)`. A Perplexity or WebSearch index level may be quoted alongside as a
+sanity check, but it is never the number of record; if the two diverge by more than
+0.25pp, note the divergence and keep the Alpaca figure.
 
 ## STEP 4 — Append week-summary to `memory/TRADE-LOG.md`
 

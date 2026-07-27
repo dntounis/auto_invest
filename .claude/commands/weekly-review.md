@@ -25,6 +25,7 @@ bash scripts/alpaca.sh positions
 # Note: activities is a single-day filter (?date=). For week trade data,
 # rely on TRADE-LOG.md (read in Step 1).
 bash scripts/alpaca.sh activities    # today only sanity check
+bash scripts/alpaca.sh bars SPY 1Day 10  # benchmark (v3.3)
 ```
 
 ## Step 3 — Compute grade card
@@ -34,9 +35,9 @@ bash scripts/alpaca.sh activities    # today only sanity check
 | Starting portfolio | EOD snapshot from prior Friday (or Day 0 baseline if week 1) |
 | Ending portfolio | `account.equity` |
 | Week return | (ending - starting) / starting * 100, $ and % |
-| S&P 500 week | from Perplexity if available, else "n/a" |
-| Bot vs S&P | week_return - S&P 500 week (positive = beat the market) |
-| Alpha vs SPX (v3) | headline alpha = Bot vs S&P, stated explicitly |
+| S&P 500 week | **`bash scripts/alpaca.sh bars SPY 1Day 10` (v3.3) — never web search.** `(last_close - prior_review_close) / prior_review_close * 100`. Cite both SPY closes and dates inline. Mark "n/a" rather than substituting a web figure |
+| Bot vs S&P | `week_return - spy_week_return`; both legs from Alpaca prices |
+| Alpha vs SPX (v3) | same as Bot vs S&P. **Never revise a prior week's benchmark figure** — footnote instead |
 | Core/satellite attribution (v3) | P&L of `Tier: core` vs `Tier: satellite` positions (no Tier field = core) |
 | Trades placed | count of BUY rows in TRADE-LOG.md this week |
 | Win rate | (closed winners) / (closed total) |
