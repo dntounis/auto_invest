@@ -58,27 +58,60 @@ done
 
 ## STEP 0 — Rule 18: clear pending catch-ups (FIRST action, v3.3)
 
-Before reading research or gating any idea, scan the tail of `memory/TRADE-LOG.md`
-for **unresolved** `CATCH-UP PENDING` rows — a `CATCH-UP PENDING: TICKER` row with no
-later `CATCH-UP CLEARED: TICKER` row for the same ticker. These are sells that a
-missed midday owed and that daily-summary deferred rather than execute at the
-closing bell.
+Before reading research or gating any idea, scan **the last 10 trading days or the
+last 200 rows of `memory/TRADE-LOG.md`, whichever is shorter** (same lookback bound
+as Rule 10's sector-kill scan) for **unresolved** `CATCH-UP PENDING` rows. A
+`CATCH-UP PENDING: TICKER` row dated `<pending-date>` (its own `$DATE` header) is
+unresolved unless a `CATCH-UP CLEARED: TICKER` row appears **strictly below it in
+the file** whose "Resolves the CATCH-UP PENDING row of ..." line **names that same
+`<pending-date>`** — matching on ticker alone is not enough, since a ticker can
+cycle through several PENDING/CLEARED incidents over time and a stale CLEARED row
+from an earlier incident must never be read as covering a newer PENDING row. If an
+unresolved row falls outside this lookback window, do NOT silently age it out —
+send a Telegram URGENT flagging it for manual review, then continue with the rows
+inside the window.
 
 For each unresolved row, in order:
 
 1. **Re-evaluate against live state.** Pull `bash scripts/alpaca.sh positions`. If the
    ticker is no longer held (its GTC trailing stop fired overnight), the sell is moot:
    write `CATCH-UP CLEARED: TICKER reason=already-exited` and move on.
-2. **Re-check the trigger.** Recompute the condition that raised it (Rule 7
-   `unrealized_pl_pct <= -7`; Rule 16 via `sizing.py decay`; Rule 10 sector-kill).
-   If it no longer holds — the position recovered overnight — write
-   `CATCH-UP CLEARED: TICKER reason=trigger-no-longer-met` and move on. Do not sell.
-3. **Otherwise execute the sell.** Apply the full Rule 14 pre-flight (`DTC`/`DTC_SOURCE`
-   per STEP 3; abort on `DTC >= 2` or `DTC_SOURCE == none`) and the Rule 15 same-day
-   filter (a catch-up position is aged by construction — it was open at yesterday's
-   close — so Rule 15 cannot block it, but verify rather than assume). Then
-   `bash scripts/alpaca.sh close TICKER` (or the sector-kill batch for Rule 10).
-   Write the normal EXIT row, then `CATCH-UP CLEARED: TICKER reason=executed`.
+2. **Re-check the trigger.**
+   - `action=hard-close|rotate-exit|sector-kill`: recompute the condition that
+     raised it (Rule 7 `unrealized_pl_pct <= -7`; Rule 16 via `sizing.py decay`;
+     Rule 10 sector-kill). If it no longer holds — the position recovered
+     overnight — write `CATCH-UP CLEARED: TICKER reason=trigger-no-longer-met`
+     and move on. Do not sell.
+   - `action=scale-out`: recompute the ladder tier via `sizing.py ladder` against
+     the position's **live** `unrealized_pl_pct` / hwm-gain. If the tier that
+     triggered the scale-out no longer holds (the position pulled back below it
+     overnight), write `CATCH-UP CLEARED: TICKER reason=trigger-no-longer-met`
+     and move on. If it still holds, **re-run `sizing.py scaleout` against the
+     position's live `qty`** — the lot may have changed overnight. Never sell the
+     quantity recorded in the PENDING row; it is informational only and may be stale.
+3. **Otherwise execute the sell.** Resolve `DTC`/`DTC_SOURCE` using **midday's
+   STEP 5 mid-loop procedure, not STEP 3's buy-side gate** — the buy-side gate is
+   deliberately permissive on `source=none` (a buy can't itself create a day
+   trade), which is the wrong behavior for a sell: `bash scripts/alpaca.sh dtc` →
+   `source=api` → use it; `source=unavailable` → derive the count locally from
+   `memory/TRADE-LOG.md` (same-day buy+sell pairs, last 5 business days), **then
+   add the number of sells already executed earlier in this STEP 0 batch** (their
+   TRADE-LOG rows haven't been written yet, so the raw scan would undercount
+   them); anything else is `source=none`. **ABORT this sell and every remaining
+   unresolved row** if `DTC >= 2` or `source=none` — send Telegram URGENT, commit
+   progress made so far on already-cleared rows, and proceed to STEP 1, leaving
+   the rest unresolved for the next market-open. Then apply the Rule 15 same-day
+   filter (a catch-up position is aged by construction — it was open at
+   yesterday's close — so Rule 15 cannot block it, but verify rather than
+   assume). Then:
+   - `action=hard-close|rotate-exit`: `bash scripts/alpaca.sh close TICKER`.
+   - `action=sector-kill`: the sector-kill batch for Rule 10 (re-check `DTC`
+     before each individual sell within the batch, same as midday STEP 5).
+   - `action=scale-out`: `bash scripts/alpaca.sh scale-out TICKER $SELL_QTY`
+     using the freshly recomputed quantity from step 2 above — never the
+     PENDING row's recorded quantity.
+   Write the normal EXIT (or SCALE-OUT) row, then `CATCH-UP CLEARED: TICKER
+   reason=executed`.
 
 Row format:
 ```

@@ -29,9 +29,12 @@ value; `source=unavailable` → derive locally from TRADE-LOG.md (same-day buy+s
 pairs over the last 5 business days, `source=local`, structurally 0 under Rules
 13/15 — non-zero is URGENT); unreadable → `source=none`, block all sells + URGENT.
 Never treat an absent field as 0. Log `Rule 14 DTC: <N> (source=...)`.
-If `DTC >= 2` or `source=none`, abort sells.
+If `DTC >= 2` or `source=none`, abort sells — but still write Step 6's mandatory
+`- midday $DATE:` cadence line first (v3.3 — an abort must not look like a cron
+skip to Rule 18's sweep).
 
-On DTC abort, also write a one-block note to memory/TRADE-LOG.md (locally; not committed):
+On DTC abort, also write a one-block note to memory/TRADE-LOG.md (locally; not
+committed) — Step 6's `- midday $DATE:` and `Rule 14 DTC:` lines first, then:
 
 ```
 ### YYYY-MM-DD — MIDDAY ABORT: daytrade_count=N (source=api|local|none)
@@ -104,7 +107,16 @@ Abort if DTC reaches 2 (any source) or source=none.
 
 ## Step 6 — Append action rows to `memory/TRADE-LOG.md` (locally)
 
-**Always, first — the Rule 14 audit line**, even with zero actionable positions
+**MANDATORY first, on every path — NO-ACTION days and the Step 2 DTC-abort path
+included (v3.3):**
+```
+- midday $DATE: <N> sells, <K> scale-outs, <M> stop-tightenings, <P> decay-flags (or "DTC ABORT").
+```
+This is the token daily-summary's Rule 18 sweep looks for; omitting it on a
+no-action or abort day makes midday indistinguishable from a cron skip and can
+trigger a spurious catch-up re-run that duplicates today's DECAY-FLAG rows.
+
+**Then — the Rule 14 audit line**, even with zero actionable positions
 or zero scheduled actions:
 ```
 - Rule 14 DTC: <N> (source=api|local|none) (sell attempted: yes|no)

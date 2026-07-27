@@ -56,12 +56,24 @@ done
 
 Before pulling state, resolve `DATE=$(TZ=America/Chicago date +%Y-%m-%d)` and verify today's
 prior routines logged. On a US market holiday (no session) skip this sweep — the routines
-correctly no-op.
-- **pre-market** → `memory/RESEARCH-LOG.md` MUST have a `$DATE` entry.
-- **market-open** → `memory/TRADE-LOG.md` MUST have a `market-open $DATE` row.
-- **midday** → `memory/TRADE-LOG.md` MUST have a `- midday $DATE:` row *(v3.3 — corrected
-  from the stale `$DATE — Midday Run` token, which the producer stopped writing after
-  2026-07-17; midday's actual guaranteed per-run line is `- midday $DATE: ...`)*.
+correctly no-op. **A row that is itself, or wraps, a `MISSING ROUTINE` placeholder for
+that routine does NOT count as evidence the routine ran.** Rule 18's own placeholder
+output must never satisfy Rule 18's own detection — this applies to all three checks
+below, not just midday.
+- **pre-market** → `memory/RESEARCH-LOG.md` MUST have a `$DATE` entry that is not
+  itself a `MISSING ROUTINE` placeholder.
+- **market-open** → `memory/TRADE-LOG.md` MUST have a `market-open $DATE` row that
+  is not itself a `MISSING ROUTINE` placeholder.
+- **midday** → `memory/TRADE-LOG.md` MUST have a `- midday $DATE:` row that is not
+  itself a `MISSING ROUTINE` placeholder *(v3.3 — corrected from the stale
+  `$DATE — Midday Run` token. That token's defect wasn't staleness — it is still
+  written on 2026-07-21/22/23 — the real bug is that the header is *also* emitted
+  as a wrapper around daily-summary's own `MISSING ROUTINE: midday` placeholder:
+  on 2026-07-22, the one genuine midday cron skip in this history, `## 2026-07-22
+  — Midday Run` IS present, wrapping the placeholder, so the old check would have
+  concluded midday ran on the exact day it didn't. `- midday $DATE:` is midday's
+  actual per-run line, written only on a real run — mandatory on every path,
+  including NO-ACTION and the Rule 14 abort, per `routines/midday.md` STEP 6)*.
 
 For each missing routine, send the alert and write the placeholder as before:
 ```
@@ -89,13 +101,18 @@ the outcome by whether it requires a market sell:
 - **`DECAY-FLAG` rows (Rule 16) — ALWAYS WRITE.** This is the state the next midday
   reads for consecutiveness; skipping it is what left the chain ambiguous on Jul 22.
   Write the row exactly as midday would.
-- **Market sells (Rule 7 hard-close, Rule 16 `rotate == 1`, Rule 10 sector-kill) —
-  DEFER.** Do NOT sell at the closing bell; fill quality is poor and the order may not
-  complete. Instead write one row per ticker:
+- **Market sells AND Rule 8 scale-outs — DEFER.** This bucket is Rule 7 hard-close,
+  Rule 16 `rotate == 1`, Rule 10 sector-kill, **and** a Rule 8 `sizing.py scaleout`
+  call that returns `reason == "ok"`. A scale-out is a partial market sell
+  (`bash scripts/alpaca.sh scale-out`), not a GTC order — it carries the identical
+  closing-bell fill risk as a full exit and belongs here, not in the stop-tightening
+  bucket above. Do NOT sell any quantity at the closing bell; fill quality is poor
+  and the order may not complete. Instead write one row per ticker:
 ```
-### $DATE — CATCH-UP PENDING: TICKER action=<hard-close|rotate-exit|sector-kill>
+### $DATE — CATCH-UP PENDING: TICKER action=<hard-close|rotate-exit|sector-kill|scale-out>
 - Missed midday $DATE (Rule 18). Evaluation run at daily-summary; a sell is owed.
-- Trigger: <Rule 7 unrealized -X% | Rule 16 2nd consecutive decay flag | Rule 10 sector S>
+- Trigger: <Rule 7 unrealized -X% | Rule 16 2nd consecutive decay flag | Rule 10 sector S | Rule 8 scale-out due, tier=core|satellite>
+- Qty (scale-out only): <N shares from sizing.py scaleout at this evaluation — informational; next market-open re-derives against live qty and never reuses this number>
 - Deferred to next market-open STEP 0 (closing-bell fill risk). Position is aged → Rule 15 safe.
 ```
   and send `bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — CATCH-UP PENDING: TICKER <action> owed from missed midday; next market-open will execute. (Rule 18)"`.

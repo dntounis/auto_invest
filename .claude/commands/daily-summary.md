@@ -11,12 +11,16 @@ This is a v2 paper run. EOD snapshot + stop placement (Rule 13) + heartbeat chec
 
 Before pulling state, resolve `DATE=$(TZ=America/Chicago date +%Y-%m-%d)` and verify today's
 prior routines logged. On a US market holiday (no session) skip this sweep — the routines
-correctly no-op.
-- **pre-market** → `memory/RESEARCH-LOG.md` MUST have a `$DATE` entry.
-- **market-open** → `memory/TRADE-LOG.md` MUST have a `market-open $DATE` row.
-- **midday** → `memory/TRADE-LOG.md` MUST have a `- midday $DATE:` row *(v3.3 fix — the
-  old `$DATE — Midday Run` token stopped matching after 2026-07-17; midday's actual
-  guaranteed per-run line is `- midday $DATE: ...`)*.
+correctly no-op. **A row that is itself, or wraps, a `MISSING ROUTINE` placeholder for
+that routine does NOT count as evidence it ran** — for all three checks below.
+- **pre-market** → `memory/RESEARCH-LOG.md` MUST have a `$DATE` entry (not a placeholder).
+- **market-open** → `memory/TRADE-LOG.md` MUST have a `market-open $DATE` row (not a placeholder).
+- **midday** → `memory/TRADE-LOG.md` MUST have a `- midday $DATE:` row (not a placeholder)
+  *(v3.3 fix — the old `$DATE — Midday Run` token's real defect wasn't staleness: it's
+  also written as a wrapper around daily-summary's own `MISSING ROUTINE: midday`
+  placeholder, so it self-satisfied on 2026-07-22, the one genuine skip day.
+  `- midday $DATE:` is midday's real per-run line, mandatory on every path per
+  `routines/midday.md` STEP 6, and never written by the placeholder path)*.
 For each missing routine:
 ```
 bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — MISSING ROUTINE: <name> did not log today. Investigate cron. (Rule 18)"
@@ -30,12 +34,14 @@ and append a placeholder to that routine's log:
 **v3.3 catch-up:** if the missing routine is `midday`, also RUN midday's Step 3+4
 evaluation now. Execute stop tightenings immediately (`replace-stop` — GTC, no fill
 risk, no DTC impact) and always write `DECAY-FLAG` rows (the Rule 16 consecutiveness
-state). Do NOT market-sell at the bell — instead write, per ticker:
+state). Do NOT market-sell OR scale-out at the bell — a scale-out is a partial market
+sell with the same closing-bell fill risk as a full exit — instead write, per ticker:
 
 ```
-### $DATE — CATCH-UP PENDING: TICKER action=<hard-close|rotate-exit|sector-kill>
+### $DATE — CATCH-UP PENDING: TICKER action=<hard-close|rotate-exit|sector-kill|scale-out>
 - Missed midday $DATE (Rule 18). Sell owed; deferred to next market-open STEP 0.
 - Trigger: <condition>
+- Qty (scale-out only): <N from sizing.py scaleout — informational, market-open re-derives live>
 ```
 
 and send an URGENT Telegram. A missing `market-open` gets a placeholder only — the

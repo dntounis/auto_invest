@@ -90,10 +90,14 @@ log the literal token `Rule 14 DTC: <N> (source=api|local|none)` in its TRADE-LO
 row so the weekly review can audit whether the gate was genuinely exercised.
 
 If `DTC >= 2` (from any source), jump immediately to the abort path described in
-Rule 14 (skip steps 3–6, write the abort note to TRADE-LOG.md, Telegram URGENT,
-commit, exit).
+Rule 14: skip steps 3–5's evaluation/execution logic, but STILL write STEP 6's
+mandatory `- midday $DATE:` cadence line and `Rule 14 DTC:` audit line first
+*(v3.3 — the old "skip steps 3–6" language silently dropped the Rule 18 cadence
+token on an abort day too, making a DTC abort indistinguishable from a cron skip
+to daily-summary's sweep)*, then the abort note, Telegram URGENT, commit, exit.
 
-On DTC abort, append to memory/TRADE-LOG.md:
+On DTC abort, append to memory/TRADE-LOG.md — STEP 6's mandatory `- midday $DATE:`
+and `Rule 14 DTC:` lines first, then:
 ```
 ### YYYY-MM-DD — MIDDAY ABORT: daytrade_count=N (source=api|local|none)
 - Reason: Rule 14 pre-flight tripped (DTC >= 2, or source=none)
@@ -119,8 +123,8 @@ For each position, compute:
 
 Drop positions where `entry_date == today` (Rule 15). The remaining list is
 "actionable". If the list is empty, skip to STEP 6 — it still writes the
-mandatory Rule 14 audit line even with zero actionable positions — then
-continue to STEP 7.
+mandatory `- midday $DATE:` cadence line and Rule 14 audit line even with zero
+actionable positions — then continue to STEP 7.
 
 ## STEP 4 — Decide actions per actionable position
 
@@ -245,9 +249,24 @@ otherwise), send URGENT Telegram, commit progress so far, exit.
 
 ## STEP 6 — Append action rows to `memory/TRADE-LOG.md`
 
-**Always, first — the Rule 14 audit line.** Before any action-specific rows below
-— and even if STEP 3 found zero actionable positions or STEP 4 scheduled zero
-actions — append one line to `memory/TRADE-LOG.md`, on every run:
+**MANDATORY on every execution path — a NO-ACTION day (STEP 3 finds zero
+actionable positions, or STEP 4 schedules zero actions), the Rule 14 abort path
+in STEP 2, and every ordinary run alike (v3.3).** Before anything else, append
+the literal Rule 18 cadence token:
+```
+- midday $DATE: <N> sells, <K> scale-outs, <M> stop-tightenings, <P> decay-flags (or "DTC ABORT" if this run aborted at STEP 2).
+```
+This is the line `daily-summary`'s Rule 18 cadence sweep searches for to confirm
+midday genuinely ran today. Writing nothing here — on a NO-ACTION day or a DTC
+abort — is indistinguishable from a cron skip, and worse: if daily-summary wrongly
+concludes midday didn't run, it re-runs the evaluation and writes duplicate
+DECAY-FLAG rows on a day that already had correct ones, corrupting the Rule 16
+consecutiveness chain (v3.3 catch-up). Never skip this line, on any path, for any
+reason.
+
+**Then, first among the rest — the Rule 14 audit line.** Before any action-specific
+rows below — and even if STEP 3 found zero actionable positions or STEP 4 scheduled
+zero actions — append one line to `memory/TRADE-LOG.md`, on every run:
 ```
 - Rule 14 DTC: <N> (source=api|local|none) (sell attempted: yes|no)
 ```

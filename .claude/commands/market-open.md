@@ -11,11 +11,19 @@ local `.env`. Otherwise the wrapper refuses with exit 4 — that's the kill-swit
 working correctly. The cloud routine ALWAYS has TRADING_ENABLED=true in v2.
 
 ## Step 0 — Rule 18: clear pending catch-ups (v3.3)
-Scan the TRADE-LOG tail for unresolved `CATCH-UP PENDING: TICKER` rows (no later
-`CATCH-UP CLEARED` for that ticker). For each: if no longer held → clear
-`reason=already-exited`; if the trigger no longer holds → clear
-`reason=trigger-no-longer-met`; else apply the Rule 14 pre-flight and Rule 15 check,
-`bash scripts/alpaca.sh close TICKER`, write the EXIT row, then clear
+Scan the last 10 trading days (or last 200 rows) of TRADE-LOG for unresolved
+`CATCH-UP PENDING: TICKER` rows — unresolved means no later `CATCH-UP CLEARED` row
+for that ticker whose "Resolves..." line names the same pending date (ticker match
+alone isn't enough; a ticker can cycle through multiple incidents). Rows older than
+the lookback window are flagged via URGENT Telegram, not silently dropped. For each
+unresolved row: if no longer held → clear `reason=already-exited`; if the trigger no
+longer holds → clear `reason=trigger-no-longer-met` (for `action=scale-out`, re-check
+the ladder tier via `sizing.py ladder` against live state); else resolve DTC using
+midday's Step 5 batch-accumulation procedure (NOT Step 3's buy-side gate — that's
+permissive on `source=none`, wrong for a sell), abort on `DTC>=2` or `source=none`,
+apply the Rule 15 check, then execute: `close TICKER` for hard-close/rotate-exit/
+sector-kill, or `scale-out TICKER $SELL_QTY` with a freshly re-derived qty (never the
+stale PENDING qty) for `action=scale-out`. Write the EXIT/SCALE-OUT row, then clear
 `reason=executed`. Telegram once per cleared row. Silent if none.
 
 ## Step 1 — Read memory
