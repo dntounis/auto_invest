@@ -7,10 +7,11 @@ cd "$ROOT"
 echo "test_sizing.sh"
 
 # --- size ---
-# tight 5% stop: raw=200/0.05=4000 > 2000 cap → floor(2000/100)=20, clamped cap
-start_test "size: tight stop clamps to 20% cap"
+# tight 5% stop: raw=200/0.05=4000 > 1600 cap → floor(1600/100)=16, clamped cap
+# (v3.3: default max-pos-pct lowered 0.20 → 0.16 so five clips fit under the 85% ceiling)
+start_test "size: tight stop clamps to 16% cap (v3.3)"
 out=$(python3 scripts/sizing.py size --equity 10000 --price 100 --stop-frac 0.05 2>&1)
-assert_contains "$out" '"shares": 20'
+assert_contains "$out" '"shares": 16'
 assert_contains "$out" '"clamped": "cap"'
 
 # stock 13% stop: raw=200/0.13=1538 < 2000 → floor(1538/150)=10, clamped none
@@ -133,5 +134,45 @@ start_test "ladder: etf trail leads scaleouts (current +5, hwm +8)"
 out=$(python3 scripts/sizing.py ladder --tier etf --unrealized-pct 5 --hwm-pct 8 2>&1)
 assert_contains "$out" '"target_trail_pct": 5'
 assert_contains "$out" '"scaleouts_due": 0'
+
+# --- v3.3 headroom-aware sizing ---
+
+# headroom below the cap binds: dollars = 900 → floor(900/100)=9, clamped headroom
+start_test "size: headroom binds below cap"
+out=$(python3 scripts/sizing.py size --equity 10000 --price 100 --stop-frac 0.05 --headroom 900 2>&1)
+assert_contains "$out" '"shares": 9'
+assert_contains "$out" '"clamped": "headroom"'
+
+# headroom above the cap is ignored: cap 1600 still binds
+start_test "size: headroom above cap is ignored"
+out=$(python3 scripts/sizing.py size --equity 10000 --price 100 --stop-frac 0.05 --headroom 5000 2>&1)
+assert_contains "$out" '"shares": 16'
+assert_contains "$out" '"clamped": "cap"'
+
+# headroom so thin the clip lands under the 5% min-pos floor → floor_skip (no dust positions)
+start_test "size: headroom under min-pos floor → floor_skip"
+out=$(python3 scripts/sizing.py size --equity 10000 --price 100 --stop-frac 0.05 --headroom 400 2>&1)
+assert_contains "$out" '"shares": 0'
+assert_contains "$out" '"clamped": "floor_skip"'
+
+# omitting --headroom is backward compatible (stock 13% stop, raw 1538 < cap 1600 → uncapped)
+start_test "size: no --headroom is backward compatible"
+out=$(python3 scripts/sizing.py size --equity 10000 --price 150 --stop-frac 0.13 2>&1)
+assert_contains "$out" '"shares": 10'
+assert_contains "$out" '"clamped": "none"'
+
+# the SCHW case (blocked live 2026-07-24): after an XLI scale-out frees ~$670, headroom
+# ~$1254 vs a raw clip of $1590 → clip shrinks to fit instead of being refused
+start_test "size: SCHW case — headroom-fit clip after scale-out frees room"
+out=$(python3 scripts/sizing.py size --equity 10335 --price 101.61 --stop-frac 0.13 --headroom 1254 2>&1)
+assert_contains "$out" '"shares": 12'
+assert_contains "$out" '"clamped": "headroom"'
+
+# the SCHW case at Friday's actual headroom (~$584): 5sh = $508.05 < the $516.75 floor
+# → correctly still skipped. Headroom-fit is not a licence to buy dust.
+start_test "size: SCHW case — thin headroom still floor_skips"
+out=$(python3 scripts/sizing.py size --equity 10335 --price 101.61 --stop-frac 0.13 --headroom 584 2>&1)
+assert_contains "$out" '"shares": 0'
+assert_contains "$out" '"clamped": "floor_skip"'
 
 print_summary

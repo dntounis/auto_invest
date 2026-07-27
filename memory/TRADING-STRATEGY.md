@@ -15,11 +15,12 @@ Beat the S&P 500 over the challenge window. Stocks only — no options, ever.
 - Max 5–6 total positions. Max 2 satellite names per GICS sector.
 - **No single GICS sector may exceed 50% of deployed equity** (ETF core + satellites combined) — an aggregate-dollar cap on top of the per-name ≤2-satellites/sector limit, enforced forward-looking by the buy-side gate *(v3.1)*.
 - ETF core may never fall below 45% of deployed — market-open refuses a satellite buy that would breach this.
+- **Sizing target is 16% of equity per position (v3.3), not the 20% Rule 3 ceiling.** Rule 3's 20% remains the hard maximum, but `sizing.py size` now defaults `--max-pos-pct` to 0.16 so that five clips fit inside the 85% deployment ceiling. At the prior 20% default a 10%-stop clip sized to exactly 20% of equity, four positions saturated the band, and the mandated 5–6 position book (with up to 3 satellites) was arithmetically unreachable — the sole cause of the empty satellite sleeve across Weeks 12–14.
 
 ## Hard Rules (non-negotiable)
 1. **NO OPTIONS** — ever
 2. Maximum 5–6 open positions at a time
-3. Maximum 20% of equity per position (~$2,000 on a $10K account)
+3. Maximum 20% of equity per position (~$2,000 on a $10K account) — a hard ceiling. Routine sizing targets **16%** (`sizing.py --max-pos-pct 0.16`) so five positions fit under the 85% deployment ceiling *(v3.3)*.
 4. Maximum 5 new trades per week *(v3 — raised from 3; swing entries only, no day-trade impact)*
 5. Target 75–85% of capital deployed
 6. Every position gets a 10% trailing stop placed as a real GTC Alpaca order. Never mental. *(v2)*

@@ -6,7 +6,7 @@ profit-taking, and rotation decisions are deterministic instead of LLM
 arithmetic. All modes print one JSON object to stdout.
 
   sizing.py size   --equity E --price P --stop-frac S [--risk-pct 0.02]
-                   [--max-pos-pct 0.20] [--min-pos-pct 0.05]
+                   [--max-pos-pct 0.16] [--min-pos-pct 0.05] [--headroom H]
   sizing.py ladder --tier etf|stock --unrealized-pct X
   sizing.py decay  --unrealized-pct X --pos-ret-10d A --spy-ret-10d B
                    --prior-flag 0|1
@@ -23,6 +23,12 @@ def cmd_size(a):
     if raw_dollars > cap_dollars:
         dollars = cap_dollars
         clamped = "cap"
+    # v3.3: shrink the clip to the caller's remaining deployment headroom rather
+    # than refusing the entry. Headroom never *raises* a clip — only lowers it.
+    # The min-pos floor below still rejects anything that would be a dust position.
+    if a.headroom is not None and a.headroom < dollars:
+        dollars = a.headroom
+        clamped = "headroom"
     shares = math.floor(dollars / a.price)
     cost = shares * a.price
     if shares < 1 or cost < a.equity * a.min_pos_pct:
@@ -91,8 +97,11 @@ def main():
     s.add_argument("--price", type=float, required=True)
     s.add_argument("--stop-frac", type=float, required=True, dest="stop_frac")
     s.add_argument("--risk-pct", type=float, default=0.02, dest="risk_pct")
-    s.add_argument("--max-pos-pct", type=float, default=0.20, dest="max_pos_pct")
+    s.add_argument("--max-pos-pct", type=float, default=0.16, dest="max_pos_pct")
     s.add_argument("--min-pos-pct", type=float, default=0.05, dest="min_pos_pct")
+    s.add_argument("--headroom", type=float, default=None,
+                   help="remaining deployment dollars to the 85%% ceiling; "
+                        "clip shrinks to fit rather than being refused")
     s.set_defaults(func=cmd_size)
 
     l = sub.add_parser("ladder")
