@@ -90,13 +90,28 @@ bash scripts/alpaca.sh close TICKER                                  # hard-clos
 bash scripts/alpaca.sh scale-out TICKER $SELL_QTY   # qty from sizing.py scaleout (min-1-share) (reason==ok only)
 bash scripts/alpaca.sh replace-stop ORDER_ID TICKER QTY NEW_TRAIL    # tighten
 ```
-After each individual sell, refresh DTC:
-```
-DTC=$(bash scripts/alpaca.sh account | python3 -c "import json,sys; print(json.load(sys.stdin)['daytrade_count'])")
-```
-Abort if DTC reaches 2.
+After each individual sell, re-resolve DTC via `bash scripts/alpaca.sh dtc`
+(same three-source procedure as Step 2) — never re-read `account.daytrade_count`
+directly; the field is absent on paper and a raw subscript raises, silently
+leaving DTC empty and fail-open. `source=api` → use the value. `source=unavailable`
+→ re-derive locally (Step 2 method) and ADD sells already done earlier in this
+loop (not yet in TRADE-LOG.md). Anything else — unparseable, missing, `dtc` call
+failure, TRADE-LOG unreadable — is `source=none`: ABORT all remaining sells in the
+batch now, URGENT Telegram, commit progress, exit. Never continue the loop on an
+empty/unparseable value.
+
+Abort if DTC reaches 2 (any source) or source=none.
 
 ## Step 6 — Append action rows to `memory/TRADE-LOG.md` (locally)
+
+**Always, first — the Rule 14 audit line**, even with zero actionable positions
+or zero scheduled actions:
+```
+- Rule 14 DTC: <N> (source=api|local|none) (sell attempted: yes|no)
+```
+Use the last resolved `DTC`/`DTC_SOURCE` (Step 5 mid-loop value if a sell was
+attempted, else Step 2's). This is the literal token weekly review greps for to
+confirm Rule 14 actually ran — never skip it.
 
 For each completed sell, append an EXIT trade row:
 ```

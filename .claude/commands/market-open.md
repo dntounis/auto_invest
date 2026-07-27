@@ -21,17 +21,18 @@ STOP with message "market-open $DATE: no RESEARCH-LOG entry found — run /pre-m
 **Before exiting** *(v3.3)*, append the mandatory Market-Open Run row (Step 7 format)
 to `memory/TRADE-LOG.md`: `- market-open $DATE: 0 orders placed, 0 filled. HALTED at
 Step 1 — no RESEARCH-LOG entry for today. Upstream pre-market failure; no ideas
-evaluated.` Then exit. Do NOT make up trade ideas.
+evaluated.` plus a second line `- Rule 14 DTC: n/a (halted before gate evaluation)`.
+Then exit. Do NOT make up trade ideas.
 
 If today's RESEARCH-LOG entry lacks `pm-YYYY-MM-DD-TICKER` IDs, treat it as
 v1-format and STOP — do not synthesize IDs. **Before exiting** *(v3.3)*, append the
-same row, adapted: `- market-open $DATE: 0 orders placed, 0 filled. HALTED at Step 1
+same two rows, adapted: `- market-open $DATE: 0 orders placed, 0 filled. HALTED at Step 1
 — RESEARCH-LOG entry is v1-format, no pm- IDs. Upstream pre-market failure; no ideas
-evaluated.` Then exit.
+evaluated.` plus `- Rule 14 DTC: n/a (halted before gate evaluation)`. Then exit.
 
 ## Step 2 — Pull state
 ```
-bash scripts/alpaca.sh account
+bash scripts/alpaca.sh account     # equity, cash, buying_power
 bash scripts/alpaca.sh positions
 bash scripts/alpaca.sh orders open
 ```
@@ -168,7 +169,11 @@ first (Rule 18 looks for the literal `- market-open $DATE:` token):
 
 - market-open $DATE: <N> orders placed, <K> filled. Pre-market Decision=<TRADE|HOLD>.
   <gate outcomes per idea, HEADROOM, deployment %, core %, sector spread, week budget>
+- Rule 14 DTC: <N> (source=api|local|none) — buy-side buffer only, no sells here.
 ```
+Literal `Rule 14 DTC:` token — weekly review greps for it to confirm the gate ran.
+Always write it, including the Step 1 halt copies of this row (use
+`n/a (halted before gate evaluation)` there since Step 3's `dtc` call never ran).
 
 **Filled orders** — additionally append a full TRADE row using the schema at the top of TRADE-LOG.md:
 

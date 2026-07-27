@@ -70,6 +70,7 @@ STOP, send Telegram alert "market-open $DATE: no RESEARCH-LOG entry found — sk
 ```
 - market-open $DATE: 0 orders placed, 0 filled. HALTED at STEP 1 — no RESEARCH-LOG
   entry for today. Upstream pre-market failure; no ideas evaluated. Telegram alert sent.
+- Rule 14 DTC: n/a (halted before gate evaluation)
 ```
 Then exit. Do NOT make up trade ideas.
 
@@ -84,13 +85,14 @@ so the row below can truthfully say one was sent)*.
 - market-open $DATE: 0 orders placed, 0 filled. HALTED at STEP 1 — RESEARCH-LOG
   entry is v1-format, no pm- IDs. Upstream pre-market failure; no ideas evaluated.
   Telegram alert sent.
+- Rule 14 DTC: n/a (halted before gate evaluation)
 ```
 Then exit.
 
 ## STEP 2 — Pull live paper-account state
 
 ```
-bash scripts/alpaca.sh account     # equity, cash, buying_power, daytrade_count
+bash scripts/alpaca.sh account     # equity, cash, buying_power
 bash scripts/alpaca.sh positions   # currently held tickers
 bash scripts/alpaca.sh orders open # open orders (used for idempotency check)
 ```
@@ -293,7 +295,15 @@ on 2026-07-08, 2026-07-14 and 2026-07-24.
   <One paragraph: for each idea, whether it passed or which gate rejected it and by
   how much; HEADROOM at STEP 2; deployment %, ETF-core % of deployed, sector spread;
   satellite slots used; week trade budget used/5; Rule 13/14/15 applicability.>
+- Rule 14 DTC: <N> (source=api|local|none) — buy-side buffer check only, no sells
+  in this routine. If this row is written from a STEP 1 halt (before STEP 3 ever
+  ran), record `n/a (halted before gate evaluation)` instead of a number/source.
 ```
+
+The `Rule 14 DTC:` line is the literal token the weekly review greps for to
+confirm the gate genuinely ran on the buy side too — write it every time this row
+is written, including the STEP 1 halt copies of this row (see STEP 1), using the
+`n/a` form there since STEP 3's `alpaca.sh dtc` call hasn't happened yet.
 
 On a HOLD or zero-order run this row is the *entire* output of the step — write it
 and proceed to STEP 8. Never skip STEP 7.

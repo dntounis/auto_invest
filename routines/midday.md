@@ -118,7 +118,9 @@ For each position, compute:
 - `unrealized_pl_pct = (current_price - avg_entry_price) / avg_entry_price * 100`
 
 Drop positions where `entry_date == today` (Rule 15). The remaining list is
-"actionable". If the list is empty, skip to STEP 7.
+"actionable". If the list is empty, skip to STEP 6 — it still writes the
+mandatory Rule 14 audit line even with zero actionable positions — then
+continue to STEP 7.
 
 ## STEP 4 — Decide actions per actionable position
 
@@ -215,15 +217,45 @@ bash scripts/alpaca.sh scale-out TICKER $SELL_QTY   # $SELL_QTY from sizing.py s
 bash scripts/alpaca.sh replace-stop EXISTING_ORDER_ID TICKER QTY NEW_TRAIL_PCT
 ```
 
-After each individual sell, refresh `account.daytrade_count`:
+After each individual sell, re-resolve `DTC` / `DTC_SOURCE` via the same
+three-source procedure as STEP 2 — **never** re-read `account.daytrade_count`
+directly; the paper endpoint omits the field and an unguarded
+`['daytrade_count']` subscript raises, leaving `DTC` empty and the loop
+fail-open by default:
 ```
-DTC=$(bash scripts/alpaca.sh account | python3 -c "import json,sys; print(json.load(sys.stdin)['daytrade_count'])")
+bash scripts/alpaca.sh dtc
 ```
+- `source == "api"`: set `DTC` to the returned `daytrade_count`, `DTC_SOURCE=api`.
+- `source == "unavailable"`: re-derive the local count exactly as in STEP 2 (same-day
+  buy+sell / `SCALE-OUT` / `ROTATE-EXIT` pairs over the last 5 business days from
+  TRADE-LOG.md), then ADD the number of sells already executed earlier in *this*
+  STEP 5 loop — those sells haven't hit TRADE-LOG.md yet (STEP 6 logs after the
+  loop finishes), so the raw TRADE-LOG scan would undercount them. The sum is
+  `DTC`, `DTC_SOURCE=local`.
+- Any other outcome — unparseable value, missing `source`, a failed `dtc` call, or
+  TRADE-LOG.md unreadable for the local fallback — is `DTC_SOURCE=none`.
+  **ABORT all remaining sells in this batch immediately** (do not place another
+  sell and do not continue the loop on a guess), send a Telegram URGENT ("Rule 14:
+  day-trade count unresolvable mid-loop — remaining sells blocked, manual review
+  required"), commit progress made so far, and exit. An empty, unparseable, or
+  missing value is never a pass.
 
-If `DTC` reaches 2 mid-loop, ABORT remaining sells (sector-kill or otherwise),
-send URGENT Telegram, commit progress so far, exit.
+If `DTC >= 2` (from any source) mid-loop, ABORT remaining sells (sector-kill or
+otherwise), send URGENT Telegram, commit progress so far, exit.
 
 ## STEP 6 — Append action rows to `memory/TRADE-LOG.md`
+
+**Always, first — the Rule 14 audit line.** Before any action-specific rows below
+— and even if STEP 3 found zero actionable positions or STEP 4 scheduled zero
+actions — append one line to `memory/TRADE-LOG.md`, on every run:
+```
+- Rule 14 DTC: <N> (source=api|local|none) (sell attempted: yes|no)
+```
+Use the final resolved `DTC` / `DTC_SOURCE` for this run: the last STEP 5
+mid-loop refresh if any sell was attempted, otherwise the STEP 2 value. This is
+the literal token the weekly review greps for to confirm Rule 14 genuinely ran
+— a run that writes nothing is indistinguishable from the fourteen weeks where
+the gate silently never executed. Never skip this line.
 
 For each completed sell, append an EXIT trade row:
 ```
