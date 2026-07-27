@@ -61,7 +61,16 @@ Run `bash scripts/perplexity.sh "<query>"` for each:
 
 **Single-stock satellite screen (v3).** For each single-stock candidate:
 - `bash scripts/alpaca.sh bars TICKER 1Day 200` → confirm last close > 50-DMA and > 200-DMA.
-- `bash scripts/alpaca.sh bars SPY 1Day 60` → candidate 10-/50-session returns vs SPY (relative strength positive). (60 bars covers the 50-session lookback, which needs 51 closes.)
+- `bash scripts/alpaca.sh bars SPY 1Day 60` → `RS10`/`RS50` (ticker minus SPY, pp).
+  Compute `DMA50` and `DMA50_PRIOR` (50-DMA now vs 10 sessions ago) from the 200-bar pull.
+  Then *(v3.3, never by eye)*:
+  ```
+  python3 scripts/sizing.py rscreen --rs10 "$RS10" --rs50 "$RS50" \
+      --close "$LAST_CLOSE" --dma50 "$DMA50" --dma50-prior "$DMA50_PRIOR"
+  ```
+  Reject on `pass == 0`, quoting `reason`. `RS50 > 0` is mandatory; `RS10 <= 0` can
+  still pass as a `constructive_pullback` (within 3% of a rising 50-DMA).
+  Tag the idea: `rs: RS10 <X>pp / RS50 <Y>pp / screen=<reason>`.
 - Reject candidates failing the liquidity filter (thin volume / wide spread).
 - **Macro-window (v3.2):** from the economic-calendar result, determine whether any Tier-1
   binary (NFP, CPI, PPI, Core PCE, FOMC decision/minutes, Powell presser) falls on T+1 or

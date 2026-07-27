@@ -175,4 +175,52 @@ out=$(python3 scripts/sizing.py size --equity 10335 --price 101.61 --stop-frac 0
 assert_contains "$out" '"shares": 0'
 assert_contains "$out" '"clamped": "floor_skip"'
 
+# --- v3.3 rscreen: medium-term leadership required; short-term pullback tolerated ---
+
+# RS50 negative → rejected regardless of anything else (leadership requirement intact)
+start_test "rscreen: negative RS50 rejects even with positive RS10"
+out=$(python3 scripts/sizing.py rscreen --rs10 5 --rs50 -1 --close 100 --dma50 98 --dma50-prior 97 2>&1)
+assert_contains "$out" '"pass": 0'
+assert_contains "$out" '"reason": "rs50_negative"'
+
+# classic pass: both RS positive
+start_test "rscreen: RS10 and RS50 both positive → pass"
+out=$(python3 scripts/sizing.py rscreen --rs10 1.5 --rs50 15.6 --close 101.61 --dma50 95 --dma50-prior 94 2>&1)
+assert_contains "$out" '"pass": 1'
+assert_contains "$out" '"reason": "rs10_positive"'
+
+# the APH case: RS10 -0.72pp, RS50 +21.62pp, close $157.51 vs 50-DMA $149.72.
+# (157.51-149.72)/149.72 = +5.2% above the DMA → too extended for the pullback
+# exception. Correctly still rejected.
+start_test "rscreen: APH case — extended above 50-DMA, still rejected"
+out=$(python3 scripts/sizing.py rscreen --rs10 -0.72 --rs50 21.62 --close 157.51 --dma50 149.72 --dma50-prior 147.0 2>&1)
+assert_contains "$out" '"pass": 0'
+assert_contains "$out" '"reason": "rs10_negative_extended"'
+
+# constructive pullback: RS50 strong, RS10 slightly negative, price 2% above a RISING
+# 50-DMA → this is the base the analyst wanted and the old screen rejected
+start_test "rscreen: constructive pullback to a rising 50-DMA → pass"
+out=$(python3 scripts/sizing.py rscreen --rs10 -0.72 --rs50 21.62 --close 152.71 --dma50 149.72 --dma50-prior 147.0 2>&1)
+assert_contains "$out" '"pass": 1'
+assert_contains "$out" '"reason": "constructive_pullback"'
+
+# same pullback but the 50-DMA is FALLING → not constructive, reject
+start_test "rscreen: pullback to a falling 50-DMA is not constructive"
+out=$(python3 scripts/sizing.py rscreen --rs10 -0.72 --rs50 21.62 --close 152.71 --dma50 149.72 --dma50-prior 151.0 2>&1)
+assert_contains "$out" '"pass": 0'
+assert_contains "$out" '"reason": "rs10_negative_extended"'
+
+# price BELOW the 50-DMA is not a constructive pullback either (trend gate also
+# rejects this upstream, but rscreen must not pass it on its own)
+start_test "rscreen: price below the 50-DMA is not constructive"
+out=$(python3 scripts/sizing.py rscreen --rs10 -2 --rs50 21.62 --close 148.00 --dma50 149.72 --dma50-prior 147.0 2>&1)
+assert_contains "$out" '"pass": 0'
+assert_contains "$out" '"reason": "rs10_negative_extended"'
+
+# exactly at the 3% band edge → still constructive (inclusive boundary)
+start_test "rscreen: 3.0% above a rising 50-DMA is inclusive"
+out=$(python3 scripts/sizing.py rscreen --rs10 -0.5 --rs50 10 --close 103 --dma50 100 --dma50-prior 99 2>&1)
+assert_contains "$out" '"pass": 1'
+assert_contains "$out" '"reason": "constructive_pullback"'
+
 print_summary

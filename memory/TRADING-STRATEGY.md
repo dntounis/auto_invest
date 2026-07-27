@@ -70,7 +70,7 @@ Before documenting any trade idea in `RESEARCH-LOG.md`:
 
 ### Single-stock satellite checklist (v3)
 - Price above both 50-DMA and 200-DMA (`alpaca.sh bars`)?
-- Positive relative strength vs SPY over 10 and 50 sessions?
+- Relative strength via `sizing.py rscreen` *(v3.3 — deterministic, unit-tested)*: `RS50 > 0` is a hard requirement (medium-term leadership). `RS10 > 0` passes outright; if `RS10 <= 0` the name may still pass as a **constructive pullback** — price above but within 3% of a 50-DMA that is itself rising over the last 10 sessions. Anything else is rejected as `rs10_negative_extended`. Rationale: requiring both RS windows positive was a catch-22 — passing names were extended enough to be rejected downstream as chase risk, and based names failed RS10 — which left the satellite sleeve empty for Weeks 12–14.
 - Adequate liquidity: average daily volume and a tight quoted spread (also guards against stale-open quotes)?
 - Specific catalyst documented (earnings/guidance/upgrade/sector tailwind)?
 - Per-idea stop width set (drives risk-parity sizing); R:R ≥ 2:1?

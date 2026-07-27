@@ -10,6 +10,7 @@ arithmetic. All modes print one JSON object to stdout.
   sizing.py ladder --tier etf|stock --unrealized-pct X
   sizing.py decay  --unrealized-pct X --pos-ret-10d A --spy-ret-10d B
                    --prior-flag 0|1
+  sizing.py rscreen --rs10 X --rs50 Y --close C --dma50 D --dma50-prior P
 """
 import argparse, json, math
 
@@ -88,6 +89,33 @@ def cmd_scaleout(a):
     return {"sell_qty": qty, "reason": "ok"}
 
 
+# Constructive-pullback band: how far above the 50-DMA a name may sit and still
+# count as "based" rather than "extended". 3% is deliberately tight.
+PULLBACK_BAND = 0.03
+
+
+def cmd_rscreen(a):
+    # v3.3 satellite relative-strength screen.
+    #
+    # The v3 screen required BOTH 10- and 50-session RS vs SPY to be positive.
+    # That is a catch-22: a name with positive RS10 is by construction extended
+    # (and gets rejected downstream as chase risk), while a name that has pulled
+    # back into a buyable base fails RS10. The sleeve sat empty for three weeks.
+    #
+    # Medium-term leadership (RS50) stays a hard requirement. The single bounded
+    # exception is a constructive pullback: price still above, but within
+    # PULLBACK_BAND of, a 50-DMA that is itself rising.
+    if a.rs50 <= 0:
+        return {"pass": 0, "reason": "rs50_negative"}
+    if a.rs10 > 0:
+        return {"pass": 1, "reason": "rs10_positive"}
+    above = (a.close - a.dma50) / a.dma50
+    constructive = (0 <= above <= PULLBACK_BAND) and (a.dma50 > a.dma50_prior)
+    if constructive:
+        return {"pass": 1, "reason": "constructive_pullback"}
+    return {"pass": 0, "reason": "rs10_negative_extended"}
+
+
 def main():
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="mode", required=True)
@@ -125,6 +153,17 @@ def main():
     so.add_argument("--scaleouts-due", type=int, required=True, dest="scaleouts_due")
     so.add_argument("--scaleouts-done", type=int, required=True, dest="scaleouts_done")
     so.set_defaults(func=cmd_scaleout)
+
+    rs = sub.add_parser("rscreen")
+    rs.add_argument("--rs10", type=float, required=True,
+                    help="ticker 10-session return minus SPY's, in pp")
+    rs.add_argument("--rs50", type=float, required=True,
+                    help="ticker 50-session return minus SPY's, in pp")
+    rs.add_argument("--close", type=float, required=True)
+    rs.add_argument("--dma50", type=float, required=True)
+    rs.add_argument("--dma50-prior", type=float, required=True, dest="dma50_prior",
+                    help="the 50-DMA 10 sessions ago; used to test that it is rising")
+    rs.set_defaults(func=cmd_rscreen)
 
     args = p.parse_args()
     print(json.dumps(args.func(args)))

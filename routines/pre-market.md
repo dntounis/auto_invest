@@ -113,7 +113,24 @@ Run `bash scripts/perplexity.sh "<query>"` for each:
 
 **Single-stock satellite screen (v3).** For each single-stock candidate from the momentum query, confirm trend + relative strength before proposing it:
 - `bash scripts/alpaca.sh bars TICKER 1Day 200` → confirm last close > 50-DMA and > 200-DMA.
-- `bash scripts/alpaca.sh bars SPY 1Day 60` → compute candidate's 10- and 50-session returns vs SPY (relative strength must be positive). (60 bars gives margin for the 50-session lookback, which needs 51 closes.)
+- `bash scripts/alpaca.sh bars SPY 1Day 60` → compute the candidate's 10- and 50-session
+  returns and SPY's over the same windows; `RS10 = ret10_ticker - ret10_SPY` and
+  `RS50 = ret50_ticker - ret50_SPY`, both in percentage points. (60 bars gives margin
+  for the 50-session lookback, which needs 51 closes.) From the 200-bar ticker pull
+  above, also compute `DMA50` (mean of the last 50 closes) and `DMA50_PRIOR` (mean of
+  the 50 closes ending 10 sessions ago). Then ask the unit-tested screen — never judge
+  this by eye *(v3.3)*:
+  ```
+  RS_JSON=$(python3 scripts/sizing.py rscreen --rs10 "$RS10" --rs50 "$RS50" \
+      --close "$LAST_CLOSE" --dma50 "$DMA50" --dma50-prior "$DMA50_PRIOR")
+  ```
+  Reject the candidate if `pass == 0`, quoting `reason`. `rs50_negative` = no
+  medium-term leadership. `rs10_negative_extended` = short-term lagging AND not in a
+  constructive base. A `pass == 1` with `reason == "constructive_pullback"` is a name
+  that is lagging over 10 sessions but sitting within 3% of a *rising* 50-DMA — the
+  base the v3 screen used to reject on RS10 alone while the market-open row rejected
+  the alternative as chase risk (AMG Jul 17/20/22, APH Jul 23; sleeve 0/3 for three weeks).
+  Tag the idea line: `rs: RS10 <+X.XX>pp / RS50 <+X.XX>pp / screen=<reason>`.
 - Reject candidates failing the liquidity filter (thin average volume / wide quoted spread — also guards against stale-open quotes).
 - **Macro-window (v3.2):** from the economic-calendar result, determine whether any Tier-1
   binary (NFP, CPI, PPI, Core PCE, FOMC decision/minutes, Powell presser) falls on T+1 or
