@@ -3667,3 +3667,42 @@ One name clears the full single-name momentum screen for the first time in the H
 - Perplexity citations: Investing.com/TradingEconomics/Oilprice/BusinessInsider (oil — feeds disagree WTI ~$72 vs TE ~$78.9 +5.2%; Red Sea/Houthi tanker-attack premium narrative); TradingNews/BusinessInsider (ES +0.35% ~7,523 / NQ +0.76% ~28,991 / Dow +0.23%, most-specific premarket quote); MarketWatch/Investing.com/BusinessInsider (VIX ~16.1–19.3, feeds disagree); TNN/CNBC/AlphaBriefing/Vested (catalysts — INTC 18A-yield surge + Google Cloud tie-up, AI-capex earnings-quality theme, Tesla Q2 miss, Alphabet $180–190B capex); MyStockHarbor/EarningsLabs/TipRanks (BMO earnings — VZ/AXP/HCA/CNI/SLB/E/NEE/CHTR, none held; NEE=XLU read-through); TradingEconomics/Scotiabank/NY Fed (calendar — flash PMIs Jul 24, FOMC Jul 28–29 + Powell Jul 29, Core PCE Jul 30); Wespath/Schwab/Investing.com momentum-map (sector YTD — Energy/Industrials/Tech/Real Estate/Materials lead; Staples/Industrials/Materials/Energy Leading quadrant); Yahoo/Zacks/Nasdaq momentum screen (SCHW Strong Buy +19.4%/3mo; MU/SKIL/TCBI/SFST/AMG)
 - Alpaca bars: SCHW 200×1Day (last $101.61 > 50-DMA $93.56 > 200-DMA $94.79; **ret10 −0.29% / ret50 +15.69% → RS10 +1.51pp / RS50 +15.58pp** vs SPY — both positive; liquidity ~7–9M sh/day), SPY 60×1Day (RS baseline: ret10 −1.80% / ret50 +0.11%)
 - WebSearch fallback used: no
+
+## 2026-07-27 — Pre-market Research (Day 67, Monday, Week 14 Day 1)
+
+### Account
+- Equity: $10,395.97
+- Cash: $2,143.49 (20.62%)
+- Buying power: $2,143.49 (cash; non-marginable BP $6,269.72 — strategy is cash-only, no margin)
+- Daytrade count: not surfaced in paper /account payload (persistent cosmetic quirk; trading_blocked=false, balance_asof 2026-07-24 → treated 0/5, <2)
+- Long market value: $8,252.48 → **deployment 79.38%** (v3 75–85% band); headroom to 85% ≈ **$584**, to 80% ≈ $64
+- ETF core (XLB+XLI+XLRE+XLU) = **100% of deployed** ≥45% floor ✓ | Sector book (of LMV): Real Estate 25.66% / Materials 25.01% / Utilities 24.70% / Industrials 24.63% — evenly balanced, all ≤50% ✓ | Satellite slots: **0/3 used, all 3 open** | **Week-14 trades: 0/5 used**
+
+### Market Context
+- WTI / Brent oil: **sharply lower** on **US–Iran weekend pause in hostilities** — WTI **~$68.3** (FT) to ~$72 (Investing futures), Brent **~$71.6** (feeds disagree on the futures print but direction unambiguous: oil DOWN, geopolitical supply premium unwinding). Disinflationary/risk-on input
+- S&P 500 futures: **ES +0.8% (~7,551), NQ +1.5%, Dow +0.8%, Russell 2000 +1.2%** — broad **risk-on rally** on the ceasefire (oil-sensitive names bid); busiest earnings week of the quarter + FOMC ahead
+- VIX: **~16–21** (feeds disagree; ycharts ~16.15, MarketWatch live ~20.95 +12%, Investing.com ~19.3) — subdued-to-moderate; treat as noisy, low-confidence
+- Today's catalysts: **US–Iran ceasefire → oil sharply lower / risk-on** (dominant); **FOMC positioning** (decision Wed); **Big-Tech earnings week** (MSFT+META Wed, AAPL+AMZN Thu — AI capex/cloud/guidance scrutiny). Today's earnings: CDNS, CINF, NUE, UDR, UHS, WELL (**none held**; WELL/UDR = REIT read-through for XLRE, NUE = Materials read-through for XLB)
+- Earnings before open: CDNS, CINF, NUE, UDR, UHS, WELL — none held; NUE (Nucor, Materials) & WELL/UDR (REITs) give indirect XLB/XLRE read-through
+- Economic calendar: today Jul 27 = Durable Goods (non-Tier-1). **Tier-1 binaries this week: FOMC decision + Powell presser Wed Jul 29 2:00/2:30pm ET; Core PCE (Jun) Thu Jul 30 8:30am ET; ECI Fri Jul 31.** No NFP this week. → **T+1 (Tue Jul 28) clear; T+2 (Wed Jul 29) = FOMC decision = Tier-1 binary → satellite macro-window NOT clear (FOMC T+2).** Core ETFs macro-exempt
+- Sector momentum YTD: **Energy #1 (~+22–26%)**, **Materials #2 (~+10–18%)** lead; Industrials/Real Estate strong; **Financials worst (~−3 to −6%)**, Consumer Disc/Tech soft. Held book — XLB (Materials #2) top-tier; XLI/XLRE mid-upper; XLU defensive laggard-but-supported (AI power demand). Sector read-through into FOMC favors **defensives/rate-sensitives (Utilities first, then Real Estate/Industrials)** IF ceasefire keeps oil + yields lower; two-sided risk if FOMC signals higher-for-longer (pressures XLU/XLRE most)
+
+### Trade Ideas
+**0 executable** (HOLD, 7th consecutive session). Every single-stock candidate is **screened out on macro-window** — FOMC decision is **T+2 (Wed Jul 29)**, so no satellite entered today clears the ≥T+3 requirement — compounding the standing **deployment ceiling** (~$584 headroom vs a ~$1.5–1.6K risk-parity clip). Core adds also blocked by the same ceiling; book already holds the 4 leading defensive/cyclical sectors evenly.
+
+- Momentum names surfaced (GOOGL/MTZ/GS/MU Zacks Momentum-A; ZS/SNOW/ORCL guidance-raise/upgrade) **NOT advanced** — all fail satellite macro-window (FOMC T+2); DMA/RS bars not run this session since macro screen fails for every satellite. Re-screen T+3 (post-FOMC, from Thu Jul 30) once the binary clears AND headroom frees.
+- **SCHW** (Friday's first fully-qualified satellite on momentum) also macro-blocked today + still deployment-blocked; re-arm post-FOMC on a scale-out/stop-out or equity growth freeing ≥~$1K.
+- **Binding constraints (both active):** (1) satellite macro-window fails (FOMC T+2); (2) deployment ceiling ~$584 headroom.
+
+### Risk Factors
+- **Macro/event:** **FOMC Wed Jul 29** is the week's pivot — a higher-for-longer/hawkish message would pressure the rate-sensitive sleeves (**XLU +1.13%, XLRE +2.79%**) most; a dovish tilt supports them. **US–Iran ceasefire → oil down** is net disinflationary/risk-on (supports the defensive book via lower yields) but energy-sector-negative (we hold no energy). **Big-Tech earnings** (MSFT/META/AAPL/AMZN) can swing broad risk sentiment mid-week (indirect; no direct holdings)
+- **Sector/idiosyncratic (book):** all-ETF core, evenly ~25% each, all four **green vs entry** — **XLI +6.38% leader** (nearest ladder trigger; first +7% ETF scale-out at ~$185.87 vs current $184.79 — approaching), XLB +3.03%, XLRE +2.79%, XLU +1.13%. NUE (Materials) + WELL/UDR (REITs) earnings today = minor XLB/XLRE read-through
+- **Portfolio:** healthy — deployment 79.4% inside band, ETF-core 100% of deployed, sectors evenly ≤26%, 0 daytrade risk, 3 satellite + 5 fresh weekly slots open. No under-deployment pressure; only constraints are the FOMC macro-window (clears T+3, Thu) and the ~$584 ceiling headroom
+
+### Decision
+**HOLD** — no executable idea (7th consecutive session). Distinct from Friday: the block is now **two-fold** — every satellite fails the macro-window (FOMC decision T+2 Wed Jul 29), on top of the standing deployment ceiling (~$584 headroom). Held book is 4 green core ETFs covering the leading sectors, evenly balanced, all above their GTC trailing stops; XLI nearing its first +7% ladder scale-out (midday to monitor). Re-screen satellites **post-FOMC (T+3, Thu Jul 30)** once the binary clears and headroom frees via a scale-out/stop-out or equity growth.
+
+### Sources
+- Perplexity citations: FT/Investing.com/countryeconomy (oil — WTI ~$68.3–72 / Brent ~$71.6, DOWN on US–Iran pause); Yahoo Finance/Reuters(wtvbam)/asianetnews (ES +0.8% ~7,551 / NQ +1.5% / Dow +0.8% / Russell +1.2%, risk-on on ceasefire + oil down); MarketWatch/ycharts/Investing.com (VIX ~16.15–20.95, feeds disagree); Yahoo/CNBC-style previews (FOMC Jul 29 + Big-Tech earnings MSFT/META Wed, AAPL/AMZN Thu; today CDNS/CINF/NUE/UDR/UHS/WELL); official calendar sources (FOMC decision Wed Jul 29 2:00pm + Powell 2:30pm ET, Core PCE Thu Jul 30, ECI Fri Jul 31, no NFP this week); FactSet/MarketWatch (sector YTD — Energy #1, Materials #2, Financials worst); Zacks/Investing.com (momentum names GOOGL/MTZ/GS/MU/ZS/SNOW/ORCL)
+- Alpaca bars: not run this session — all satellite candidates fail the macro-window screen (FOMC T+2), so DMA/RS confirmation deferred to post-FOMC re-screen
+- WebSearch fallback used: no
