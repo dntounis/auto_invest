@@ -78,6 +78,18 @@ bash scripts/alpaca.sh positions   # currently held tickers
 bash scripts/alpaca.sh orders open # open orders (used for idempotency check)
 ```
 
+From that payload compute, once, for the whole run *(v3.3)*:
+
+```
+DEPLOY_CEILING = 0.85
+HEADROOM = (EQUITY * DEPLOY_CEILING) - LONG_MARKET_VALUE
+```
+
+`HEADROOM` is the dollar room remaining before the Rule 5 deployment ceiling.
+It may be negative (book already over the ceiling) — in that case no buy of any
+size is permitted; skip every idea and log
+`deployment ceiling: already at X% — no headroom, 0 buys`.
+
 Idempotency (DECIDED H): if today's orders already include any BUY for a ticker
 that's also a candidate today, SKIP that ticker. The routine ran already — don't
 double-buy.
@@ -85,7 +97,7 @@ double-buy.
 ## STEP 3 — Apply buy-side gate to each idea
 
 First, read the `**Decision:**` line from today's RESEARCH-LOG entry.
-- If `Decision: HOLD` → log "market-open $DATE: pre-market Decision=HOLD — skipping execution", send Telegram "market-open $DATE (paper) — pre-market HOLD decision: no orders placed", then skip to STEP 8.
+- If `Decision: HOLD` → send Telegram "market-open $DATE (paper) — pre-market HOLD decision: no orders placed", then skip to **STEP 7** (NOT STEP 8 — STEP 7 must still write the mandatory Market-Open Run row, or Rule 18 will report a false cron skip).
 - If `Decision: TRADE` → proceed with gate checks below.
 
 For each idea in today's RESEARCH-LOG entry, run the Buy-Side Gate from
@@ -98,7 +110,7 @@ For each idea in today's RESEARCH-LOG entry, run the Buy-Side Gate from
 - **(v3, satellite only)** If this idea's `tier` is `satellite`: ETF-core market value after this fill stays ≥ 45% of deployed equity (sum of all position market values from `positions`). Skip + log if it would breach the core floor.
 - **(v3, satellite only)** If this idea's `tier` is `satellite`: ≤ 2 satellite names (existing + pending) in this idea's GICS sector after the fill. Skip + log if it would make 3.
 - **(v3.1, all ideas)** Sector concentration cap: compute `deployed_after = long_market_value + position_cost` and `sector_after = (sum of this sector's existing position market values) + position_cost`. If `sector_after / deployed_after > 0.50`, skip + log "sector cap: TICKER sector would be X% of deployed (> 50%)".
-- **(v3.1, all ideas)** Deployment ceiling: if `(long_market_value + position_cost) / equity > 0.85`, skip + log "deployment ceiling: post-fill X% > 85% — deferring add".
+- **(v3.1, all ideas — restated v3.3)** Deployment ceiling: this gate no longer refuses an idea pre-sizing. `HEADROOM` (STEP 2) is passed to the sizer in STEP 5c, which shrinks the clip to fit. Here, only skip the idea outright if `HEADROOM <= 0` — log "deployment ceiling: already at X% — no headroom". After sizing, STEP 5c re-asserts `(long_market_value + position_cost) / equity <= 0.85` as a belt-and-braces check and skips + logs if it somehow fails.
 - **(v3.2, satellite only)** Macro-binary proximity: read the idea's `macro-window:` tag. If `tier` is `satellite` AND the tag names a Tier-1 binary on T+1/T+2 (anything other than `clear`), skip + log "macro-binary gate: TICKER blocked by <BINARY> at T+N". `tier: core` ideas (tag `n/a (core)`) bypass this check.
 - `account.daytrade_count` MUST be ≤ 1 to allow new entries (Rule 14 buffer).
   WHY: a buy today could trigger a stop-fired sell tomorrow, bumping DTC by 1; a
@@ -113,7 +125,7 @@ For each idea in today's RESEARCH-LOG entry, run the Buy-Side Gate from
 - Already ranked by R:R descending in pre-market output (DECIDED C).
 - `weekly_cap_remaining = 5 - trades_this_week` (from TRADE-LOG.md tally read in STEP 1) *(v3 — cap raised to 5)*
 - Take `min(len(passing_ideas), weekly_cap_remaining)`. May be zero — in which
-  case skip to STEP 8 with no orders placed.
+  case skip to STEP 7 (which still writes the mandatory Market-Open Run row) with no orders placed.
 
 ## STEP 5 — Per-idea: fetch live quote, extract trail, compute size (DECIDED D)
 
@@ -163,14 +175,33 @@ to `trail_pct / 100`. Then call the unit-tested sizer:
 ```
 SLIPPAGE_PCT=${MAX_ENTRY_SLIPPAGE_PCT:-0.10}
 SIZE_JSON=$(python3 scripts/sizing.py size \
-    --equity "$EQUITY" --price "$LIVE_ASK" --stop-frac "$STOP_FRAC")
+    --equity "$EQUITY" --price "$LIVE_ASK" --stop-frac "$STOP_FRAC" \
+    --headroom "$HEADROOM")
 ```
 
-Parse `shares` and `clamped` from `SIZE_JSON`. If `clamped == "floor_skip"` or
-`shares < 1`, skip the idea and log the reason (`floor_skip` = cap/risk budget too
-small). This replaces the prior hand-computed `shares_by_risk`/`shares_by_cap`
-formula (same risk-parity logic — 2% equity at risk, clamped to the 20% Rule 3 cap —
-now deterministic and unit-tested in `tests/test_sizing.sh`).
+Parse `shares`, `cost` and `clamped` from `SIZE_JSON`.
+
+- If `clamped == "floor_skip"` or `shares < 1`: skip the idea and log the reason
+  (`floor_skip` = the risk budget, the 16% cap, or the remaining headroom left too
+  little to build a position above the 5%-of-equity minimum — a dust position is
+  worse than no position).
+- If `clamped == "headroom"`: the clip was deliberately shrunk to fit the remaining
+  deployment room *(v3.3)*. This is a normal, expected outcome — proceed with the
+  order and log `sized to headroom: TICKER N sh ($COST, X.X% of equity, full clip
+  would have been $RAW)`.
+- If `clamped == "cap"` or `"none"`: full risk-parity or 16%-capped clip; proceed.
+
+Then re-assert the ceiling: `(LONG_MARKET_VALUE + cost) / EQUITY` MUST be `<= 0.85`.
+If it is not, skip the idea and log "deployment ceiling re-assert failed" — this
+should be unreachable and indicates a headroom computation bug worth a Telegram note.
+
+**Multi-idea runs:** after each order is placed, decrement
+`HEADROOM = HEADROOM - cost` before sizing the next idea, so two ideas in one
+session cannot each consume the same headroom.
+
+This keeps the same risk-parity logic (2% equity at risk, clamped to the 16% v3.3
+sizing target and to remaining headroom) deterministic and unit-tested in
+`tests/test_sizing.sh`.
 
 **5d. Compute limit price**
 
@@ -209,9 +240,28 @@ DO NOT place a trailing stop here — that is `daily-summary`'s job (Rule 13).
 
 ## STEP 7 — Append entries to `memory/TRADE-LOG.md`
 
-**Filled orders only** — append a full TRADE row matching the schema at the top
-of `TRADE-LOG.md`:
+**This step is MANDATORY on every execution path — including a pre-market HOLD,
+a gate-rejected-everything run, and a zero-fill run.** Rule 18's cadence sweep
+looks for the literal token `- market-open $DATE:` in this file; a run that
+writes nothing is indistinguishable from a cron skip. This gap tripped Rule 18
+on 2026-07-08, 2026-07-14 and 2026-07-24.
 
+**Always, first — the Market-Open Run row.** Before any per-order rows, append:
+
+```
+## $DATE — Market-Open Run (Day N, <Weekday>, Week W Day D)
+
+- market-open $DATE: <N> orders placed, <K> filled. Pre-market Decision=<TRADE|HOLD>.
+  <One paragraph: for each idea, whether it passed or which gate rejected it and by
+  how much; HEADROOM at STEP 2; deployment %, ETF-core % of deployed, sector spread;
+  satellite slots used; week trade budget used/5; Rule 13/14/15 applicability.>
+```
+
+On a HOLD or zero-order run this row is the *entire* output of the step — write it
+and proceed to STEP 8. Never skip STEP 7.
+
+**Filled orders** — additionally append a full TRADE row matching the schema at the
+top of `TRADE-LOG.md`:
 ```
 ### YYYY-MM-DD — TRADE: TICKER side=buy qty=N
 - Entry: $X

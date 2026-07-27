@@ -30,6 +30,9 @@ bash scripts/alpaca.sh positions
 bash scripts/alpaca.sh orders open
 ```
 
+Then compute once for the run *(v3.3)*: `HEADROOM = (EQUITY * 0.85) - LONG_MARKET_VALUE`.
+If `HEADROOM <= 0`, no buy of any size is permitted — skip all ideas.
+
 Idempotency: skip any ticker with an existing today BUY (DECIDED H).
 
 ## Step 3 — Apply buy-side gate
@@ -46,7 +49,7 @@ Additional gate checks per idea:
 - **(v3, satellite only)** ETF-core market value stays ≥ 45% of deployed equity after the fill (skip + log if breached)
 - **(v3, satellite only)** ≤ 2 satellite names in this idea's GICS sector after the fill
 - **(v3.1, all ideas)** Sector concentration cap: compute `deployed_after = long_market_value + position_cost` and `sector_after = (sum of this sector's existing position market values) + position_cost`. If `sector_after / deployed_after > 0.50`, skip + log "sector cap: TICKER sector would be X% of deployed (> 50%)".
-- **(v3.1, all ideas)** Deployment ceiling: if `(long_market_value + position_cost) / equity > 0.85`, skip + log "deployment ceiling: post-fill X% > 85% — deferring add".
+- **(v3.1, restated v3.3)** Deployment ceiling: no longer a pre-sizing refusal. `HEADROOM` is passed to the sizer in Step 5, which shrinks the clip to fit. Skip outright only if `HEADROOM <= 0`.
 - **(v3.2, satellite only)** Macro-binary proximity: read the idea's `macro-window:` tag. If `tier` is `satellite` AND the tag names a Tier-1 binary on T+1/T+2 (anything other than `clear`), skip + log "macro-binary gate: TICKER blocked by <BINARY> at T+N". `tier: core` ideas (tag `n/a (core)`) bypass this check.
 - Instrument is a stock (not option/crypto/forex/futures)
 
@@ -89,19 +92,17 @@ planned trail percent: N
 If that line is absent, or N is 0 or blank, set `trail_pct = 10` (default).
 This default prevents division-by-zero in the sizing formula below.
 
-**5c. Compute position size (deterministic helper — v3)**
-
-Use the idea's **stop width** as `stop-frac` (parse `stop width N%` from the pm idea
-line; fall back to `trail_pct / 100`). Then:
+**5c. Compute position size**
 
 ```
-SIZE_JSON=$(python3 scripts/sizing.py size \
-    --equity "$EQUITY" --price "$LIVE_ASK" --stop-frac "$STOP_FRAC")
+SIZE_JSON=$(python3 scripts/sizing.py size --equity "$EQUITY" --price "$LIVE_ASK" \
+    --stop-frac "$STOP_FRAC" --headroom "$HEADROOM")
 ```
 
-Parse `shares`/`clamped`. If `clamped == "floor_skip"` or `shares < 1`, skip the idea
-and log the reason. Same risk-parity logic (2% equity risk, clamped to the 20% cap),
-now deterministic and unit-tested.
+`clamped == "floor_skip"` or `shares < 1` → skip + log. `clamped == "headroom"` →
+clip deliberately shrunk to fit; proceed and log it. Re-assert
+`(LONG_MARKET_VALUE + cost) / EQUITY <= 0.85`. After each order, decrement
+`HEADROOM = HEADROOM - cost`.
 
 **5d. Compute limit price**
 
@@ -140,7 +141,17 @@ DO NOT place a trailing stop here — Rule 13 says daily-summary places it at ma
 DO NOT cancel positions or close anything — Rule 15 (no same-day exits, no closes, no cancels) applies even though this routine never sells.
 
 ## Step 7 — Append to `memory/TRADE-LOG.md` (locally)
-**Filled orders** — append a full TRADE row using the schema at the top of TRADE-LOG.md:
+**MANDATORY on every path — including HOLD and zero-fill.** Always write the run row
+first (Rule 18 looks for the literal `- market-open $DATE:` token):
+
+```
+## $DATE — Market-Open Run (Day N, <Weekday>, Week W Day D)
+
+- market-open $DATE: <N> orders placed, <K> filled. Pre-market Decision=<TRADE|HOLD>.
+  <gate outcomes per idea, HEADROOM, deployment %, core %, sector spread, week budget>
+```
+
+**Filled orders** — additionally append a full TRADE row using the schema at the top of TRADE-LOG.md:
 
 ```
 ### YYYY-MM-DD — TRADE: TICKER side=buy qty=N
