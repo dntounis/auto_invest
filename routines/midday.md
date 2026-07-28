@@ -72,22 +72,51 @@ bash scripts/alpaca.sh orders open # open trailing-stop orders (for replace-stop
 
 1. Parse `bash scripts/alpaca.sh dtc`. If `source == "api"`, set `DTC` to
    `daytrade_count` and `DTC_SOURCE=api`. Done.
-2. If `source == "unavailable"` (the paper endpoint omits the field), derive the
-   count locally: scan `memory/TRADE-LOG.md` over the **last 5 business days** and
-   count tickers that have BOTH a `side=buy` row AND a `side=sell` / `SCALE-OUT` /
-   `ROTATE-EXIT` row dated the **same calendar day**. That count is `DTC`, with
-   `DTC_SOURCE=local`. Rules 13 and 15 make this structurally 0 — if it is **not**
-   0, send a Telegram URGENT ("Rule 14: local day-trade count is N — Rule 13/15 may
-   have been bypassed") and treat it as a genuine DTC.
-3. If TRADE-LOG.md cannot be read at all, set `DTC_SOURCE=none`. **Block every
-   routine-initiated sell**, send Telegram URGENT ("Rule 14: day-trade count
-   unresolvable — sells blocked, manual review required"), and continue with
-   non-sell actions only (stop tightenings are not sells and remain permitted;
-   already-placed GTC stops are unaffected).
+2. If `source == "unavailable"` — the call **succeeded** but the paper endpoint
+   omits the field — derive the count locally per the procedure below, with
+   `DTC_SOURCE=local`.
+3. If `source == "error"` — the `dtc` HTTP call itself failed (non-zero curl
+   status or a non-JSON body: 5xx, timeout, DNS, bad creds) — **nothing** is known
+   about the account. Set `DTC_SOURCE=error` and go to (4). Do **NOT** fall back to
+   the local derivation: under Rules 13/15 it is structurally 0, so treating a
+   transport failure as `unavailable` would silently downgrade this visa-critical
+   gate to a derived zero and let a whole sell batch through. `unavailable` means
+   "the broker answered and genuinely has no field"; `error` means "the broker did
+   not answer".
+4. If `DTC_SOURCE == error`, or `source == "unavailable"` but TRADE-LOG.md cannot
+   be read at all (`DTC_SOURCE=none`): **block every routine-initiated sell**, send
+   Telegram URGENT ("Rule 14: day-trade count unresolvable (source=none|error) —
+   sells blocked, manual review required"), and continue with non-sell actions only
+   (stop tightenings are not sells and remain permitted; already-placed GTC stops
+   are unaffected).
+
+**Local derivation (used only for `source == "unavailable"`) — v3.3, broker-first.**
+The bot's own log records only what the bot itself did; a GTC trailing stop that
+filled on a day the bot also traded that name, a partial-fill re-entry, or any
+manual action taken in the Alpaca UI is invisible to it. So consult the broker
+first:
+- **Primary evidence — `bash scripts/alpaca.sh activities`** (read-only, no
+  kill-switch gate; takes an optional `YYYY-MM-DD` arg and defaults to today in
+  America/Chicago). Call it once per business day over the **last 5 business days**
+  and count symbols with BOTH a `FILL`/`PARTIAL_FILL` on `side=buy` AND one on
+  `side=sell` on the **same** activity date. That count is the day-trade count.
+- **Corroboration — `memory/TRADE-LOG.md`.** Scan the same 5 business days for
+  tickers with BOTH a `side=buy` row AND a `side=sell` / `SCALE-OUT` /
+  `ROTATE-EXIT` row dated the same calendar day. Take `DTC = max(activities_count,
+  tradelog_count)` — never the minimum, and never the TRADE-LOG figure alone. If
+  the two disagree, the broker saw a round trip the bot did not log: send a
+  Telegram URGENT naming the ticker and date.
+- If `activities` fails for any day in the window, fall back to the TRADE-LOG
+  figure for the whole window and note `source=local (activities unavailable)` in
+  the audit line — a degraded but still non-zero-capable derivation.
+Rules 13 and 15 make this count structurally 0. If it is **not** 0 from either
+evidence source, send a Telegram URGENT ("Rule 14: local day-trade count is N —
+Rule 13/15 may have been bypassed") and treat it as a genuine DTC.
 
 Never record "field absent, treated 0". Every routine that evaluates Rule 14 MUST
-log the literal token `Rule 14 DTC: <N> (source=api|local|none)` in its TRADE-LOG
-row so the weekly review can audit whether the gate was genuinely exercised.
+log the literal token `Rule 14 DTC: <N> (source=api|local|none|error)` in its
+TRADE-LOG row so the weekly review can audit whether the gate was genuinely
+exercised.
 
 If `DTC >= 2` (from any source), jump immediately to the abort path described in
 Rule 14: skip steps 3–5's evaluation/execution logic, but STILL write STEP 6's
@@ -99,7 +128,7 @@ to daily-summary's sweep)*, then the abort note, Telegram URGENT, commit, exit.
 On DTC abort, append to memory/TRADE-LOG.md — STEP 6's mandatory `- midday $DATE:`
 and `Rule 14 DTC:` lines first, then:
 ```
-### YYYY-MM-DD — MIDDAY ABORT: daytrade_count=N (source=api|local|none)
+### YYYY-MM-DD — MIDDAY ABORT: daytrade_count=N (source=api|local|none|error)
 - Reason: Rule 14 pre-flight tripped (DTC >= 2, or source=none)
 - Pending actions skipped: <list of would-be actions>
 - Resolution: manual human review required
@@ -230,19 +259,22 @@ fail-open by default:
 bash scripts/alpaca.sh dtc
 ```
 - `source == "api"`: set `DTC` to the returned `daytrade_count`, `DTC_SOURCE=api`.
-- `source == "unavailable"`: re-derive the local count exactly as in STEP 2 (same-day
-  buy+sell / `SCALE-OUT` / `ROTATE-EXIT` pairs over the last 5 business days from
-  TRADE-LOG.md), then ADD the number of sells already executed earlier in *this*
-  STEP 5 loop — those sells haven't hit TRADE-LOG.md yet (STEP 6 logs after the
-  loop finishes), so the raw TRADE-LOG scan would undercount them. The sum is
-  `DTC`, `DTC_SOURCE=local`.
-- Any other outcome — unparseable value, missing `source`, a failed `dtc` call, or
-  TRADE-LOG.md unreadable for the local fallback — is `DTC_SOURCE=none`.
-  **ABORT all remaining sells in this batch immediately** (do not place another
-  sell and do not continue the loop on a guess), send a Telegram URGENT ("Rule 14:
-  day-trade count unresolvable mid-loop — remaining sells blocked, manual review
-  required"), commit progress made so far, and exit. An empty, unparseable, or
-  missing value is never a pass.
+- `source == "unavailable"`: re-derive the local count exactly as in STEP 2
+  (`activities` as primary evidence, TRADE-LOG as corroboration, `max` of the two),
+  then ADD the number of sells already executed earlier in *this* STEP 5 loop —
+  those sells may not yet appear in `activities` and definitely haven't hit
+  TRADE-LOG.md yet (STEP 6 logs after the loop finishes), so the raw scan would
+  undercount them. The sum is `DTC`, `DTC_SOURCE=local`.
+- `source == "error"`: the `dtc` call itself failed — `DTC_SOURCE=error`. Abort as
+  below. Never substitute the local derivation here (see STEP 2 (3)).
+- Any other outcome — unparseable value, missing `source`, or TRADE-LOG.md
+  unreadable for the local fallback — is `DTC_SOURCE=none`.
+- On `DTC_SOURCE` of `error` **or** `none`: **ABORT all remaining sells in this
+  batch immediately** (do not place another sell and do not continue the loop on a
+  guess), send a Telegram URGENT ("Rule 14: day-trade count unresolvable mid-loop
+  (source=none|error) — remaining sells blocked, manual review required"), commit
+  progress made so far, and exit. An empty, unparseable, or missing value is never
+  a pass.
 
 If `DTC >= 2` (from any source) mid-loop, ABORT remaining sells (sector-kill or
 otherwise), send URGENT Telegram, commit progress so far, exit.
@@ -268,7 +300,7 @@ reason.
 rows below — and even if STEP 3 found zero actionable positions or STEP 4 scheduled
 zero actions — append one line to `memory/TRADE-LOG.md`, on every run:
 ```
-- Rule 14 DTC: <N> (source=api|local|none) (sell attempted: yes|no)
+- Rule 14 DTC: <N> (source=api|local|none|error) (sell attempted: yes|no)
 ```
 Use the final resolved `DTC` / `DTC_SOURCE` for this run: the last STEP 5
 mid-loop refresh if any sell was attempted, otherwise the STEP 2 value. This is

@@ -20,7 +20,9 @@ unresolved row: if no longer held → clear `reason=already-exited`; if the trig
 longer holds → clear `reason=trigger-no-longer-met` (for `action=scale-out`, re-check
 the ladder tier via `sizing.py ladder` against live state); else resolve DTC using
 midday's Step 5 batch-accumulation procedure (NOT Step 3's buy-side gate — that's
-permissive on `source=none`, wrong for a sell), abort on `DTC>=2` or `source=none`,
+permissive on `source=none`/`source=error`, wrong for a sell), abort on `DTC>=2`,
+`source=none` or `source=error` (a failed `dtc` call knows nothing — never fall back
+to the structurally-zero local derivation),
 apply the Rule 15 check, then execute: `close TICKER` for hard-close/rotate-exit/
 sector-kill, or `scale-out TICKER $SELL_QTY` with a freshly re-derived qty (never the
 stale PENDING qty) for `action=scale-out`. Write the EXIT/SCALE-OUT row, then clear
@@ -60,12 +62,14 @@ Idempotency: skip any ticker with an existing today BUY (DECIDED H).
 
 ## Step 3 — Apply buy-side gate
 Per `TRADING-STRATEGY.md`. Resolve `DTC`/`DTC_SOURCE` via `bash scripts/alpaca.sh dtc`
-*(v3.3, same three-source procedure as midday)*. Reject ideas where `DTC > 1` to
-preserve the Rule 14 buffer (a buy today + a stop-triggered sell tomorrow could
-bump DTC; buffer of 1 keeps us well below the FINRA PDT threshold of 4 day
-trades in 5 rolling business days even if a same-day stop fires unexpectedly).
-`source=none` allows buys but must be logged — a buy cannot itself create a day
-trade because Rule 13 defers the stop to market close.
+*(v3.3, same four-source procedure as midday: `api` | `local` | `none` | `error`)*.
+Reject ideas where `DTC > 1` to preserve the Rule 14 buffer (a buy today + a
+stop-triggered sell tomorrow could bump DTC; buffer of 1 keeps us well below the
+FINRA PDT threshold of 4 day trades in 5 rolling business days even if a same-day
+stop fires unexpectedly). `source=none` and `source=error` both allow buys but must
+be logged as a degraded state — a buy cannot itself create a day trade because Rule
+13 defers the stop to market close. This permissiveness is buy-side only; Step 0's
+catch-up sells treat both as hard aborts.
 
 Additional gate checks per idea:
 - Total positions after fill ≤ 6
@@ -185,7 +189,7 @@ first (Rule 18 looks for the literal `- market-open $DATE:` token):
 
 - market-open $DATE: <N> orders placed, <K> filled. Pre-market Decision=<TRADE|HOLD>.
   <gate outcomes per idea, HEADROOM, deployment %, core %, sector spread, week budget>
-- Rule 14 DTC: <N> (source=api|local|none) — buy-side buffer only, no sells here.
+- Rule 14 DTC: <N> (source=api|local|none|error) — buy-side buffer only, no sells here.
 ```
 Literal `Rule 14 DTC:` token — weekly review greps for it to confirm the gate ran.
 Always write it, including the Step 1 halt copies of this row (use

@@ -52,17 +52,44 @@ case "$cmd" in
         ;;
     dtc)
         # Rule 14 support (v3.3): always emits one JSON object and always exits 0.
-        # `source` is the sole signal — a curl failure yields source=unavailable, not a
+        # `source` is the sole signal — a transport failure yields source=error, not a
         # nonzero exit, so a caller running under `set -e` can branch on it instead of
         # dying at the call site. This is deliberately unlike the other read-only
         # subcommands, which use the silence+nonzero-exit idiom.
-        resp="$(curl -fsS -H "$H_KEY" -H "$H_SEC" "$API/account" || true)"
-        printf '%s' "$resp" | python3 -c '
-import json,sys
+        #
+        # Three source values, and the distinction between the last two is
+        # visa-critical:
+        #   api         — the call succeeded and `daytrade_count` parsed to an int.
+        #   unavailable — the call SUCCEEDED (HTTP 2xx, parseable JSON object) but the
+        #                 field is absent, null or unparseable. This is the benign
+        #                 paper-endpoint case; Rule 14 derives the count locally.
+        #   error       — the HTTP call itself failed (non-zero curl status: 5xx,
+        #                 timeout, DNS, bad creds) OR the body is not a JSON object.
+        #                 NOTHING is known about the account. Callers MUST treat this
+        #                 exactly like `source=none`: block routine-initiated sells and
+        #                 send a Telegram URGENT. Collapsing it into `unavailable`
+        #                 would silently downgrade the gate to a derived zero on a live
+        #                 account, where the field is normally present.
+        # curl's status is captured via `if` (exempt from `set -e`) so a failure is
+        # observable rather than swallowed by `|| true`.
+        if resp="$(curl -fsS -H "$H_KEY" -H "$H_SEC" "$API/account")"; then
+            curl_rc=0
+        else
+            curl_rc=$?
+        fi
+        printf '%s' "$resp" | CURL_RC="$curl_rc" python3 -c '
+import json,os,sys
+raw = sys.stdin.read()
+if os.environ.get("CURL_RC") != "0":
+    print(json.dumps({"daytrade_count": None, "source": "error"}))
+    raise SystemExit(0)
 try:
-    d = json.load(sys.stdin)
+    d = json.loads(raw)
 except Exception:
-    d = {}
+    d = None
+if not isinstance(d, dict):
+    print(json.dumps({"daytrade_count": None, "source": "error"}))
+    raise SystemExit(0)
 v = d.get("daytrade_count")
 try:
     n = int(v)

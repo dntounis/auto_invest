@@ -93,12 +93,17 @@ For each unresolved row, in order:
    STEP 5 mid-loop procedure, not STEP 3's buy-side gate** — the buy-side gate is
    deliberately permissive on `source=none` (a buy can't itself create a day
    trade), which is the wrong behavior for a sell: `bash scripts/alpaca.sh dtc` →
-   `source=api` → use it; `source=unavailable` → derive the count locally from
-   `memory/TRADE-LOG.md` (same-day buy+sell pairs, last 5 business days), **then
-   add the number of sells already executed earlier in this STEP 0 batch** (their
-   TRADE-LOG rows haven't been written yet, so the raw scan would undercount
-   them); anything else is `source=none`. **ABORT this sell and every remaining
-   unresolved row** if `DTC >= 2` or `source=none` — send Telegram URGENT, commit
+   `source=api` → use it; `source=unavailable` (the call succeeded, the field is
+   simply absent) → derive the count locally exactly as midday STEP 2 does
+   (`bash scripts/alpaca.sh activities` as primary evidence over the last 5
+   business days, TRADE-LOG same-day buy+sell pairs as corroboration, `max` of the
+   two), **then add the number of sells already executed earlier in this STEP 0
+   batch** (their TRADE-LOG rows haven't been written yet, so the raw scan would
+   undercount them); `source=error` — the `dtc` HTTP call itself failed, so
+   nothing is known — is treated exactly like `source=none` and must NEVER fall
+   back to the local derivation (structurally 0, hence a fail-open); anything else
+   is `source=none`. **ABORT this sell and every remaining unresolved row** if
+   `DTC >= 2`, `source=none` or `source=error` — send Telegram URGENT, commit
    progress made so far on already-cleared rows, and proceed to STEP 1, leaving
    the rest unresolved for the next market-open. Then apply the Rule 15 same-day
    filter (a catch-up position is aged by construction — it was open at
@@ -200,10 +205,12 @@ For each idea in today's RESEARCH-LOG entry, run the Buy-Side Gate from
 - **(v3.1, all ideas — restated v3.3)** Deployment ceiling: this gate no longer refuses an idea pre-sizing. `HEADROOM` (STEP 2) is passed to the sizer in STEP 5c, which shrinks the clip to fit. Here, only skip the idea outright if `HEADROOM <= 0` — log "deployment ceiling: already at X% — no headroom, 0 buys". After sizing, STEP 5c re-asserts `(long_market_value + position_cost) / equity <= 0.85` as a belt-and-braces check and skips + logs if it somehow fails.
 - **(v3.2, satellite only)** Macro-binary proximity: read the idea's `macro-window:` tag. If `tier` is `satellite` AND the tag names a Tier-1 binary on T+1/T+2 (anything other than `clear`), skip + log "macro-binary gate: TICKER blocked by <BINARY> at T+N". `tier: core` ideas (tag `n/a (core)`) bypass this check.
 - Resolve `DTC` / `DTC_SOURCE` via `bash scripts/alpaca.sh dtc` using the same
-  three-source procedure as midday STEP 2 *(v3.3)*. `DTC` MUST be ≤ 1 to allow new
-  entries (Rule 14 buffer). If `DTC_SOURCE == none`, allow buys but log the
-  degraded state — a buy cannot itself create a day trade (Rule 13 defers the stop
-  to market close), so this gate fails safe on the buy side.
+  four-source procedure as midday STEP 2 *(v3.3 — `api` | `local` | `none` |
+  `error`)*. `DTC` MUST be ≤ 1 to allow new entries (Rule 14 buffer). If
+  `DTC_SOURCE` is `none` **or** `error`, allow buys but log the degraded state —
+  a buy cannot itself create a day trade (Rule 13 defers the stop to market
+  close), so this gate fails safe on the buy side. (This permissiveness is
+  buy-side only: STEP 0's catch-up sells treat `none` and `error` as hard aborts.)
   WHY: a buy today could trigger a stop-fired sell tomorrow, bumping DTC by 1; a
   buffer of 1 keeps us well below the FINRA PDT threshold of 4 day trades in 5
   rolling business days even if a same-day stop fires unexpectedly (rare but
@@ -361,7 +368,7 @@ on 2026-07-08, 2026-07-14 and 2026-07-24.
   <One paragraph: for each idea, whether it passed or which gate rejected it and by
   how much; HEADROOM at STEP 2; deployment %, ETF-core % of deployed, sector spread;
   satellite slots used; week trade budget used/5; Rule 13/14/15 applicability.>
-- Rule 14 DTC: <N> (source=api|local|none) — buy-side buffer check only, no sells
+- Rule 14 DTC: <N> (source=api|local|none|error) — buy-side buffer check only, no sells
   in this routine. If this row is written from a STEP 1 halt (before STEP 3 ever
   ran), record `n/a (halted before gate evaluation)` instead of a number/source.
 ```

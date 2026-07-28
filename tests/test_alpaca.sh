@@ -315,16 +315,31 @@ assert_contains "$out" "dtc"
 # invoking it, because the real subcommand curls Alpaca first and these must run
 # offline with no credentials. The mirrored block is the parser's CONTRACT under
 # test — if you change the parser in alpaca.sh, change it here too. Keep the two
-# byte-identical; that coupling is the point, not an accident.
+# byte-identical; that coupling is the point, not an accident. (Only the pipe
+# prefix differs: alpaca.sh feeds it `printf '%s' "$resp" | CURL_RC="$curl_rc"`,
+# the tests feed it `echo ... | CURL_RC=0` to simulate a successful HTTP call.)
+#
+# `CURL_RC` is how the parser learns whether the transport succeeded: a non-"0"
+# value means the curl itself failed and NOTHING is known, which must surface as
+# source=error — never as source=unavailable, which Rule 14 reads as "field
+# legitimately absent, derive locally" and would be a fail-open on a live account.
 
-# Test: the dtc parser reports source=unavailable when the field is absent
-start_test "dtc parser: absent field → source unavailable"
-out=$(echo '{"equity":"10000","cash":"2000"}' | python3 -c '
-import json,sys
+# Test: the dtc parser reports source=unavailable when the field is absent from an
+# otherwise successful response (the benign paper-endpoint case)
+start_test "dtc parser: successful call, absent field → source unavailable"
+out=$(echo '{"equity":"10000","cash":"2000"}' | CURL_RC=0 python3 -c '
+import json,os,sys
+raw = sys.stdin.read()
+if os.environ.get("CURL_RC") != "0":
+    print(json.dumps({"daytrade_count": None, "source": "error"}))
+    raise SystemExit(0)
 try:
-    d = json.load(sys.stdin)
+    d = json.loads(raw)
 except Exception:
-    d = {}
+    d = None
+if not isinstance(d, dict):
+    print(json.dumps({"daytrade_count": None, "source": "error"}))
+    raise SystemExit(0)
 v = d.get("daytrade_count")
 try:
     n = int(v)
@@ -340,12 +355,19 @@ assert_contains "$out" '"daytrade_count": null'
 
 # Test: the dtc parser reports source=api when the field is present
 start_test "dtc parser: present field → source api"
-out=$(echo '{"equity":"10000","daytrade_count":3}' | python3 -c '
-import json,sys
+out=$(echo '{"equity":"10000","daytrade_count":3}' | CURL_RC=0 python3 -c '
+import json,os,sys
+raw = sys.stdin.read()
+if os.environ.get("CURL_RC") != "0":
+    print(json.dumps({"daytrade_count": None, "source": "error"}))
+    raise SystemExit(0)
 try:
-    d = json.load(sys.stdin)
+    d = json.loads(raw)
 except Exception:
-    d = {}
+    d = None
+if not isinstance(d, dict):
+    print(json.dumps({"daytrade_count": None, "source": "error"}))
+    raise SystemExit(0)
 v = d.get("daytrade_count")
 try:
     n = int(v)
@@ -362,12 +384,19 @@ assert_contains "$out" '"daytrade_count": 3'
 # Test: the dtc parser falls back to unavailable (no traceback) on a
 # non-integer-parseable string value, e.g. "3.0"
 start_test "dtc parser: non-integer-parseable string (3.0) → source unavailable, no traceback"
-out=$(echo '{"daytrade_count":"3.0"}' | python3 -c '
-import json,sys
+out=$(echo '{"daytrade_count":"3.0"}' | CURL_RC=0 python3 -c '
+import json,os,sys
+raw = sys.stdin.read()
+if os.environ.get("CURL_RC") != "0":
+    print(json.dumps({"daytrade_count": None, "source": "error"}))
+    raise SystemExit(0)
 try:
-    d = json.load(sys.stdin)
+    d = json.loads(raw)
 except Exception:
-    d = {}
+    d = None
+if not isinstance(d, dict):
+    print(json.dumps({"daytrade_count": None, "source": "error"}))
+    raise SystemExit(0)
 v = d.get("daytrade_count")
 try:
     n = int(v)
@@ -385,12 +414,19 @@ assert_not_contains "$out" "Traceback"
 # Test: the dtc parser falls back to unavailable (no traceback) on a
 # non-integer-parseable string value, e.g. "N/A"
 start_test "dtc parser: non-integer-parseable string (N/A) → source unavailable, no traceback"
-out=$(echo '{"daytrade_count":"N/A"}' | python3 -c '
-import json,sys
+out=$(echo '{"daytrade_count":"N/A"}' | CURL_RC=0 python3 -c '
+import json,os,sys
+raw = sys.stdin.read()
+if os.environ.get("CURL_RC") != "0":
+    print(json.dumps({"daytrade_count": None, "source": "error"}))
+    raise SystemExit(0)
 try:
-    d = json.load(sys.stdin)
+    d = json.loads(raw)
 except Exception:
-    d = {}
+    d = None
+if not isinstance(d, dict):
+    print(json.dumps({"daytrade_count": None, "source": "error"}))
+    raise SystemExit(0)
 v = d.get("daytrade_count")
 try:
     n = int(v)
@@ -408,12 +444,19 @@ assert_not_contains "$out" "Traceback"
 # Test: the dtc parser accepts an integer-string value (Alpaca sometimes
 # stringifies numerics), pinning the coercion behaviour
 start_test "dtc parser: integer-string field (\"3\") → source api"
-out=$(echo '{"daytrade_count":"3"}' | python3 -c '
-import json,sys
+out=$(echo '{"daytrade_count":"3"}' | CURL_RC=0 python3 -c '
+import json,os,sys
+raw = sys.stdin.read()
+if os.environ.get("CURL_RC") != "0":
+    print(json.dumps({"daytrade_count": None, "source": "error"}))
+    raise SystemExit(0)
 try:
-    d = json.load(sys.stdin)
+    d = json.loads(raw)
 except Exception:
-    d = {}
+    d = None
+if not isinstance(d, dict):
+    print(json.dumps({"daytrade_count": None, "source": "error"}))
+    raise SystemExit(0)
 v = d.get("daytrade_count")
 try:
     n = int(v)
@@ -427,12 +470,104 @@ else:
 assert_contains "$out" '"source": "api"'
 assert_contains "$out" '"daytrade_count": 3'
 
+# Test: a successful HTTP call whose body is not JSON at all (an HTML error page,
+# a truncated proxy response) is a transport-level failure, NOT an absent field.
+start_test "dtc parser: non-JSON body → source error"
+out=$(echo '<html>502 Bad Gateway</html>' | CURL_RC=0 python3 -c '
+import json,os,sys
+raw = sys.stdin.read()
+if os.environ.get("CURL_RC") != "0":
+    print(json.dumps({"daytrade_count": None, "source": "error"}))
+    raise SystemExit(0)
+try:
+    d = json.loads(raw)
+except Exception:
+    d = None
+if not isinstance(d, dict):
+    print(json.dumps({"daytrade_count": None, "source": "error"}))
+    raise SystemExit(0)
+v = d.get("daytrade_count")
+try:
+    n = int(v)
+except (TypeError, ValueError):
+    n = None
+if n is None:
+    print(json.dumps({"daytrade_count": None, "source": "unavailable"}))
+else:
+    print(json.dumps({"daytrade_count": n, "source": "api"}))
+' 2>&1)
+assert_contains "$out" '"source": "error"'
+assert_contains "$out" '"daytrade_count": null'
+assert_not_contains "$out" "Traceback"
+
+# Test: an empty body from a 200 (or a JSON scalar rather than an object) is also
+# an error, not an absent field.
+start_test "dtc parser: empty body → source error"
+out=$(printf '' | CURL_RC=0 python3 -c '
+import json,os,sys
+raw = sys.stdin.read()
+if os.environ.get("CURL_RC") != "0":
+    print(json.dumps({"daytrade_count": None, "source": "error"}))
+    raise SystemExit(0)
+try:
+    d = json.loads(raw)
+except Exception:
+    d = None
+if not isinstance(d, dict):
+    print(json.dumps({"daytrade_count": None, "source": "error"}))
+    raise SystemExit(0)
+v = d.get("daytrade_count")
+try:
+    n = int(v)
+except (TypeError, ValueError):
+    n = None
+if n is None:
+    print(json.dumps({"daytrade_count": None, "source": "unavailable"}))
+else:
+    print(json.dumps({"daytrade_count": n, "source": "api"}))
+' 2>&1)
+assert_contains "$out" '"source": "error"'
+assert_not_contains "$out" "Traceback"
+
+# Test: a non-zero curl status wins over anything in the body. Even a perfectly
+# well-formed cached/partial payload must not be reported as `api` or
+# `unavailable` when the HTTP call itself failed.
+start_test "dtc parser: non-zero curl status → source error even with a valid body"
+out=$(echo '{"equity":"10000","daytrade_count":0}' | CURL_RC=22 python3 -c '
+import json,os,sys
+raw = sys.stdin.read()
+if os.environ.get("CURL_RC") != "0":
+    print(json.dumps({"daytrade_count": None, "source": "error"}))
+    raise SystemExit(0)
+try:
+    d = json.loads(raw)
+except Exception:
+    d = None
+if not isinstance(d, dict):
+    print(json.dumps({"daytrade_count": None, "source": "error"}))
+    raise SystemExit(0)
+v = d.get("daytrade_count")
+try:
+    n = int(v)
+except (TypeError, ValueError):
+    n = None
+if n is None:
+    print(json.dumps({"daytrade_count": None, "source": "unavailable"}))
+else:
+    print(json.dumps({"daytrade_count": n, "source": "api"}))
+' 2>&1)
+assert_contains "$out" '"source": "error"'
+assert_not_contains "$out" '"source": "api"'
+assert_not_contains "$out" '"source": "unavailable"'
+
 # Test: dtc's contract is total — a curl failure (bad creds, no network, 5xx)
-# must still exit 0 with a well-formed source=unavailable payload, never let
-# `set -euo pipefail` propagate curl's nonzero status. This is what lets a
-# caller running under its own `set -e` (Task 4's routines) branch on `source`
-# instead of dying at the call site.
-start_test "dtc: curl failure still exits 0 with source=unavailable"
+# must still exit 0 with a well-formed payload, never let `set -euo pipefail`
+# propagate curl's nonzero status. This is what lets a caller running under its
+# own `set -e` (Task 4's routines) branch on `source` instead of dying at the
+# call site. The payload MUST be source=error, not source=unavailable: the call
+# failed, so nothing is known, and Rule 14 must block sells rather than derive a
+# structurally-zero local count.
+start_test "dtc: transport failure exits 0 with source=error (not unavailable)"
 TMP="$(mktemp -d tests/.tmp/alp.XXXXXX)"
 out=$(
     cd "$TMP"
@@ -448,7 +583,8 @@ out=$(
 )
 rc=$?
 assert_exit_code 0 "$rc"
-assert_contains "$out" '"source": "unavailable"'
+assert_contains "$out" '"source": "error"'
+assert_not_contains "$out" '"source": "unavailable"'
 
 rm -rf tests/.tmp/alp.*
 print_summary

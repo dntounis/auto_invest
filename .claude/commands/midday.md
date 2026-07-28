@@ -24,12 +24,23 @@ bash scripts/alpaca.sh positions   # avg_entry_price + market_value + current_pr
 bash scripts/alpaca.sh orders open # open trailing-stop orders (for replace-stop trail_percent parse)
 ```
 
-Resolve Rule 14 via `bash scripts/alpaca.sh dtc` *(v3.3)*: `source=api` → use the
-value; `source=unavailable` → derive locally from TRADE-LOG.md (same-day buy+sell
-pairs over the last 5 business days, `source=local`, structurally 0 under Rules
-13/15 — non-zero is URGENT); unreadable → `source=none`, block all sells + URGENT.
+Resolve Rule 14 via `bash scripts/alpaca.sh dtc` *(v3.3, four sources)*:
+- `source=api` → use the value.
+- `source=unavailable` (call **succeeded**, field simply absent) → derive locally,
+  `source=local`. Broker-first: `bash scripts/alpaca.sh activities` per business day
+  over the last 5 business days is the **primary** evidence (count symbols with a buy
+  fill AND a sell fill on the same activity date — this is the only thing that sees a
+  GTC stop fill, a partial-fill re-entry, or a manual Alpaca-UI action); the
+  TRADE-LOG same-day buy+sell / `SCALE-OUT` / `ROTATE-EXIT` scan is corroboration.
+  Take `max` of the two; a disagreement is itself URGENT. Structurally 0 under Rules
+  13/15 — non-zero from either source is URGENT.
+- `source=error` (the `dtc` HTTP call itself failed — nothing is known) → block all
+  sells + URGENT. **Never** substitute the local derivation here: it is structurally
+  0 and would fail the gate open on a live account.
+- TRADE-LOG unreadable for the local fallback → `source=none`, block sells + URGENT.
+
 Never treat an absent field as 0. Log `Rule 14 DTC: <N> (source=...)`.
-If `DTC >= 2` or `source=none`, abort sells — but still write Step 6's mandatory
+If `DTC >= 2`, `source=none` or `source=error`, abort sells — but still write Step 6's mandatory
 `- midday $DATE:` cadence line first (v3.3 — an abort must not look like a cron
 skip to Rule 18's sweep).
 
@@ -37,8 +48,8 @@ On DTC abort, also write a one-block note to memory/TRADE-LOG.md (locally; not
 committed) — Step 6's `- midday $DATE:` and `Rule 14 DTC:` lines first, then:
 
 ```
-### YYYY-MM-DD — MIDDAY ABORT: daytrade_count=N (source=api|local|none)
-- Reason: Rule 14 pre-flight tripped (DTC >= 2, or source=none)
+### YYYY-MM-DD — MIDDAY ABORT: daytrade_count=N (source=api|local|none|error)
+- Reason: Rule 14 pre-flight tripped (DTC >= 2, or source=none|error)
 - Pending actions skipped: <list>
 - Resolution: manual human review required
 ```
@@ -94,16 +105,17 @@ bash scripts/alpaca.sh scale-out TICKER $SELL_QTY   # qty from sizing.py scaleou
 bash scripts/alpaca.sh replace-stop ORDER_ID TICKER QTY NEW_TRAIL    # tighten
 ```
 After each individual sell, re-resolve DTC via `bash scripts/alpaca.sh dtc`
-(same three-source procedure as Step 2) — never re-read `account.daytrade_count`
+(same four-source procedure as Step 2) — never re-read `account.daytrade_count`
 directly; the field is absent on paper and a raw subscript raises, silently
 leaving DTC empty and fail-open. `source=api` → use the value. `source=unavailable`
-→ re-derive locally (Step 2 method) and ADD sells already done earlier in this
-loop (not yet in TRADE-LOG.md). Anything else — unparseable, missing, `dtc` call
-failure, TRADE-LOG unreadable — is `source=none`: ABORT all remaining sells in the
-batch now, URGENT Telegram, commit progress, exit. Never continue the loop on an
-empty/unparseable value.
+→ re-derive locally (Step 2 method: activities-primary, TRADE-LOG corroborating)
+and ADD sells already done earlier in this loop (not yet in activities/TRADE-LOG).
+`source=error` (the call failed) → abort, never re-derive. Anything else —
+unparseable, missing, TRADE-LOG unreadable — is `source=none`: ABORT all remaining
+sells in the batch now, URGENT Telegram, commit progress, exit. Never continue the
+loop on an empty/unparseable value.
 
-Abort if DTC reaches 2 (any source) or source=none.
+Abort if DTC reaches 2 (any source), or source=none, or source=error.
 
 ## Step 6 — Append action rows to `memory/TRADE-LOG.md` (locally)
 
@@ -119,7 +131,7 @@ trigger a spurious catch-up re-run that duplicates today's DECAY-FLAG rows.
 **Then — the Rule 14 audit line**, even with zero actionable positions
 or zero scheduled actions:
 ```
-- Rule 14 DTC: <N> (source=api|local|none) (sell attempted: yes|no)
+- Rule 14 DTC: <N> (source=api|local|none|error) (sell attempted: yes|no)
 ```
 Use the last resolved `DTC`/`DTC_SOURCE` (Step 5 mid-loop value if a sell was
 attempted, else Step 2's). This is the literal token weekly review greps for to
