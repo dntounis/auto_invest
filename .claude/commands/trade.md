@@ -50,7 +50,7 @@ entirely. Use the same call market-open Step 5c uses:
 STOP_FRAC=$(python3 -c "print($trail_pct/100)")   # or the user's STOP_PCT/100
 HEADROOM=$(python3 -c "print(0.85*$EQUITY - $LONG_MARKET_VALUE)")   # from Step 2
 SIZE_JSON=$(python3 scripts/sizing.py size \
-    --equity "$EQUITY" --price "$LIVE_ASK" --stop-frac "$STOP_FRAC" \
+    --equity "$EQUITY" --price "$live_ask" --stop-frac "$STOP_FRAC" \
     --headroom "$HEADROOM")
 ```
 Parse `shares`, `cost`, `clamped`.

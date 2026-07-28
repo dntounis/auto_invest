@@ -233,7 +233,7 @@ first (Rule 18 looks for the literal `- market-open $DATE:` token):
 
 - market-open $DATE: <N> orders placed, <K> filled. Pre-market Decision=<TRADE|HOLD>.
   <gate outcomes per idea, HEADROOM, deployment %, core %, sector spread, week budget>
-- Rule 14 DTC: <N> (source=api|local|none|error) — buy-side buffer only, no sells here.
+- Rule 14 DTC: <N> (source=api|local|none|error) — <buy-side buffer only, no sells this run | buy-side buffer + Step 0 catch-up: <K> sell(s) executed, each pre-flighted>.
 ```
 Literal `Rule 14 DTC:` token — weekly review greps for it to confirm the gate ran.
 Always write it, including the Step 1 halt copies of this row (use

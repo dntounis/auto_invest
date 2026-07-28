@@ -133,7 +133,7 @@ Then split the outcome by whether it requires a market sell:
 ```
 ### $DATE — CATCH-UP PENDING: TICKER action=<hard-close|rotate-exit|sector-kill|scale-out>
 - Missed midday $DATE (Rule 18). Evaluation run at daily-summary; a sell is owed.
-- Trigger: <Rule 7 unrealized -X% | Rule 16 2nd consecutive decay flag | Rule 10 sector S | Rule 8 scale-out due, tier=core|satellite>
+- Trigger: <Rule 7 unrealized -X% | Rule 16 2nd consecutive decay flag | Rule 10 sector S | Rule 8 scale-out due, tier=<core|satellite> (role), ladder=<etf|stock> (instrument type passed to --tier)>
 - Qty (scale-out only): <N shares from sizing.py scaleout at this evaluation — informational; next market-open re-derives against live qty and never reuses this number>
 - Deferred to next market-open STEP 0 (closing-bell fill risk). Position is aged → Rule 15 safe.
 ```

@@ -28,6 +28,16 @@ done
 ```
 - Sanity checks: `ALPACA_ENDPOINT` contains `paper-api.alpaca.markets`; `TRADING_ENABLED == "true"`.
   If either fails, STOP, Telegram-alert, exit.
+- **On an environment STOP, deliberately write NOTHING to TRADE-LOG.md** *(v3.3 —
+  do not "fix" this by analogy with `market-open`, which does write a halt row)*.
+  The asymmetry is intentional: a missing `- midday $DATE:` row is exactly the
+  signal `daily-summary`'s Rule 18 sweep uses to fire the midday catch-up and run
+  the Rule 7/8/16 evaluation this run never reached. Writing a cadence token here
+  would tell the sweep midday ran and **suppress the recovery** — the opposite of
+  what the token is for. `market-open` writes a halt row precisely because it has
+  no recoverer and because its STEP 0 catch-ups must not be misread as cleared.
+  The Rule 14 abort paths are different again: those *did* evaluate, so they DO
+  write the cadence line (STEP 5, STEP 6).
 
 ## IMPORTANT — VISA-AWARE RULES (read before acting)
 
@@ -146,7 +156,7 @@ On DTC abort, append to memory/TRADE-LOG.md — STEP 6's mandatory `- midday $DA
 and `Rule 14 DTC:` lines first, then:
 ```
 ### YYYY-MM-DD — MIDDAY ABORT: daytrade_count=N (source=api|local|none|error)
-- Reason: Rule 14 pre-flight tripped (DTC >= 2, or source=none)
+- Reason: Rule 14 pre-flight tripped (DTC >= 2, or source=none|error)
 - Pending actions skipped: <list of would-be actions>
 - Resolution: manual human review required
 ```
@@ -318,21 +328,40 @@ bash scripts/alpaca.sh dtc
 - On `DTC_SOURCE` of `error` **or** `none`: **ABORT all remaining sells in this
   batch immediately** (do not place another sell and do not continue the loop on a
   guess), send a Telegram URGENT ("Rule 14: day-trade count unresolvable mid-loop
-  (source=none|error) — remaining sells blocked, manual review required"), commit
-  progress made so far, and exit. An empty, unparseable, or missing value is never
-  a pass.
+  (source=none|error) — remaining sells blocked, manual review required"), then
+  **proceed to STEP 6 — do NOT exit** *(v3.3, see below)*. An empty, unparseable,
+  or missing value is never a pass.
 
 If `DTC >= 2` (from any source) mid-loop, ABORT remaining sells (sector-kill or
-otherwise), send URGENT Telegram, commit progress so far, exit.
+otherwise), send URGENT Telegram, then **proceed to STEP 6 — do NOT exit**.
+
+**A mid-loop abort obeys the same contract as every other Rule 14 abort: it blocks
+sells, it does not end the run** *(v3.3 — this path previously said "commit
+progress so far, exit", contradicting the preamble, STEP 2 and Rule 14 itself)*.
+After aborting the remaining sells, still:
+- write STEP 6's mandatory `- midday $DATE:` cadence line and the `Rule 14 DTC:`
+  audit line (both are mandatory on **every** path, this one included);
+- write the rows already earned in this run — EXIT / `SCALE-OUT` rows for sells that
+  completed *before* the abort, plus every stop tightening and `DECAY-FLAG` row from
+  STEP 4, none of which are sells;
+- send STEP 7's Telegram and commit at STEP 8.
+
+Exiting here instead would write no cadence token, so `daily-summary`'s Rule 18
+sweep would read the day as a cron skip, re-run midday's evaluation and write
+**duplicate `DECAY-FLAG` rows** on a day that already had correct ones — corrupting
+the Rule 16 consecutiveness chain — and the weekly `Rule 14 DTC:` audit sweep would
+report a spurious audit gap for a day the gate actually ran and did its job.
 
 ## STEP 6 — Append action rows to `memory/TRADE-LOG.md`
 
-**MANDATORY on every execution path — a NO-ACTION day (STEP 3 finds zero
-actionable positions, or STEP 4 schedules zero actions), the Rule 14 abort path
-in STEP 2, and every ordinary run alike (v3.3).** Before anything else, append
-the literal Rule 18 cadence token:
+**MANDATORY on every execution path, without exception (v3.3)** — a NO-ACTION day
+(STEP 3 finds zero actionable positions, or STEP 4 schedules zero actions), **every
+Rule 14 abort path — STEP 2's pre-flight abort and STEP 5's mid-loop abort alike** —
+and every ordinary run. No abort, at any step, may reach `exit` without passing
+through this step first. Before anything else, append the literal Rule 18 cadence
+token:
 ```
-- midday $DATE: <N> sells, <K> scale-outs, <M> stop-tightenings, <P> decay-flags (or "DTC ABORT" if this run aborted at STEP 2).
+- midday $DATE: <N> sells, <K> scale-outs, <M> stop-tightenings, <P> decay-flags (or "DTC ABORT (STEP 2 pre-flight)" / "DTC ABORT (STEP 5 mid-loop, K sells completed before abort)" if this run aborted).
 ```
 This is the line `daily-summary`'s Rule 18 cadence sweep searches for to confirm
 midday genuinely ran today. Writing nothing here — on a NO-ACTION day or a DTC

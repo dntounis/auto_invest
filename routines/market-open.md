@@ -485,9 +485,11 @@ on 2026-07-08, 2026-07-14 and 2026-07-24.
   <One paragraph: for each idea, whether it passed or which gate rejected it and by
   how much; HEADROOM at STEP 2; deployment %, ETF-core % of deployed, sector spread;
   satellite slots used; week trade budget used/5; Rule 13/14/15 applicability.>
-- Rule 14 DTC: <N> (source=api|local|none|error) — buy-side buffer check only, no sells
-  in this routine. If this row is written from a STEP 1 halt (before STEP 3 ever
-  ran), record `n/a (halted before gate evaluation)` instead of a number/source.
+- Rule 14 DTC: <N> (source=api|local|none|error) — <buy-side buffer check only, no
+  sells this run | buy-side buffer check + STEP 0 Rule 18 catch-up: <K> catch-up
+  sell(s) executed, each with its own pre-flight>. If this row is written from a
+  STEP 1 halt (before STEP 3 ever ran), record `n/a (halted before gate evaluation)`
+  instead of a number/source.
 ```
 
 The `Rule 14 DTC:` line is the literal token the weekly review greps for to

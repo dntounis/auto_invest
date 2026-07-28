@@ -36,7 +36,10 @@ daily-summary is missing. If it is missing, send
 `bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — MISSING ROUTINE: daily-summary did not log for <prior_date>. Investigate cron. (Rule 18)"` and append a
 `### <prior_date> — MISSING ROUTINE: daily-summary (Rule 18)` placeholder to TRADE-LOG.md.
 
-**Then RUN THE MISSED RULE 13 STOP PLACEMENT (v3.3).** daily-summary is the *only*
+**Then — only on the "snapshot missing" branch — RUN THE MISSED RULE 13 STOP
+PLACEMENT (v3.3).** If the prior session's snapshot is present, daily-summary ran
+and placed its stops; skip this. (Idempotent, so a stray run is harmless, but it is
+not unconditional.) daily-summary is the *only*
 placer of Rule 13 stops — market-open never places one, midday only tightens one
 that already exists — so a single skipped daily-summary leaves that day's positions
 permanently stop-less. Pull `bash scripts/alpaca.sh positions` and

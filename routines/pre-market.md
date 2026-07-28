@@ -87,9 +87,13 @@ daily-summary is missing. If it is missing, send
 `bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — MISSING ROUTINE: daily-summary did not log for <prior_date>. Investigate cron. (Rule 18)"` and append a
 `### <prior_date> — MISSING ROUTINE: daily-summary (Rule 18)` placeholder to TRADE-LOG.md.
 
-**Then RUN THE MISSED RULE 13 STOP PLACEMENT (v3.3 recovery).** Detection alone is
-not enough here, because `daily-summary` is the **sole** placer of Rule 13 trailing
-stops: `market-open` deliberately never places one (Rule 13), and `midday` only
+**Then — still inside the "prior-day EOD snapshot is missing" branch, and ONLY
+there — RUN THE MISSED RULE 13 STOP PLACEMENT (v3.3 recovery).** If the prior
+session's EOD snapshot *is* present, daily-summary ran and placed its stops: skip
+this recovery entirely and proceed. (The placement is idempotent, so a stray run
+would be harmless, but it is not unconditional and must not be read as such.)
+Detection alone is not enough on the missing branch, because `daily-summary` is the
+**sole** placer of Rule 13 trailing stops: `market-open` deliberately never places one (Rule 13), and `midday` only
 *tightens* an existing stop — which requires an open stop's `trail_percent` to
 exist. So a single skipped `daily-summary` leaves every position opened that day
 permanently stop-less, with nothing downstream to notice. Recover it here:

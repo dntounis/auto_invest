@@ -129,17 +129,27 @@ leaving DTC empty and fail-open. `source=api` → use the value. `source=unavail
 and ADD sells already done earlier in this loop (not yet in activities/TRADE-LOG).
 `source=error` (the call failed) → abort, never re-derive. Anything else —
 unparseable, missing, TRADE-LOG unreadable — is `source=none`: ABORT all remaining
-sells in the batch now, URGENT Telegram, commit progress, exit. Never continue the
-loop on an empty/unparseable value.
+sells in the batch now, URGENT Telegram, **then proceed to Step 6 — do NOT exit**.
+Never continue the loop on an empty/unparseable value.
 
 Abort if DTC reaches 2 (any source), or source=none, or source=error.
 
+**A mid-loop abort blocks sells, not the run** *(v3.3 — this path used to say
+"commit progress, exit", contradicting the preamble, Step 2 and Rule 14)*. Still
+write Step 6's `- midday $DATE:` cadence line and `Rule 14 DTC:` audit line, the
+rows already earned (EXIT/`SCALE-OUT` for sells completed before the abort, plus
+every stop tightening and `DECAY-FLAG` row), then the Telegram. Exiting instead
+would leave no cadence token, so daily-summary's Rule 18 sweep would read a cron
+skip, re-run the evaluation and duplicate today's DECAY-FLAG rows (corrupting the
+Rule 16 chain), and the weekly audit sweep would report a spurious Rule 14 gap.
+
 ## Step 6 — Append action rows to `memory/TRADE-LOG.md` (locally)
 
-**MANDATORY first, on every path — NO-ACTION days and the Step 2 DTC-abort path
-included (v3.3):**
+**MANDATORY first, on every path, without exception — NO-ACTION days and BOTH
+DTC-abort paths (Step 2 pre-flight and Step 5 mid-loop) included (v3.3). No abort
+reaches `exit` without passing through this step:**
 ```
-- midday $DATE: <N> sells, <K> scale-outs, <M> stop-tightenings, <P> decay-flags (or "DTC ABORT").
+- midday $DATE: <N> sells, <K> scale-outs, <M> stop-tightenings, <P> decay-flags (or "DTC ABORT (Step 2 pre-flight)" / "DTC ABORT (Step 5 mid-loop, K sells before abort)").
 ```
 This is the token daily-summary's Rule 18 sweep looks for; omitting it on a
 no-action or abort day makes midday indistinguishable from a cron skip and can
