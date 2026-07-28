@@ -208,7 +208,21 @@ From that payload compute, once, for the whole run *(v3.3)*:
 ```
 DEPLOY_CEILING = 0.85
 HEADROOM = (EQUITY * DEPLOY_CEILING) - LONG_MARKET_VALUE
-COMMITTED_COST = 0
+
+# --- STEP 2 snapshot, read once from `positions` (+ the Tier:/Sector: fields on
+#     each open position's BUY row in TRADE-LOG.md) ---
+CORE_MV       = sum of market_value over positions whose Tier is core
+SECTOR_MV[s]  = sum of market_value over positions in GICS sector s
+POS_COUNT     = number of positions currently held
+SAT_COUNT[s]  = number of satellite names currently held in sector s
+
+# --- Running totals for THIS run. Every gate in STEP 3 and STEP 5c evaluates
+#     against snapshot + committed, NEVER the bare snapshot (v3.3) ---
+COMMITTED_COST      = 0    # dollars reserved by ideas already sized this run
+COMMITTED_CORE_MV   = 0    # of that, dollars going into tier=core names
+COMMITTED_SECTOR_MV = {}   # sector -> dollars committed this run
+COMMITTED_POS       = 0    # new names (not already held) committed this run
+COMMITTED_SAT       = {}   # sector -> new satellite names committed this run
 ```
 
 `HEADROOM` is the dollar room remaining before the Rule 5 deployment ceiling.
@@ -216,6 +230,17 @@ COMMITTED_COST = 0
 run *(v3.3 — see STEP 5c)*. `HEADROOM` may be negative (book already over the
 ceiling) — in that case no buy of any size is permitted; skip every idea and log
 `deployment ceiling: already at X% — no headroom, 0 buys`.
+
+**Why the other accumulators exist** *(v3.3)*. Before this version the deployment
+ceiling was the only gate that re-asserted against a running total; the ETF-core
+floor, the 50% sector cap and "total positions ≤ 6" each evaluated against the
+STEP 2 snapshot, so N ideas in one run were all measured against a book that
+already assumed none of the others filled. Worked example: equity $10,000, LMV
+$4,000 = core $3,000 + satellite $1,000, two satellite ideas at $1,600 each. Each
+passes the core floor individually ($3,000/$5,600 = 53.6%), but after both fill
+core is $3,000/$7,200 = **41.7%** — floor breached. The same arithmetic breaks the
+sector cap. Multi-buy runs were nearly unreachable before this branch; enabling
+them is the branch's whole purpose, so this is now the normal case.
 
 Idempotency (DECIDED H): if today's orders already include any BUY for a ticker
 that's also a candidate today, SKIP that ticker. The routine ran already — don't
@@ -230,14 +255,41 @@ First, read the `**Decision:**` line from today's RESEARCH-LOG entry.
 For each idea in today's RESEARCH-LOG entry, run the Buy-Side Gate from
 `TRADING-STRATEGY.md`. Skip and log reason for any failure:
 
-- Total positions after this fill ≤ 6
+**All four portfolio-shape gates below accumulate** *(v3.3)*. Each evaluates
+against the STEP 2 snapshot **plus everything already committed earlier in this
+run**, not the bare snapshot. At this point the idea has not been sized yet, so use
+a provisional `position_cost` — the pm idea line's planned clip, else
+`min(0.16 * EQUITY, HEADROOM)` — and treat this as a screen. STEP 5c re-asserts all
+four against the **actual** sized cost, and that re-assertion is the binding check.
+The clip-shrink direction is safe: a headroom-clamped clip only ever makes these
+ratios easier to satisfy, so a gate that passes here on the provisional estimate
+cannot be turned into a breach by sizing. This is accumulation, not a sizing change.
+
+- **Total positions after this fill ≤ 6:** `POS_COUNT + COMMITTED_POS + 1 ≤ 6`
+  (count the idea only if the ticker is not already held — an add to an existing
+  name does not create a new position).
 - Trades placed this week (incl. this one) ≤ 5
 - Position cost ≤ 20% of account equity
 - Position cost ≤ available cash
-- **(v3, satellite only)** If this idea's `tier` is `satellite`: ETF-core market value after this fill stays ≥ 45% of deployed equity (sum of all position market values from `positions`). Skip + log if it would breach the core floor.
-- **(v3, satellite only)** If this idea's `tier` is `satellite`: ≤ 2 satellite names (existing + pending) in this idea's GICS sector after the fill. Skip + log if it would make 3.
-- **(v3.1, all ideas)** Sector concentration cap: compute `deployed_after = long_market_value + position_cost` and `sector_after = (sum of this sector's existing position market values) + position_cost`. If `sector_after / deployed_after > 0.50`, skip + log "sector cap: TICKER sector would be X% of deployed (> 50%)".
-- **(v3.1, all ideas — restated v3.3)** Deployment ceiling: this gate no longer refuses an idea pre-sizing. `HEADROOM` (STEP 2) is passed to the sizer in STEP 5c, which shrinks the clip to fit. Here, only skip the idea outright if `HEADROOM <= 0` — log "deployment ceiling: already at X% — no headroom, 0 buys". After sizing, STEP 5c re-asserts `(long_market_value + position_cost) / equity <= 0.85` as a belt-and-braces check and skips + logs if it somehow fails.
+- **(v3, satellite only)** ETF-core floor. Compute:
+  ```
+  deployed_after = LONG_MARKET_VALUE + COMMITTED_COST + position_cost
+  core_after     = CORE_MV + COMMITTED_CORE_MV        # a satellite adds nothing to core
+  ```
+  Require `core_after / deployed_after >= 0.45`. Skip + log if it would breach the
+  core floor, quoting both the individual and the post-run ratio.
+- **(v3, satellite only)** ≤ 2 satellite names in this idea's GICS sector after the
+  fill: `SAT_COUNT[sector] + COMMITTED_SAT[sector] + 1 <= 2`. Skip + log if it would
+  make 3. ("existing + pending" now has a precise definition: pending = committed
+  earlier in this run.)
+- **(v3.1, all ideas)** Sector concentration cap:
+  ```
+  deployed_after = LONG_MARKET_VALUE + COMMITTED_COST + position_cost
+  sector_after   = SECTOR_MV[sector] + COMMITTED_SECTOR_MV[sector] + position_cost
+  ```
+  If `sector_after / deployed_after > 0.50`, skip + log "sector cap: TICKER sector
+  would be X% of deployed (> 50%)".
+- **(v3.1, all ideas — restated v3.3)** Deployment ceiling: this gate no longer refuses an idea pre-sizing. `HEADROOM` (STEP 2) is passed to the sizer in STEP 5c, which shrinks the clip to fit. Here, only skip the idea outright if `HEADROOM <= 0` — log "deployment ceiling: already at X% — no headroom, 0 buys". After sizing, STEP 5c re-asserts `(LONG_MARKET_VALUE + COMMITTED_COST + cost) / equity <= 0.85` — the running total, not the bare snapshot — as a belt-and-braces check and skips + logs if it somehow fails.
 - **(v3.2, satellite only)** Macro-binary proximity: read the idea's `macro-window:` tag. If `tier` is `satellite` AND the tag names a Tier-1 binary on T+1/T+2 (anything other than `clear`), skip + log "macro-binary gate: TICKER blocked by <BINARY> at T+N". `tier: core` ideas (tag `n/a (core)`) bypass this check.
 - Resolve `DTC` / `DTC_SOURCE` via `bash scripts/alpaca.sh dtc` using the same
   four-source procedure as midday STEP 2 *(v3.3 — `api` | `local` | `none` |
@@ -324,25 +376,49 @@ Parse `shares`, `cost` and `clamped` from `SIZE_JSON`.
   would have been $RAW)`.
 - If `clamped == "cap"` or `"none"`: full risk-parity or 16%-capped clip; proceed.
 
-**Reserve at sizing time, not order-placement time** *(v3.3)*: immediately after
-parsing a successful `cost` above (any outcome other than `floor_skip`), before
-moving on to size the next idea, reserve it:
+**Re-assert the four accumulating gates against the ACTUAL sized cost** *(v3.3)*,
+before reserving anything. STEP 3 screened this idea on a provisional cost; now
+`cost` is known, so redo those checks with it, still against snapshot + committed:
 ```
-COMMITTED_COST = COMMITTED_COST + cost
-HEADROOM = HEADROOM - cost
+deployed_after = LONG_MARKET_VALUE + COMMITTED_COST + cost
+core_after     = CORE_MV + COMMITTED_CORE_MV + (cost if tier == core else 0)
+sector_after   = SECTOR_MV[sector] + COMMITTED_SECTOR_MV[sector] + cost
+
+positions:  POS_COUNT + COMMITTED_POS + (0 if already held else 1) <= 6
+core floor: core_after / deployed_after >= 0.45          (satellite ideas only)
+sat/sector: SAT_COUNT[sector] + COMMITTED_SAT[sector] + 1 <= 2  (satellite only)
+sector cap: sector_after / deployed_after <= 0.50
+ceiling:    deployed_after / EQUITY <= 0.85              (belt-and-braces, Rule 5)
+```
+If any fails, skip the idea, log which gate and by how much, and reserve nothing.
+This is the binding evaluation of these gates; STEP 3's is a screen. A ceiling
+failure here should be unreachable — `--headroom` already shrank the clip to fit —
+so log "deployment ceiling re-assert failed", skip the idea, and send a Telegram
+note: it indicates a headroom computation bug.
+
+**Then reserve at sizing time, not order-placement time**: immediately after a
+successful `cost` (any outcome other than `floor_skip`) clears the re-assertion
+above, and before moving on to size the next idea:
+```
+COMMITTED_COST                 += cost
+COMMITTED_CORE_MV              += cost   if tier == core   else 0
+COMMITTED_SECTOR_MV[sector]    += cost
+COMMITTED_POS                  += 1      unless the ticker is already held
+COMMITTED_SAT[sector]          += 1      if tier == satellite and not already held
+HEADROOM                        -= cost
 ```
 This must happen here, in STEP 5c, and not in STEP 6 — STEP 5 sizes *every*
 idea first ("After all ideas are processed, proceed to STEP 6"), and STEP 6 is
 a separate loop that places orders afterwards. If the reservation were deferred
 to order-placement time, no order would yet exist when idea 2 is sized, so two
 ideas in one session would each be sized against the same, undecremented
-headroom — the exact double-consumption bug this reservation exists to prevent.
+headroom **and each be gated against the same, unchanged core/sector/position
+snapshot** — the exact double-consumption bug this reservation exists to prevent.
 
-Then re-assert the ceiling using the running total: `(LONG_MARKET_VALUE +
-COMMITTED_COST) / EQUITY` MUST be `<= 0.85` (note `COMMITTED_COST` already
-includes this idea's cost after the reservation above). If it is not, skip the
-idea and log "deployment ceiling re-assert failed" — this should be
-unreachable and indicates a headroom computation bug worth a Telegram note.
+After the reservation, `(LONG_MARKET_VALUE + COMMITTED_COST) / EQUITY` is exactly
+the `deployed_after / EQUITY` you just asserted `<= 0.85`, and the accumulators now
+describe the book as it will stand if every reserved order fills — which is what
+the next idea is gated against.
 
 If an order is later rejected or expires unfilled in STEP 6, the reservation
 is simply released for the next session — do not attempt to re-size mid-run.

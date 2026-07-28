@@ -55,8 +55,17 @@ bash scripts/alpaca.sh positions
 bash scripts/alpaca.sh orders open
 ```
 
-Then compute once for the run *(v3.3)*: `HEADROOM = (EQUITY * 0.85) - LONG_MARKET_VALUE`,
-`COMMITTED_COST = 0`. If `HEADROOM <= 0`, no buy of any size is permitted — skip all ideas.
+Then compute once for the run *(v3.3)*: `HEADROOM = (EQUITY * 0.85) - LONG_MARKET_VALUE`.
+If `HEADROOM <= 0`, no buy of any size is permitted — skip all ideas.
+
+Snapshot, read once from `positions` (+ `Tier:`/`Sector:` on each open BUY row):
+`CORE_MV`, `SECTOR_MV[s]`, `POS_COUNT`, `SAT_COUNT[s]`. Running totals for this run,
+all starting at 0: `COMMITTED_COST`, `COMMITTED_CORE_MV`, `COMMITTED_SECTOR_MV[s]`,
+`COMMITTED_POS`, `COMMITTED_SAT[s]`. Every portfolio-shape gate below evaluates
+against **snapshot + committed**, never the bare snapshot — before v3.3 only the
+deployment ceiling accumulated, so two satellite ideas could each pass the core
+floor individually and breach it jointly (equity $10k, LMV $4k = $3k core + $1k
+satellite, two $1.6k satellites: 53.6% each, 41.7% after both).
 
 Idempotency: skip any ticker with an existing today BUY (DECIDED H).
 
@@ -71,14 +80,19 @@ be logged as a degraded state — a buy cannot itself create a day trade because
 13 defers the stop to market close. This permissiveness is buy-side only; Step 0's
 catch-up sells treat both as hard aborts.
 
-Additional gate checks per idea:
-- Total positions after fill ≤ 6
+Additional gate checks per idea. The four portfolio-shape gates **accumulate**
+*(v3.3)* — each uses snapshot + committed. The idea isn't sized yet here, so use a
+provisional `position_cost` (the pm idea's planned clip, else
+`min(0.16*EQUITY, HEADROOM)`); this is a screen and Step 5c re-asserts all four on
+the actual sized cost. Clip-shrink is safe: a headroom-clamped clip only makes these
+ratios easier to satisfy, so this is accumulation, not a sizing change.
+- Total positions after fill: `POS_COUNT + COMMITTED_POS + 1 ≤ 6` (skip the +1 if already held)
 - Trades placed this week (incl. this one) ≤ 5
 - Position cost ≤ 20% of account equity
 - Position cost ≤ available cash
-- **(v3, satellite only)** ETF-core market value stays ≥ 45% of deployed equity after the fill (skip + log if breached)
-- **(v3, satellite only)** ≤ 2 satellite names in this idea's GICS sector after the fill
-- **(v3.1, all ideas)** Sector concentration cap: compute `deployed_after = long_market_value + position_cost` and `sector_after = (sum of this sector's existing position market values) + position_cost`. If `sector_after / deployed_after > 0.50`, skip + log "sector cap: TICKER sector would be X% of deployed (> 50%)".
+- **(v3, satellite only)** ETF-core floor: `deployed_after = LONG_MARKET_VALUE + COMMITTED_COST + position_cost`, `core_after = CORE_MV + COMMITTED_CORE_MV` (a satellite adds nothing to core). Require `core_after / deployed_after ≥ 0.45`; skip + log if breached
+- **(v3, satellite only)** `SAT_COUNT[sector] + COMMITTED_SAT[sector] + 1 ≤ 2` satellite names in this idea's GICS sector after the fill ("pending" = committed earlier this run)
+- **(v3.1, all ideas)** Sector concentration cap: `sector_after = SECTOR_MV[sector] + COMMITTED_SECTOR_MV[sector] + position_cost`. If `sector_after / deployed_after > 0.50`, skip + log "sector cap: TICKER sector would be X% of deployed (> 50%)".
 - **(v3.1, restated v3.3)** Deployment ceiling: no longer a pre-sizing refusal. `HEADROOM` is passed to the sizer in Step 5, which shrinks the clip to fit. Skip outright only if `HEADROOM <= 0`.
 - **(v3.2, satellite only)** Macro-binary proximity: read the idea's `macro-window:` tag. If `tier` is `satellite` AND the tag names a Tier-1 binary on T+1/T+2 (anything other than `clear`), skip + log "macro-binary gate: TICKER blocked by <BINARY> at T+N". `tier: core` ideas (tag `n/a (core)`) bypass this check.
 - Instrument is a stock (not option/crypto/forex/futures)
@@ -135,14 +149,34 @@ SIZE_JSON=$(python3 scripts/sizing.py size --equity "$EQUITY" --price "$LIVE_ASK
 `clamped == "floor_skip"` or `shares < 1` → skip + log. `clamped == "headroom"` →
 clip deliberately shrunk to fit; proceed and log it.
 
-**Reserve at sizing time, not order-placement time** *(v3.3)*: right after parsing
-a successful `cost` (any outcome other than `floor_skip`), before sizing the next
-idea: `COMMITTED_COST += cost`, `HEADROOM -= cost`. Must happen here — Step 5 sizes
-every idea before Step 6 places any order, so a decrement deferred to order-placement
-time would never fire and two ideas could both consume the same headroom. Re-assert
-`(LONG_MARKET_VALUE + COMMITTED_COST) / EQUITY <= 0.85` (already includes this idea's
-cost). If a later order is rejected/unfilled in Step 6, the reservation is simply
-released for the next session — don't re-size mid-run.
+**Re-assert the accumulating gates on the ACTUAL cost, then reserve** *(v3.3)*.
+With `cost` now known, redo Step 3's four gates against snapshot + committed:
+```
+deployed_after = LONG_MARKET_VALUE + COMMITTED_COST + cost
+core_after     = CORE_MV + COMMITTED_CORE_MV + (cost if tier == core else 0)
+sector_after   = SECTOR_MV[sector] + COMMITTED_SECTOR_MV[sector] + cost
+
+positions:  POS_COUNT + COMMITTED_POS + (0 if already held else 1) <= 6
+core floor: core_after / deployed_after >= 0.45            (satellite only)
+sat/sector: SAT_COUNT[sector] + COMMITTED_SAT[sector] + 1 <= 2   (satellite only)
+sector cap: sector_after / deployed_after <= 0.50
+ceiling:    deployed_after / EQUITY <= 0.85                (Rule 5 belt-and-braces)
+```
+Any failure → skip the idea, log which gate and by how much, reserve nothing. This
+is the binding evaluation; Step 3's is a screen. Then reserve, before sizing the
+next idea:
+```
+COMMITTED_COST += cost;  HEADROOM -= cost
+COMMITTED_CORE_MV += cost if tier == core else 0
+COMMITTED_SECTOR_MV[sector] += cost
+COMMITTED_POS += 1  unless already held
+COMMITTED_SAT[sector] += 1  if tier == satellite and not already held
+```
+Must happen here — Step 5 sizes every idea before Step 6 places any order, so a
+decrement deferred to order-placement time would never fire and two ideas could
+both consume the same headroom *and* both be gated against the same unchanged
+core/sector/position snapshot. If a later order is rejected/unfilled in Step 6, the
+reservation is simply released for the next session — don't re-size mid-run.
 
 **5d. Compute limit price**
 
