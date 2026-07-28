@@ -38,6 +38,24 @@ done
   If it contains `api.alpaca.markets` (without `paper-`), STOP, Telegram-alert, exit.
 - Sanity check: `TRADING_ENABLED` MUST equal `true` in v2. If not, STOP, Telegram-alert, exit.
 
+**Before exiting on ANY of the three STOPs above** *(v3.3 — mandatory)*: append the
+Market-Open Run row (STEP 7 format) to `memory/TRADE-LOG.md` recording the
+environment failure, then run STEP 9's commit-and-push so the row actually
+persists. An environment STOP that writes nothing is indistinguishable from a cron
+skip: Rule 18's cadence sweep would report a false MISSING ROUTINE, and — worse —
+any `CATCH-UP PENDING` rows owed from a previous day would never be cleared,
+because STEP 0 is the only thing that clears them and it never ran.
+```
+- market-open $DATE: 0 orders placed, 0 filled. HALTED before STEP 0 — environment
+  check failed: <missing var | endpoint is not paper-api | TRADING_ENABLED=<value>>.
+  No STEP 0 catch-up attempted; any CATCH-UP PENDING rows remain unresolved for the
+  next market-open. Telegram alert sent.
+- Rule 14 DTC: n/a (halted before gate evaluation)
+```
+If the commit/push itself cannot be performed (e.g. `GITHUB_TOKEN` is the missing
+var), say so explicitly in the Telegram alert — the halt is then invisible to the
+next run and needs human eyes.
+
 ## IMPORTANT — PERSISTENCE
 
 - This workspace is a fresh clone. File changes VANISH unless you commit and push to `main`.

@@ -46,11 +46,18 @@ done
 
 ## IMPORTANT — KILL SWITCH
 
-- v1 has `TRADING_ENABLED=false`. The Alpaca wrapper will refuse `order`, `cancel`,
-  `cancel-all`, `close`, `close-all` with exit 4. You will not call those subcommands
-  in this routine — only `account`, `positions`, `orders`. If you accidentally call
-  a state-changing subcommand and get exit 4, that is the kill-switch working
-  correctly. Log it in the research entry as a behavior anomaly and continue.
+- This routine is **research-only for entries and exits**: it NEVER calls `order`,
+  `cancel`, `cancel-all`, `close`, `close-all` or `scale-out`. It places no buys and
+  no sells, ever.
+- The **only** state-changing subcommand it may call is `trailing-stop`, and only
+  from STEP 0: the Rule 17 pending-stop retry and the Rule 18 recovery of a missed
+  `daily-summary`'s Rule 13 placement *(v3.3)*. Both are protective GTC orders on
+  aged positions — never a sell, never day-trade-relevant.
+- `trailing-stop` is kill-switch-gated. In v3 `TRADING_ENABLED=true`, so it
+  executes. If it returns exit 4, the kill switch is off: **positions are
+  unprotected**. Send an URGENT Telegram naming the affected tickers, append the
+  `STOP-PLACEMENT-FAILED` marker (Rule 17), note it in the research entry as a
+  behavior anomaly, and continue the routine.
 
 ---
 
@@ -79,6 +86,54 @@ the prior trading session; if the newest EOD snapshot predates it, the prior
 daily-summary is missing. If it is missing, send
 `bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — MISSING ROUTINE: daily-summary did not log for <prior_date>. Investigate cron. (Rule 18)"` and append a
 `### <prior_date> — MISSING ROUTINE: daily-summary (Rule 18)` placeholder to TRADE-LOG.md.
+
+**Then RUN THE MISSED RULE 13 STOP PLACEMENT (v3.3 recovery).** Detection alone is
+not enough here, because `daily-summary` is the **sole** placer of Rule 13 trailing
+stops: `market-open` deliberately never places one (Rule 13), and `midday` only
+*tightens* an existing stop — which requires an open stop's `trail_percent` to
+exist. So a single skipped `daily-summary` leaves every position opened that day
+permanently stop-less, with nothing downstream to notice. Recover it here:
+
+```
+bash scripts/alpaca.sh positions   # currently held tickers + qty
+bash scripts/alpaca.sh orders open # open orders, incl. any trailing_stop
+```
+For each **held** position with **no** open order of `type=trailing_stop` for that
+symbol, place the stop `daily-summary` STEP 4 would have placed:
+```
+TRAIL_PCT=10   # canonical Rule 6 trail, exactly what daily-summary STEP 4 uses
+bash scripts/alpaca.sh trailing-stop TICKER QTY $TRAIL_PCT
+```
+If the ticker's TRADE-LOG history records a **tighter** trail from an earlier Rule 8
+`STOP UPDATE`, use that tighter value instead — Rule 9 forbids moving a stop down.
+Use the position's **live** `qty` from `positions`, not a quantity from TRADE-LOG,
+which may be stale after a scale-out. Skip any symbol that already has an open
+trailing stop (idempotency — this routine may be re-run).
+
+Append per placement:
+```
+### $DATE — STOP PLACED: TICKER trail %N
+- Order ID: <from response>
+- Trigger reason: Rule 18 recovery of missed daily-summary <prior_date> (Rule 13 placement)
+- Links to BUY: pm-YYYY-MM-DD-TICKER
+```
+and send one non-URGENT Telegram note per placement: "Rule 18 recovery — TICKER
+now protected (trail N%), missed daily-summary <prior_date>".
+
+**Why this is visa-safe.** Every position reachable here was opened **on or before
+the prior session** — it survived to appear in this morning's `positions` pull, and
+the routine that would have stopped it ran (or failed to run) at the prior session's
+close. So it is aged by construction: a stop placed now cannot fire on its entry day
+and cannot produce a same-day round trip. This is the same reasoning Rule 13 uses
+for placing stops at 15:00 CT, and Rule 15 is not engaged at all — placing a stop is
+not a sell. Do NOT place a stop on any position whose entry date is today; there are
+none at this hour (market-open has not run), and if one somehow appears, skip it.
+
+**If a placement fails**, do not invent a new path — fall through to the Rule 17
+escalation already defined above: retry up to 3 times with a short backoff, then send
+the URGENT Telegram, append the `STOP-PLACEMENT-FAILED: TICKER QTY TRAIL` marker row,
+and continue the routine. The next routine's Rule 17 sweep picks it up.
+
 Then continue.
 If no unresolved marker exists, proceed to STEP 1.
 
