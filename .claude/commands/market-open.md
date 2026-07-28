@@ -18,7 +18,9 @@ alone isn't enough; a ticker can cycle through multiple incidents). Rows older t
 the lookback window are flagged via URGENT Telegram, not silently dropped. For each
 unresolved row: if no longer held → clear `reason=already-exited`; if the trigger no
 longer holds → clear `reason=trigger-no-longer-met` (for `action=scale-out`, re-check
-the ladder tier via `sizing.py ladder` against live state); else resolve DTC using
+the ladder tier via `sizing.py ladder` against live state — bind `LADDER_TIER`, the
+**instrument** type `etf`|`stock` derived from what the symbol is, and pass that to
+`--tier`; never the `core`|`satellite` role, which `sizing.py` rejects); else resolve DTC using
 midday's Step 5 batch-accumulation procedure (NOT Step 3's buy-side gate — that's
 permissive on `source=none`/`source=error`, wrong for a sell), abort on `DTC>=2`,
 `source=none` or `source=error` (a failed `dtc` call knows nothing — never fall back

@@ -93,6 +93,15 @@ verbatim — same Rule 15 same-day filter, same `sizing.py ladder` / `scaleout` 
 calls, same Rule 14 pre-flight (midday STEP 2's `DTC` / `DTC_SOURCE` resolution,
 including `source=error` → treat as `none`).
 
+"Verbatim" includes midday STEP 4's **two-attribute binding** *(v3.3)*: bind `TIER`
+(portfolio role, `core`|`satellite`, from the BUY row's `Tier:` field) **and**
+`LADDER_TIER` (instrument type, `etf`|`stock`) separately, and pass `LADDER_TIER` —
+never `TIER` — to `sizing.py ladder --tier`, which accepts only `etf|stock`. Derive
+`LADDER_TIER` from what the instrument actually is (sector/broad-market fund → `etf`;
+one company's shares → `stock`), not by assuming `core == etf`; fall back to
+`core`→`etf` / `satellite`→`stock` only if the instrument type is undeterminable, and
+mark it as a fallback in the row.
+
 **A Rule 14 abort inside this catch-up blocks sells only — it must NEVER end this
 routine** *(v3.3)*. Since every sell in the catch-up is deferred anyway (see the
 third bullet below), an unresolvable count changes almost nothing here: record it

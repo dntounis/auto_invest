@@ -62,7 +62,21 @@ For each position:
 Drop positions where `entry_date == today` (Rule 15). Drop positions held in Alpaca but missing from TRADE-LOG.md (memory desync). Send Telegram URGENT: 'midday $DATE: position TICKER held in Alpaca but missing from TRADE-LOG.md, manual review required'. Then skip the position (treat as non-actionable). The remaining list is "actionable".
 
 ## Step 4 — Decide actions
-Determine each position's `tier` (`core`|`satellite`) from its BUY row `Tier:` field (default `core`). Hard-close (1) is exclusive; ladder (2) may scale-out AND tighten; decay (3) only fires on losers below entry.
+Bind **two distinct attributes** per position *(v3.3 — do not conflate them)*:
+- `TIER` — portfolio **role**, `core`|`satellite`, from the BUY row's `Tier:` field
+  (default `core`). Drives the core floor and satellite caps; recorded in audit rows.
+- `LADDER_TIER` — **instrument type**, `etf`|`stock`. The only valid value for
+  `sizing.py ladder --tier`; `LADDERS` is keyed on instrument type because a broad
+  fund and a single name move differently (etf +4/+7/+10/+15, stock +6/+10/+15/+25).
+
+Derive `LADDER_TIER` from what the instrument **is** (a sector/broad-market fund →
+`etf`; one company's shares → `stock`), not from the role. They coincide today only
+because every core holding is an ETF; the first core single-stock or satellite ETF
+would silently get the wrong ladder and the call would still succeed. Fallback only
+if the instrument type is genuinely undeterminable: `core`→`etf`, `satellite`→`stock`
+(and mark it as a fallback in the row). Never pass `$TIER` to `--tier`.
+
+Hard-close (1) is exclusive; ladder (2) may scale-out AND tighten; decay (3) only fires on losers below entry.
 
 1. ≤ -7% → hard-close (Rule 7). Exclusive.
 2. **Profit ladder (Rule 8, v3):**
@@ -71,7 +85,10 @@ Determine each position's `tier` (`core`|`satellite`) from its BUY row `Tier:` f
    # OID/QTY/trail_percent). hwm is the peak price Alpaca tracked since the stop was placed.
    # HWM_GAIN = (hwm - avg_entry_price) / avg_entry_price * 100
    # If the position has no open trailing stop yet (no hwm), omit --hwm-pct entirely.
-   LADDER_JSON=$(python3 scripts/sizing.py ladder --tier "$TIER" --unrealized-pct "$UPCT" --hwm-pct "$HWM_GAIN")
+   #
+   # --tier takes LADDER_TIER (instrument type, etf|stock) — never $TIER, the
+   # portfolio role, which is not a valid value for this flag.
+   LADDER_JSON=$(python3 scripts/sizing.py ladder --tier "$LADDER_TIER" --unrealized-pct "$UPCT" --hwm-pct "$HWM_GAIN")
    ```
    `--hwm-pct` makes `target_trail_pct` reflect the highest tier the position reached
    intraday (catching a post-midday spike that reversed), while `scaleouts_due` stays on
@@ -152,14 +169,14 @@ For each completed sell, append an EXIT trade row:
 For each stop tightening, append a STOP UPDATE row:
 ```
 ### YYYY-MM-DD — STOP UPDATE: TICKER trail %X -> %Y
-- Trigger: Rule 8 profit ladder, tier=<core|satellite>, unrealized +X%
+- Trigger: Rule 8 profit ladder, tier=<core|satellite>, ladder=<etf|stock>, unrealized +X%
 - New stop order ID: <id from replace-stop response>
 ```
 
 For each scale-out (v3):
 ```
 ### YYYY-MM-DD — SCALE-OUT: TICKER qty=N (scale-out slice, M before)
-- Tier: <core|satellite> | Trigger: Rule 8 ladder, +X% (scale-out #K of 2) | Realized P&L on slice: $X
+- Tier: <core|satellite> (role) | Ladder: <etf|stock> (passed to --tier) | Trigger: Rule 8 ladder, +X% (scale-out #K of 2) | Realized P&L on slice: $X
 ```
 
 For each deferred (sub-unit) scale-out, append instead (no sell occurred):

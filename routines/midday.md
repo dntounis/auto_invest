@@ -179,8 +179,34 @@ fires, skip the rest for that position. The profit ladder (2) may both scale out
 AND tighten in the same run; momentum-decay (3) only ever fires on losers below
 entry, so (2) and (3) are mutually exclusive in practice.
 
-Determine each position's `tier` (`core` | `satellite`) from its latest BUY row in
-TRADE-LOG.md (the `Tier:` field). Default to `core` if the field is absent.
+Determine **two different attributes** for each position, and keep them distinct
+*(v3.3 — this section previously introduced a single `tier` in role vocabulary and
+then passed it straight into an instrument-typed flag)*:
+
+- **`TIER` — the position's portfolio ROLE**, `core` | `satellite`, read from the
+  `Tier:` field on its latest BUY row in TRADE-LOG.md. Default to `core` if the
+  field is absent. This is what the ETF-core floor, the ≤3-satellite limit and the
+  ≤2-satellites-per-sector cap count, and what the audit rows record.
+- **`LADDER_TIER` — the INSTRUMENT type**, `etf` | `stock`. This is the **only**
+  value that may be passed to `sizing.py ladder --tier`. The `LADDERS` table in
+  `scripts/sizing.py` is keyed on instrument type because the thresholds differ by
+  how a broad fund moves versus a single name (`etf` +4/+7/+10/+15 vs `stock`
+  +6/+10/+15/+25).
+
+**Derive `LADDER_TIER` from what the instrument actually is** — a sector or
+broad-market fund (XLE, XLK, SPY, …) is `etf`; one company's shares is `stock` —
+**not** by assuming `core == etf`. The two vocabularies line up today only because
+every core holding happens to be an ETF; they are not synonyms. The first time a
+core position is a single stock, or a satellite is an ETF, the role→instrument
+shortcut would select the wrong ladder *and the call would still succeed*, so the
+error would be invisible.
+
+**Fallback only**, when the instrument type genuinely cannot be determined:
+`core` → `etf`, `satellite` → `stock`. That is a fallback, not the definition —
+say so in the row that records it.
+
+`sizing.py ladder` accepts only `etf|stock`; passing a role value aborts the call.
+Bind `LADDER_TIER` explicitly here, before any ladder call, and pass that.
 
 1. **Hard-close** (Rule 7) — `unrealized_pl_pct ≤ -7`:
    - Action: market sell entire position
@@ -192,7 +218,10 @@ TRADE-LOG.md (the `Tier:` field). Default to `core` if the field is absent.
    # OID/QTY/trail_percent). hwm is the peak price Alpaca tracked since the stop was placed.
    # HWM_GAIN = (hwm - avg_entry_price) / avg_entry_price * 100
    # If the position has no open trailing stop yet (no hwm), omit --hwm-pct entirely.
-   LADDER_JSON=$(python3 scripts/sizing.py ladder --tier "$TIER" --unrealized-pct "$UPCT" --hwm-pct "$HWM_GAIN")
+   #
+   # --tier takes LADDER_TIER (the INSTRUMENT type, etf|stock) — never $TIER, which
+   # is the portfolio role (core|satellite) and is not a valid value for this flag.
+   LADDER_JSON=$(python3 scripts/sizing.py ladder --tier "$LADDER_TIER" --unrealized-pct "$UPCT" --hwm-pct "$HWM_GAIN")
    ```
    `--hwm-pct` makes `target_trail_pct` reflect the highest tier the position reached
    intraday (catching a post-midday spike that reversed), while `scaleouts_due` stays on
@@ -340,14 +369,20 @@ For each completed sell, append an EXIT trade row:
 For each stop tightening, append a STOP UPDATE row:
 ```
 ### YYYY-MM-DD — STOP UPDATE: TICKER trail %X -> %Y
-- Trigger: Rule 8 profit ladder, tier=<core|satellite>, unrealized +X%
+- Trigger: Rule 8 profit ladder, tier=<core|satellite>, ladder=<etf|stock>, unrealized +X%
 - New stop order ID: <id from replace-stop response>
 ```
+Record **both** vocabularies: `tier=` is the portfolio role, `ladder=` is the
+instrument type actually passed to `sizing.py ladder --tier` *(v3.3 — historical
+rows recorded sometimes one and sometimes the other, e.g. `ladder, tier=core` in
+early rows and `ladder (tier=etf)` from v3.2 on, which is precisely the ambiguity
+this split removes)*. If `ladder=` came from the fallback rather than from the
+instrument, append `(fallback)`.
 
 For each scale-out partial sell, append a SCALE-OUT row (v3):
 ```
 ### YYYY-MM-DD — SCALE-OUT: TICKER qty=N (scale-out slice, M before)
-- Tier: <core|satellite>
+- Tier: <core|satellite> (role) | Ladder: <etf|stock> (instrument type passed to --tier)
 - Trigger: Rule 8 ladder, unrealized +X% (scale-out #K of 2)
 - Realized P&L on slice: $X (X.X%)
 ```

@@ -118,7 +118,13 @@ For each unresolved row, in order:
      overnight — write `CATCH-UP CLEARED: TICKER reason=trigger-no-longer-met`
      and move on. Do not sell.
    - `action=scale-out`: recompute the ladder tier via `sizing.py ladder` against
-     the position's **live** `unrealized_pl_pct` / hwm-gain. If the tier that
+     the position's **live** `unrealized_pl_pct` / hwm-gain. Bind `LADDER_TIER`
+     first — the **instrument** type, `etf` | `stock`, derived from what the
+     symbol actually is (sector/broad-market fund → `etf`; one company's shares →
+     `stock`), falling back to `core`→`etf` / `satellite`→`stock` only if that is
+     undeterminable — and pass **that** to `--tier`. Never pass the position's
+     portfolio role (`core` | `satellite`); `sizing.py` accepts only `etf|stock`
+     and a role value aborts the call *(v3.3)*. If the tier that
      triggered the scale-out no longer holds (the position pulled back below it
      overnight), write `CATCH-UP CLEARED: TICKER reason=trigger-no-longer-met`
      and move on. If it still holds, **re-run `sizing.py scaleout` against the
