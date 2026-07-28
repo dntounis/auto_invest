@@ -32,11 +32,19 @@ done
 ## IMPORTANT — VISA-AWARE RULES (read before acting)
 
 - **Rule 14 (pre-flight):** Before placing ANY sell, you MUST resolve `DTC` and
-  `DTC_SOURCE` per STEP 2 *(v3.3 — `alpaca.sh dtc`, with a TRADE-LOG-derived
-  fallback; never treat an absent field as 0)*. If `DTC >= 2` OR
-  `DTC_SOURCE == none`, ABORT all sell actions, send a Telegram URGENT alert
-  "midday $DATE: aborted sells, daytrade_count=N source=S",
-  commit a no-op note to TRADE-LOG.md, and exit. Do not work around this.
+  `DTC_SOURCE` per STEP 2 *(v3.3 — `alpaca.sh dtc`, with an activities-primary
+  local fallback; never treat an absent field as 0)*. If `DTC >= 2`, or
+  `DTC_SOURCE` is `none` or `error`, **ABORT all sell actions** — and *only* the
+  sell actions. Send a Telegram URGENT alert "midday $DATE: aborted sells,
+  daytrade_count=N source=S" and write the abort note to TRADE-LOG.md.
+  **A Rule 14 abort blocks sells; it does not end the run** *(v3.3 — the previous
+  "and exit" wording contradicted STEP 2 and Rule 14 itself, and propagated into
+  daily-summary's catch-up, where obeying it would have skipped STEP 4 and left
+  today's new positions with no Rule 13 stop at all)*. Still perform every
+  non-sell action: stop tightenings via `replace-stop`, `DECAY-FLAG` state rows,
+  STEP 6's mandatory `- midday $DATE:` cadence line and `Rule 14 DTC:` audit line,
+  STEP 7's Telegram and STEP 8's commit. Already-placed GTC stops are unaffected.
+  Do not work around the sell block.
 - **Rule 15 (same-day skip):** A position is "actionable" only if
   `entry_date < today`. Same-day positions (opened earlier today by market-open)
   are READ-ONLY in this routine. Do not close them. Do not adjust their stops.
@@ -118,12 +126,21 @@ log the literal token `Rule 14 DTC: <N> (source=api|local|none|error)` in its
 TRADE-LOG row so the weekly review can audit whether the gate was genuinely
 exercised.
 
-If `DTC >= 2` (from any source), jump immediately to the abort path described in
-Rule 14: skip steps 3–5's evaluation/execution logic, but STILL write STEP 6's
-mandatory `- midday $DATE:` cadence line and `Rule 14 DTC:` audit line first
-*(v3.3 — the old "skip steps 3–6" language silently dropped the Rule 18 cadence
-token on an abort day too, making a DTC abort indistinguishable from a cron skip
-to daily-summary's sweep)*, then the abort note, Telegram URGENT, commit, exit.
+If `DTC >= 2` (from any source), or `DTC_SOURCE` is `none` or `error`, take the
+abort path described in Rule 14. **The abort blocks sells only — it does not end
+the run** *(v3.3)*:
+- **Skipped:** every sell in STEP 5 — Rule 7 hard-close, Rule 8 scale-out, Rule 16
+  rotation exit, Rule 10 sector-kill. List them in the abort note as
+  "would-be actions" instead of executing them.
+- **Still performed:** STEP 3's actionable filter and STEP 4's evaluation (you
+  cannot list the would-be actions without them); Rule 8/9 stop tightenings via
+  `replace-stop` (a GTC order, not a sell, and the only protection left on a
+  position the gate has just refused to let you exit); `DECAY-FLAG` rows (the
+  Rule 16 consecutiveness state — dropping it corrupts the next midday's chain);
+  STEP 6's mandatory `- midday $DATE:` cadence line and `Rule 14 DTC:` audit line
+  *(the old "skip steps 3–6" language silently dropped the Rule 18 cadence token
+  on an abort day, making a DTC abort indistinguishable from a cron skip to
+  daily-summary's sweep)*; then the abort note, Telegram URGENT, commit at STEP 8.
 
 On DTC abort, append to memory/TRADE-LOG.md — STEP 6's mandatory `- midday $DATE:`
 and `Rule 14 DTC:` lines first, then:

@@ -90,8 +90,21 @@ break in the Rule 16 consecutiveness chain — detection alone let all three lap
 2026-07-22. Pull `bash scripts/alpaca.sh positions` and `bash scripts/alpaca.sh orders open`
 early (before STEP 2 if needed) and execute midday's STEP 3 + STEP 4 decision logic
 verbatim — same Rule 15 same-day filter, same `sizing.py ladder` / `scaleout` / `decay`
-calls, same Rule 14 pre-flight (Task 4's `DTC` / `DTC_SOURCE` resolution). Then split
-the outcome by whether it requires a market sell:
+calls, same Rule 14 pre-flight (midday STEP 2's `DTC` / `DTC_SOURCE` resolution,
+including `source=error` → treat as `none`).
+
+**A Rule 14 abort inside this catch-up blocks sells only — it must NEVER end this
+routine** *(v3.3)*. Since every sell in the catch-up is deferred anyway (see the
+third bullet below), an unresolvable count changes almost nothing here: record it
+in the `CATCH-UP PENDING` rows and continue. Under no circumstances may a Rule 14
+abort skip **STEP 4 (Rule 13 trailing-stop placement)** or **STEP 6 (the EOD
+snapshot)** — placing a stop is not a sell, it is precisely what protects a
+position the gate has just refused to let the bot exit, and daily-summary is the
+*only* placer of Rule 13 stops. Exiting early here would leave every position
+opened today permanently stop-less: market-open will not place one (Rule 13), and
+midday only tightens a stop that already exists.
+
+Then split the outcome by whether it requires a market sell:
 
 - **Stop tightenings (Rule 8 `target_trail_pct`) — EXECUTE NOW.** `bash scripts/alpaca.sh
   replace-stop OID TICKER QTY $target_trail_pct`. A stop replacement is a GTC order,

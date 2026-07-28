@@ -47,12 +47,29 @@ done
 
 - **Rule 13:** This routine NEVER places trailing stops. Stops are placed by
   `daily-summary` at 15:00 CT (market close) so they cannot fire same-day.
-- **Rule 14:** This routine only places BUY orders. No sells. The pre-flight
-  `daytrade_count` check is enforced at midday and weekly-review where sells
-  may occur.
-- **Rule 15:** Same-day exits are forbidden. Since this routine never sells,
-  Rule 15 does not constrain it directly — but it must NOT cancel an existing
-  position or close anything.
+- **Rule 14:** The **ordinary path of this routine places BUY orders only.**
+  There is exactly **one** exception *(v3.3)*: **STEP 0's Rule 18 catch-up**,
+  which executes sells that a *previous* day's missed `midday` already owed and
+  recorded as `CATCH-UP PENDING` rows. No other step of this routine may sell.
+  **Do NOT skip STEP 0 on the strength of "this routine only buys"** — that
+  reading silently disables the entire Rule 18 recovery path, leaving a missed
+  hard-close, rotation or scale-out owed indefinitely.
+  Why the exception is visa-safe: (i) **every** catch-up sell carries the full
+  Rule 14 pre-flight — `bash scripts/alpaca.sh dtc` resolved by midday's STEP 5
+  mid-loop procedure, aborting the sell and every remaining row on `DTC >= 2`,
+  `source=none` or `source=error`, re-checked before each individual sell in a
+  batch; and (ii) the position was open at the **prior** session's close, so it
+  is aged by definition and Rule 15 cannot be breached (see below).
+  The pre-flight is enforced at **midday, market-open STEP 0, weekly-review and
+  the manual `/trade` command** *(v3.3 — corrected: it is no longer "midday and
+  weekly-review" only)*, i.e. at every site Rule 14 in `TRADING-STRATEGY.md`
+  names.
+- **Rule 15:** Same-day exits are forbidden. This routine never sells a position
+  it opened today. STEP 0's catch-up sells are aged **by construction** — the
+  ticker was held through the prior session's close, which is precisely what made
+  the catch-up owed — but STEP 0 still verifies the entry date per row rather than
+  assuming it. Outside STEP 0, do NOT cancel an existing position or close
+  anything.
 
 ---
 

@@ -44,7 +44,7 @@ bash scripts/alpaca.sh bars SPY 1Day 10  # benchmark (v3.3)
 | Best trade | highest realized P&L % |
 | Worst trade | lowest realized P&L % |
 | Profit factor | sum(gains) / abs(sum(losses)) |
-| daytrade_count delta | `account.daytrade_count` now vs last week's `WEEKLY-REVIEW.md` entry (or 0 / "n/a (week 1)") |
+| daytrade_count delta | **`bash scripts/alpaca.sh dtc`, never raw `account.daytrade_count`** *(v3.3 — absent on paper)*. Resolve per midday Step 2 (`api` → use it; `unavailable` → derive locally, activities-primary; `none`/`error` → unresolvable). Compare vs last week's `WEEKLY-REVIEW.md` entry (or 0 / "n/a (week 1)"). Report the source alongside: `0 -> 1 (source=api)`, `unresolvable (source=error)` |
 | Rule violations | scan TRADE-LOG.md for: positions > 20%, missing trailing stops, -7% closes that exceeded -10%, Rule 13 violations, Rule 14 abort events |
 
 ## Step 4 — Append week-summary to `memory/TRADE-LOG.md` (locally)

@@ -32,7 +32,8 @@ and append a placeholder to that routine's log:
 ```
 
 **v3.3 catch-up:** if the missing routine is `midday`, also RUN midday's Step 3+4
-evaluation now. Execute stop tightenings immediately (`replace-stop` — GTC, no fill
+evaluation now, applying the same Rule 14 pre-flight (`source=error` counts as
+`none`). Execute stop tightenings immediately (`replace-stop` — GTC, no fill
 risk, no DTC impact) and always write `DECAY-FLAG` rows (the Rule 16 consecutiveness
 state). Do NOT market-sell OR scale-out at the bell — a scale-out is a partial market
 sell with the same closing-bell fill risk as a full exit — instead write, per ticker:
@@ -46,6 +47,11 @@ sell with the same closing-bell fill risk as a full exit — instead write, per 
 
 and send an URGENT Telegram. A missing `market-open` gets a placeholder only — the
 entry window has closed.
+
+**A Rule 14 abort in this catch-up blocks sells only — never the routine** (v3.3).
+It must never skip Step 4 (Rule 13 stop placement) or Step 6 (the EOD snapshot):
+placing a stop is not a sell, and daily-summary is the only placer of Rule 13
+stops, so exiting early would leave today's new positions permanently unprotected.
 
 Then continue to Step 1. If all three logged, proceed silently.
 

@@ -8,7 +8,7 @@ today's date with `DATE=$(TZ=America/Chicago date +%Y-%m-%d)`.
 This is a v2 paper run. Sells may execute if `TRADING_ENABLED=true`.
 
 ## Visa-aware gates (READ FIRST)
-- **Rule 14 (pre-flight):** Resolve `DTC`/`DTC_SOURCE` via `bash scripts/alpaca.sh dtc` (v3.3, see Step 2) BEFORE any sell — never treat an absent field as 0. If `DTC >= 2` or `DTC_SOURCE == none`, abort all sells; print which sells you would have done; exit. Re-check DTC between sells in a sector-kill loop.
+- **Rule 14 (pre-flight):** Resolve `DTC`/`DTC_SOURCE` via `bash scripts/alpaca.sh dtc` (v3.3, see Step 2) BEFORE any sell — never treat an absent field as 0. If `DTC >= 2`, or `DTC_SOURCE` is `none` or `error`, abort all sells and print which sells you would have done. **The abort blocks sells only — it does not end the run** (v3.3): still run Step 3/4's evaluation, still tighten stops via `replace-stop` (a GTC order, not a sell), still write `DECAY-FLAG` rows, and still write Step 6's `- midday $DATE:` cadence line and `Rule 14 DTC:` audit line. Re-check DTC between sells in a sector-kill loop.
 - **Rule 15 (same-day skip):** Positions with `entry_date == today` are read-only. Do not act on them.
 - **Rule 13 (no new stops):** This routine only TIGHTENS existing stops via `replace-stop`. Daily-summary places new stops at market close.
 

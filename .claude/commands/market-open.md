@@ -178,7 +178,15 @@ bash scripts/alpaca.sh order "$ORDER_JSON"
 
 DO NOT place a trailing stop here — Rule 13 says daily-summary places it at market close.
 
-DO NOT cancel positions or close anything — Rule 15 (no same-day exits, no closes, no cancels) applies even though this routine never sells.
+DO NOT cancel positions or close anything **in this step**. The ordinary path of
+this command places BUY orders only; the single exception is Step 0's Rule 18
+catch-up, which sells what a *previous* day's missed midday already owed *(v3.3 —
+do not skip Step 0 because "market-open only buys", or the whole recovery path
+never fires)*. That exception is visa-safe on both counts: the position was open
+at the prior session's close, so it is aged and Rule 15 cannot be breached, and
+every catch-up sell carries the full Rule 14 pre-flight (abort on `DTC>=2`,
+`source=none` or `source=error`). The pre-flight is enforced at midday,
+market-open Step 0, weekly-review and `/trade`.
 
 ## Step 7 — Append to `memory/TRADE-LOG.md` (locally)
 **MANDATORY on every path — including HOLD and zero-fill.** Always write the run row

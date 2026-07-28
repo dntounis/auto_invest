@@ -44,8 +44,24 @@ done
 This routine is mostly read-only. The exception is if it proposes manual closes
 of positions for "thesis broken" or "rule violation" reasons. In that case:
 
-- Rule 14 pre-flight: read `account.daytrade_count`. If ≥ 2, do NOT issue any
-  closes; only document the proposed closes in WEEKLY-REVIEW.md and Telegram them.
+- Rule 14 pre-flight *(v3.3 — never read `account.daytrade_count` raw; the paper
+  endpoint omits the field and an absent field is not 0)*. Resolve `DTC` /
+  `DTC_SOURCE` with `bash scripts/alpaca.sh dtc`, using midday STEP 2's resolution:
+  - `source=api` → use the returned `daytrade_count`, `DTC_SOURCE=api`.
+  - `source=unavailable` (the call succeeded, the field is simply absent) → derive
+    the count locally over the last 5 business days, `DTC_SOURCE=local`:
+    `bash scripts/alpaca.sh activities` per business day is the primary evidence
+    (symbols with a buy fill AND a sell fill on the same activity date), the
+    TRADE-LOG same-day buy/sell scan is corroboration, take the `max`. Rules 13/15
+    make this structurally 0 — a non-zero result is itself an URGENT-worthy alarm.
+  - `source=error` (the `dtc` call itself failed — nothing is known) or
+    `DTC_SOURCE=none` (nothing resolvable at all) → **block all closes** and send a
+    Telegram URGENT. Never fall back to the local derivation on `error`.
+  If `DTC >= 2`, or the source is `none`/`error`, do NOT issue any closes; only
+  document the proposed closes in WEEKLY-REVIEW.md and Telegram them. Blocking
+  closes never blocks the rest of this routine — the grade card, the week summary
+  and the commit still happen. Log the literal token
+  `Rule 14 DTC: <N> (source=api|local|none|error)` in the week-summary row.
 - Rule 15: never close a position opened today (this is Friday — by definition,
   same-day positions exist if market-open fired this morning).
 
@@ -105,7 +121,7 @@ Compute from the read-in data:
 | Best trade | highest realized P&L % |
 | Worst trade | lowest realized P&L % |
 | Profit factor | sum(gains) / abs(sum(losses)) |
-| daytrade_count delta | `account.daytrade_count` now vs the value recorded in last week's `WEEKLY-REVIEW.md` entry (or 0 on Week 1). If no prior value exists, state "n/a (week 1)" |
+| daytrade_count delta | **From `bash scripts/alpaca.sh dtc`, never from a raw `account.daytrade_count` subscript** *(v3.3 — the field is absent on the paper endpoint, so the raw read produced a silent nothing every week)*. Resolve `DTC` / `DTC_SOURCE` exactly as the Rule 14 pre-flight above, then compare against the value recorded in last week's `WEEKLY-REVIEW.md` entry (or 0 on Week 1; "n/a (week 1)" if no prior value exists). **Report the source alongside the number**, e.g. `0 -> 1 (source=api)` or `0 -> 0 (source=local, derived — field absent)` or `unresolvable (source=error)`. A `source=error` row is a finding in its own right: the day-trade gate could not be read this week |
 | Rule violations (audit) | scan TRADE-LOG.md for: positions > 20% (Rule 3); missing trailing stops (Rule 6); -7% closes that exceeded -10% (Rule 7 timeout); Rule 13 violations (stop placed before market close); Rule 14 abort events |
 
 **Benchmark provenance (v3.3).** The `S&P 500 week` figure MUST cite its two SPY
@@ -125,7 +141,7 @@ by more than 0.25pp, note the divergence and keep the Alpaca figure.
 - Phase P&L: $X (X.X%)
 - Best: TICKER +X%
 - Worst: TICKER -X%
-- daytrade_count delta: 0 -> N
+- daytrade_count delta: 0 -> N (source=api|local|none|error)
 - Rule violations: <list, or "none">
 ```
 
