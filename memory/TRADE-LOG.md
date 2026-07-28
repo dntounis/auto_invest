@@ -1713,3 +1713,8 @@ Pre-market Decision: HOLD / TRADE-READY (conditional TRADE per rationale); three
 - **Rule 16 decay:** XLU only name below entry (-0.15%); 10-session -0.03% vs SPY -1.72% → XLU ahead of SPY, not lagging → flag=0, rotate=0 (prior_flag=0, chain stays 0).
 - **Rule 10 sector-kill:** held sectors Materials/Industrials/Real Estate/Utilities have 0 exits in recent log (only recent losses = Consumer Staples ×2 / Energy / Tech, none held) → no doomed sector.
 - Positions 4/6 all core SPDR ETFs (ETF-core 100% ≥45% floor ✓, all ≤20% cap ✓). Satellite sleeve 0/3. Next: daily-summary T (Rule 13 stops — no-op, 0 opened today). Patience > activity.
+
+### 2026-07-27 — MISSING ROUTINE: daily-summary (Rule 18 cadence guardrail)
+- At 2026-07-28 pre-market Rule-18 sweep: **no `## Jul 27 — EOD Snapshot` header found in TRADE-LOG** — the Jul 27 (Mon) daily-summary did not log. Newest EOD Snapshot is Jul 24; Jul 27 has market-open (HOLD row) + midday (NO-ACTION) + DECAY-FLAG rows, but the 15:00 CT daily-summary produced no EOD snapshot and no Rule-13 stop-placement pass row.
+- **2nd genuine daily-summary/cron gap of the phase** (distinct from the recurring market-open HOLD-path logging gap Jul 8/14/16/20/21/24 and the Jul 22 midday skip). URGENT Telegram sent (msg_id 164). **Investigate cron.**
+- Money-moving impact assessment: **low** — Jul 27 pre-market Decision=HOLD + midday NO-ACTION confirm 0 buys / 0 sells that session; all 4 GTC trailing stops remained armed & unchanged (verified live this run: XLB 9b627571 $49.5783/7%, XLI 4b207f64 $176.567/5%, XLRE 16d5a6b2 $41.517/10%, XLU fa8eb3f2 $41.9625/10%). No position was opened Jul 27 → Rule-13 stop-placement pass was a no-op anyway. Logging/snapshot gap only.
