@@ -167,7 +167,10 @@ Run `bash scripts/perplexity.sh "<query>"` for each:
 - News on each currently-held ticker
 
 **Single-stock satellite screen (v3).** For each single-stock candidate from the momentum query, confirm trend + relative strength before proposing it:
-- `bash scripts/alpaca.sh bars TICKER 1Day 200` → confirm last close > 50-DMA and > 200-DMA.
+- `bash scripts/alpaca.sh bars TICKER 1Day 200` → set `LAST_CLOSE` = the close of the
+  **last** bar returned, and confirm `LAST_CLOSE` > 50-DMA and > 200-DMA. *(v3.3 —
+  `LAST_CLOSE` is bound here, by name, because the `rscreen` call below passes it;
+  it was previously the only unbound variable in that call.)*
 - `bash scripts/alpaca.sh bars SPY 1Day 60` → compute the candidate's 10- and 50-session
   returns and SPY's over the same windows; `RS10 = ret10_ticker - ret10_SPY` and
   `RS50 = ret50_ticker - ret50_SPY`, both in percentage points. (60 bars gives margin

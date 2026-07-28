@@ -13,15 +13,18 @@ ALL routine gates apply: Buy-Side Gate from `TRADING-STRATEGY.md`, Rule 14 daytr
 
 ## Step 2 — Pull state
 ```
-bash scripts/alpaca.sh account
+bash scripts/alpaca.sh account     # equity, cash, long_market_value
 bash scripts/alpaca.sh positions
 bash scripts/alpaca.sh orders open
 ```
+Bind `EQUITY = account.equity` and `LONG_MARKET_VALUE = account.long_market_value`
+(or the sum of position `market_value`s) — Step 4c needs both for the deployment
+headroom.
 
 ## Step 3 — Apply Buy-Side Gate
 Per `TRADING-STRATEGY.md`. ALL must pass:
 - Total positions after this fill ≤ 6
-- Trades this week (incl. this one) ≤ 3
+- Trades this week (incl. this one) ≤ 5 *(Rule 4 — raised from 3 in v3)*
 - Position cost ≤ 20% equity
 - Position cost ≤ available cash
 - **Rule 14 pre-flight — `DTC <= 1`** *(v3.3 — resolve via `bash scripts/alpaca.sh dtc`; **never** read `account.daytrade_count` raw. The paper endpoint omits the field, so the raw read silently evaluated to nothing and this gate never ran.)* Use midday Step 2's resolution:
@@ -38,16 +41,28 @@ a. Fetch live quote: `bash scripts/alpaca.sh quote TICKER`. Parse `.quote.ap` (A
 
 b. `trail_pct = STOP_PCT or 10`. Must be > 0 (else division-by-zero in sizing).
 
-c. Risk-parity sizing:
+c. Risk-parity sizing — **call the unit-tested sizer; never size inline** *(v3.3)*.
+The old inline formula defaulted `MAX_POSITION_PCT` to **20**, so a manual entry
+reintroduced the very oversizing defect v3.3 fixed (`sizing.py` targets 16% so five
+clips fit under the 85% deployment ceiling), and it ignored the deployment ceiling
+entirely. Use the same call market-open Step 5c uses:
 ```
-RISK_PCT=${RISK_PER_TRADE_PCT:-2.0}
-MAX_POS_PCT=${MAX_POSITION_PCT:-20}
-dollar_risk = (RISK_PCT/100) * equity
-shares_by_risk = floor(dollar_risk / (live_ask * trail_pct/100))
-shares_by_cap  = floor((MAX_POS_PCT/100) * equity / live_ask)
-shares = min(shares_by_risk, shares_by_cap)
+STOP_FRAC=$(python3 -c "print($trail_pct/100)")   # or the user's STOP_PCT/100
+HEADROOM=$(python3 -c "print(0.85*$EQUITY - $LONG_MARKET_VALUE)")   # from Step 2
+SIZE_JSON=$(python3 scripts/sizing.py size \
+    --equity "$EQUITY" --price "$LIVE_ASK" --stop-frac "$STOP_FRAC" \
+    --headroom "$HEADROOM")
 ```
-If `shares < 1`, skip — risk budget too small.
+Parse `shares`, `cost`, `clamped`.
+- `clamped == "floor_skip"` or `shares < 1` → skip and report why (the risk budget,
+  the 16% cap, or the remaining headroom left too little to clear the 5%-of-equity
+  minimum — a dust position is worse than none).
+- `clamped == "headroom"` → the clip was deliberately shrunk to fit the remaining
+  deployment room. Normal; proceed and say so in the report.
+- `clamped == "cap"` or `"none"` → full risk-parity or 16%-capped clip; proceed.
+
+If `HEADROOM <= 0` the book is already at or past the Rule 5 ceiling — no buy of any
+size is permitted; stop and report it.
 
 d. `limit = round(live_ask * (1 + MAX_ENTRY_SLIPPAGE_PCT/100), 2)` (default 0.10 = 0.10%).
 

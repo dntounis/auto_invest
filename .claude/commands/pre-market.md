@@ -86,7 +86,9 @@ Run `bash scripts/perplexity.sh "<query>"` for each:
 - News on each currently-held ticker
 
 **Single-stock satellite screen (v3).** For each single-stock candidate:
-- `bash scripts/alpaca.sh bars TICKER 1Day 200` → confirm last close > 50-DMA and > 200-DMA.
+- `bash scripts/alpaca.sh bars TICKER 1Day 200` → set `LAST_CLOSE` = the last bar's
+  close (bound here by name — the `rscreen` call below passes it), and confirm
+  `LAST_CLOSE` > 50-DMA and > 200-DMA.
 - `bash scripts/alpaca.sh bars SPY 1Day 60` → `RS10`/`RS50` (ticker minus SPY, pp).
   Compute `DMA50` and `DMA50_PRIOR` (50-DMA now vs 10 sessions ago) from the 200-bar pull.
   Then *(v3.3, never by eye)*:

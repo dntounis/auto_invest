@@ -156,7 +156,7 @@ bash scripts/alpaca.sh orders
 - **Day P&L** ($ and %) = today's equity − yesterday's equity from STEP 1
 - **Phase cumulative P&L** ($ and %) = today's equity − $10,000 starting baseline
 - **Trades today**: count BUY rows in TRADE-LOG.md committed today by `market-open` (`grep -c "^### .* — TRADE: .* side=buy" memory/TRADE-LOG.md` filtered by today's date) AND EXIT rows committed today by `midday` (`side=sell`). Format as `<N opened, K closed>`.
-- **Trades this week** running total: count BUY rows since Monday's date (use TRADE-LOG.md tail). Hard cap at 3 per Rule 4.
+- **Trades this week** running total: count BUY rows since Monday's date (use TRADE-LOG.md tail). Hard cap at 5 per Rule 4 *(v3.3 — corrected; Rule 4 has been 5, not 3, since v3)*.
 
 ## STEP 4 — Place trailing stops for today's new positions (Rule 13, visa-aware)
 
@@ -218,9 +218,13 @@ Otherwise empty string. The prefix gets prepended to the EOD Telegram body in ST
 
 ## STEP 6 — Append EOD snapshot to `memory/TRADE-LOG.md`
 
-Match the schema at the top of `TRADE-LOG.md` exactly:
+Match the schema at the top of `TRADE-LOG.md` exactly. **The header is `##`, not
+`###`** *(v3.3 — the template said `###` while all 63 snapshots in the log history
+use `##` and `pre-market` STEP 0's Rule 18 detector greps for `## <MMM DD> — EOD
+Snapshot`. Producer, detector and history now agree; a `###` snapshot would be
+invisible to the detector and report a false missing daily-summary.)*
 ```
-### MMM DD — EOD Snapshot (Day N, Weekday)
+## MMM DD — EOD Snapshot (Day N, Weekday)
 **Portfolio:** $X | **Cash:** $X (X%) | **Day P&L:** ±$X (±X%) | **Phase P&L:** ±$X (±X%)
 
 | Ticker | Shares | Entry | Close | Day Chg | Unrealized P&L | Stop |

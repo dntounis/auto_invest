@@ -71,7 +71,7 @@ bash scripts/alpaca.sh activities    # for realized P&L from today's closes
 - Day P&L (realized + unrealized vs yesterday's equity)
 - Phase P&L (vs $10K Day 0 baseline)
 - Trades today: count today's BUY rows + EXIT rows from TRADE-LOG.md → format as `<N opened, K closed>`
-- Trades this week: count BUY rows since Monday (cap 3 per Rule 4)
+- Trades this week: count BUY rows since Monday (cap 5 per Rule 4 — v3.3 correction; it has been 5 since v3)
 
 ## Step 4 — Place trailing stops for today's new positions (Rule 13, visa-aware)
 For each position opened today (entry_date == today, identified from BUY rows

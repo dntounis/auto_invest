@@ -122,7 +122,26 @@ Compute from the read-in data:
 | Worst trade | lowest realized P&L % |
 | Profit factor | sum(gains) / abs(sum(losses)) |
 | daytrade_count delta | **From `bash scripts/alpaca.sh dtc`, never from a raw `account.daytrade_count` subscript** *(v3.3 — the field is absent on the paper endpoint, so the raw read produced a silent nothing every week)*. Resolve `DTC` / `DTC_SOURCE` exactly as the Rule 14 pre-flight above, then compare against the value recorded in last week's `WEEKLY-REVIEW.md` entry (or 0 on Week 1; "n/a (week 1)" if no prior value exists). **Report the source alongside the number**, e.g. `0 -> 1 (source=api)` or `0 -> 0 (source=local, derived — field absent)` or `unresolvable (source=error)`. A `source=error` row is a finding in its own right: the day-trade gate could not be read this week |
-| Rule violations (audit) | scan TRADE-LOG.md for: positions > 20% (Rule 3); missing trailing stops (Rule 6); -7% closes that exceeded -10% (Rule 7 timeout); Rule 13 violations (stop placed before market close); Rule 14 abort events |
+| Rule violations (audit) | scan TRADE-LOG.md for: positions > 20% (Rule 3); missing trailing stops (Rule 6); -7% closes that exceeded -10% (Rule 7 timeout); Rule 13 violations (stop placed before market close); Rule 14 abort events; **Rule 14 audit-token sweep — see below** |
+
+**Rule 14 audit-token sweep (v3.3).** Three files state that `Rule 14 DTC:` is "the
+literal token the weekly review greps for to confirm Rule 14 genuinely ran" — until
+now nothing here actually grepped for it, so the claim was unbacked. Do it
+explicitly, every week:
+```
+grep -c 'Rule 14 DTC:' <this week's TRADE-LOG rows, WEEK_START..DATE>
+```
+Both `market-open` (STEP 7) and `midday` (STEP 6) must write the token once per
+trading session, on **every** path — HOLD, zero-fill, NO-ACTION and DTC-abort days
+included — so the expected count is `2 × <trading sessions this week>`, plus one per
+manual `/trade` entry. Then go session by session: for each trading day in the week,
+confirm the token appears in that day's `- market-open $DATE:` block **and** in that
+day's `- midday $DATE:` block. **Name every session missing either one and record it
+as a `Rule 14 audit gap` in the Rule violations list** (a gap is a finding even when
+no sell was attempted — it means the gate cannot be shown to have run).
+Why this matters: the routine prompts are re-pasted into the cloud UI by hand, so a
+stale paste silently drops the token with nothing detecting it. That missing-detector
+shape is exactly what let the original Rule 14 fail-open survive fourteen weeks.
 
 **Benchmark provenance (v3.3).** The `S&P 500 week` figure MUST cite its two SPY
 closes and their dates inline, e.g. `+0.34% (SPY $748.32 Jul 17 → $750.87 Jul 24,
