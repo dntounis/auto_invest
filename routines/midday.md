@@ -268,7 +268,7 @@ bash scripts/alpaca.sh replace-stop EXISTING_ORDER_ID TICKER QTY NEW_TRAIL_PCT
 ```
 
 After each individual sell, re-resolve `DTC` / `DTC_SOURCE` via the same
-three-source procedure as STEP 2 — **never** re-read `account.daytrade_count`
+four-source procedure as STEP 2 — **never** re-read `account.daytrade_count`
 directly; the paper endpoint omits the field and an unguarded
 `['daytrade_count']` subscript raises, leaving `DTC` empty and the loop
 fail-open by default:
