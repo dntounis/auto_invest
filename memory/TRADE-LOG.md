@@ -1745,3 +1745,27 @@ Pre-market Decision: HOLD / TRADE-READY (conditional TRADE per rationale); three
 
 ### 2026-07-29 — HOLD: no orders placed
 - market-open 2026-07-29: **pre-market Decision=HOLD → 0 orders placed** (9th consecutive session). Explicit HOLD row written to avoid the Rule 18 cadence-guardrail trip (recurring HOLD-path logging gap Jul 8/14/16/20/21/24/28). No idea cleared the v3 buy-side gate — block is **two-fold** and at its tightest today: (1) **satellite macro-window fails** — three consecutive Tier-1 binaries (FOMC decision+presser **T+0 today Wed Jul 29**, Core PCE **T+1 Thu Jul 30**, PPI **T+2 Fri Jul 31**), so no satellite entered today clears the ≥T+3 requirement (MU/WDC/CRDO/STRL/AVT momentum names + carryover GOOGL/GS/ORCL/SCHW all macro-blocked); (2) standing **deployment ceiling** (~$590 headroom to 85% vs a ~$1.5–1.6K risk-parity clip). Core adds blocked by the same ceiling. **No add, no defensive action:** 4/6 held ETFs — XLI +4.60%, XLB +4.51%, XLRE +2.72%, XLU -0.44% (Rule-16 decay watch); ETF-core 100% of deployed ≥45% floor, sectors evenly ≤26% ≤50%, all above their GTC trails. Satellite sleeve 0/3, all slots open. **Week-14 trades: 0/5 used.** Account: equity $10,330.45, cash $2,143.49, long_market_value $8,186.96, deployment **79.25%** (v3 75–85% band). Rule 13/14/15 N/A (0 buys, 0 sells; daytrade_count field absent from paper /account payload — cosmetic quirk, trading_blocked=false → treated 0/5, <2). Idempotency: no candidate BUYs today → no double-buy risk. Tape: ES slightly higher premarket (+0.23%) into the FOMC pivot, chip stocks wobbly ahead of MSFT/META after-close earnings; oil softer (WTI ~$71–73.7); VIX ~16–19 cooling. Re-screen satellites **post-binaries (T+3, ~Mon Aug 3)** once FOMC/PCE/PPI all clear AND headroom frees via scale-out/stop-out/equity growth. Nearest capital-freeing catalyst = **XLI first +7% scale-out at $185.87** (currently ~$181.71 / +4.60%, closest of the four). Next: midday T (Rule 8 XLI ladder watch, Rule 16 XLU decay). Patience > activity.
+
+### 2026-07-29 — TRADE: XLI side=sell qty=11
+- Exit: $176.54 (GTC trailing-stop fill @ 11:14 CT / 16:14:37Z)
+- Stop level: was trail 5% $176.567 hwm $185.86 — fired: yes (automatic, not routine-initiated)
+- Sector: Industrials
+- Thesis: 10% trail ratcheted to 5% via Rule 8 ladder; peaked $185.86 then rolled over into FOMC, trailing stop caught the reversal. Clean profit-protecting exit.
+- Catalyst: links back to pm-2026-05-13-XLI original BUY
+- Target: n/a (ETF core ballast, ladder-managed)
+- Realized P&L: +$31.09 (+1.627%)
+- Reconciliation note: exit occurred between market-open (logged XLI held +4.60%) and midday; recorded here to keep book in sync (daily-summary confirms at EOD). Held book now 3/6 (XLB, XLRE, XLU).
+
+### 2026-07-29 — DECAY-FLAG: XLU flag=0
+- unrealized -1.35% | 10-session pos -0.13% vs SPY -2.62% | prior_flag=0 | rotate=0
+
+### 2026-07-29 — MIDDAY: NO MONEY-MOVING ACTION (Rule 7/8/10 clean; Rule 16 → 1 DECAY-FLAG row, flag=0)
+- midday 2026-07-29 (Day 69, Wed, Week 14 Day 3): env verified (ALPACA_ENDPOINT=paper-api ✓, TRADING_ENABLED=true ✓). daytrade_count field ABSENT from paper /account payload (persistent cosmetic quirk; trading_blocked=false → treated 0/5, <2 pass) — moot, **0 routine sells placed**. **Event during session: XLI GTC trailing stop fired @ 11:14 CT (+1.63% WIN, logged above)** → held book 4→3.
+- **3 open positions; none opened today → Rule 15 N/A. 3 actionable**: XLB (entered 2026-05-18), XLRE (2026-07-13), XLU (2026-07-15) — all entry_date < today. All have BUY rows (no desync). Tier: all etf (core).
+- Unrealized vs entry (positions.current_price): **XLB +2.97%** ($51.565 vs $50.08, hwm-gain +6.45% hwm $53.31), **XLRE +2.39%** ($45.86 vs $44.79, hwm-gain +3.72% hwm $46.455), **XLU −1.35%** ($45.18 vs $45.80).
+- Rule 7 hard-close (≤−7%): none (worst XLU −1.35%).
+- Rule 8 ladder (`sizing.py`, hwm-aware): **XLB** target_trail=7% == current stop 7% (not strictly less → Rule 9 no-tighten), scaleouts_due=0 → no action; **XLRE** target=null (hwm-gain +3.72% below +4% tier), scaleouts_due=0 → no action; XLU below entry → not ladder-eligible.
+- Rule 16 momentum-decay: only below-entry flag-eligible → **XLU** `decay(upct −1.35, pos_ret −0.13, spy_ret −2.62, prior_flag 0) = flag=0, rotate=0` (XLU 10-session −0.13% LEADS SPY −2.62% → decay condition not met) → **DECAY-FLAG XLU flag=0 logged**. XLB/XLRE above entry → not eligible.
+- Rule 10 sector-kill: held sectors Materials/Real Estate/Utilities; recent losses only in Consumer Staples (non-consecutive, none held), Energy, Info Tech — **no doomed sector**. Industrials last exit (XLI today) = WIN.
+- **Execution: 0 routine sells, 0 scale-outs, 0 stop tightenings.** Rule 17: no unresolved STOP-PLACEMENT-FAILED markers.
+- **Telegram: silent** (no routine money-moving actions, DTC treated <2). XLI stop-out surfaces at EOD daily-summary.
