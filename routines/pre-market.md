@@ -46,11 +46,18 @@ done
 
 ## IMPORTANT — KILL SWITCH
 
-- v1 has `TRADING_ENABLED=false`. The Alpaca wrapper will refuse `order`, `cancel`,
-  `cancel-all`, `close`, `close-all` with exit 4. You will not call those subcommands
-  in this routine — only `account`, `positions`, `orders`. If you accidentally call
-  a state-changing subcommand and get exit 4, that is the kill-switch working
-  correctly. Log it in the research entry as a behavior anomaly and continue.
+- This routine is **research-only for entries and exits**: it NEVER calls `order`,
+  `cancel`, `cancel-all`, `close`, `close-all` or `scale-out`. It places no buys and
+  no sells, ever.
+- The **only** state-changing subcommand it may call is `trailing-stop`, and only
+  from STEP 0: the Rule 17 pending-stop retry and the Rule 18 recovery of a missed
+  `daily-summary`'s Rule 13 placement *(v3.3)*. Both are protective GTC orders on
+  aged positions — never a sell, never day-trade-relevant.
+- `trailing-stop` is kill-switch-gated. In v3 `TRADING_ENABLED=true`, so it
+  executes. If it returns exit 4, the kill switch is off: **positions are
+  unprotected**. Send an URGENT Telegram naming the affected tickers, append the
+  `STOP-PLACEMENT-FAILED` marker (Rule 17), note it in the research entry as a
+  behavior anomaly, and continue the routine.
 
 ---
 
@@ -79,6 +86,58 @@ the prior trading session; if the newest EOD snapshot predates it, the prior
 daily-summary is missing. If it is missing, send
 `bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — MISSING ROUTINE: daily-summary did not log for <prior_date>. Investigate cron. (Rule 18)"` and append a
 `### <prior_date> — MISSING ROUTINE: daily-summary (Rule 18)` placeholder to TRADE-LOG.md.
+
+**Then — still inside the "prior-day EOD snapshot is missing" branch, and ONLY
+there — RUN THE MISSED RULE 13 STOP PLACEMENT (v3.3 recovery).** If the prior
+session's EOD snapshot *is* present, daily-summary ran and placed its stops: skip
+this recovery entirely and proceed. (The placement is idempotent, so a stray run
+would be harmless, but it is not unconditional and must not be read as such.)
+Detection alone is not enough on the missing branch, because `daily-summary` is the
+**sole** placer of Rule 13 trailing stops: `market-open` deliberately never places one (Rule 13), and `midday` only
+*tightens* an existing stop — which requires an open stop's `trail_percent` to
+exist. So a single skipped `daily-summary` leaves every position opened that day
+permanently stop-less, with nothing downstream to notice. Recover it here:
+
+```
+bash scripts/alpaca.sh positions   # currently held tickers + qty
+bash scripts/alpaca.sh orders open # open orders, incl. any trailing_stop
+```
+For each **held** position with **no** open order of `type=trailing_stop` for that
+symbol, place the stop `daily-summary` STEP 4 would have placed:
+```
+TRAIL_PCT=10   # canonical Rule 6 trail, exactly what daily-summary STEP 4 uses
+bash scripts/alpaca.sh trailing-stop TICKER QTY $TRAIL_PCT
+```
+If the ticker's TRADE-LOG history records a **tighter** trail from an earlier Rule 8
+`STOP UPDATE`, use that tighter value instead — Rule 9 forbids moving a stop down.
+Use the position's **live** `qty` from `positions`, not a quantity from TRADE-LOG,
+which may be stale after a scale-out. Skip any symbol that already has an open
+trailing stop (idempotency — this routine may be re-run).
+
+Append per placement:
+```
+### $DATE — STOP PLACED: TICKER trail %N
+- Order ID: <from response>
+- Trigger reason: Rule 18 recovery of missed daily-summary <prior_date> (Rule 13 placement)
+- Links to BUY: pm-YYYY-MM-DD-TICKER
+```
+and send one non-URGENT Telegram note per placement: "Rule 18 recovery — TICKER
+now protected (trail N%), missed daily-summary <prior_date>".
+
+**Why this is visa-safe.** Every position reachable here was opened **on or before
+the prior session** — it survived to appear in this morning's `positions` pull, and
+the routine that would have stopped it ran (or failed to run) at the prior session's
+close. So it is aged by construction: a stop placed now cannot fire on its entry day
+and cannot produce a same-day round trip. This is the same reasoning Rule 13 uses
+for placing stops at 15:00 CT, and Rule 15 is not engaged at all — placing a stop is
+not a sell. Do NOT place a stop on any position whose entry date is today; there are
+none at this hour (market-open has not run), and if one somehow appears, skip it.
+
+**If a placement fails**, do not invent a new path — fall through to the Rule 17
+escalation already defined above: retry up to 3 times with a short backoff, then send
+the URGENT Telegram, append the `STOP-PLACEMENT-FAILED: TICKER QTY TRAIL` marker row,
+and continue the routine. The next routine's Rule 17 sweep picks it up.
+
 Then continue.
 If no unresolved marker exists, proceed to STEP 1.
 
@@ -112,8 +171,28 @@ Run `bash scripts/perplexity.sh "<query>"` for each:
 - News on each currently-held ticker
 
 **Single-stock satellite screen (v3).** For each single-stock candidate from the momentum query, confirm trend + relative strength before proposing it:
-- `bash scripts/alpaca.sh bars TICKER 1Day 200` → confirm last close > 50-DMA and > 200-DMA.
-- `bash scripts/alpaca.sh bars SPY 1Day 60` → compute candidate's 10- and 50-session returns vs SPY (relative strength must be positive). (60 bars gives margin for the 50-session lookback, which needs 51 closes.)
+- `bash scripts/alpaca.sh bars TICKER 1Day 200` → set `LAST_CLOSE` = the close of the
+  **last** bar returned, and confirm `LAST_CLOSE` > 50-DMA and > 200-DMA. *(v3.3 —
+  `LAST_CLOSE` is bound here, by name, because the `rscreen` call below passes it;
+  it was previously the only unbound variable in that call.)*
+- `bash scripts/alpaca.sh bars SPY 1Day 60` → compute the candidate's 10- and 50-session
+  returns and SPY's over the same windows; `RS10 = ret10_ticker - ret10_SPY` and
+  `RS50 = ret50_ticker - ret50_SPY`, both in percentage points. (60 bars gives margin
+  for the 50-session lookback, which needs 51 closes.) From the 200-bar ticker pull
+  above, also compute `DMA50` (mean of the last 50 closes) and `DMA50_PRIOR` (mean of
+  the 50 closes ending 10 sessions ago). Then ask the unit-tested screen — never judge
+  this by eye *(v3.3)*:
+  ```
+  RS_JSON=$(python3 scripts/sizing.py rscreen --rs10 "$RS10" --rs50 "$RS50" \
+      --close "$LAST_CLOSE" --dma50 "$DMA50" --dma50-prior "$DMA50_PRIOR")
+  ```
+  Reject the candidate if `pass == 0`, quoting `reason`. `rs50_negative` = no
+  medium-term leadership. `rs10_negative_extended` = short-term lagging AND not in a
+  constructive base. A `pass == 1` with `reason == "constructive_pullback"` is a name
+  that is lagging over 10 sessions but sitting within 3% of a *rising* 50-DMA — the
+  base the v3 screen used to reject on RS10 alone while the market-open row rejected
+  the alternative as chase risk (AMG Jul 17/20/22, APH Jul 23; sleeve 0/3 for three weeks).
+  Tag the idea line: `rs: RS10 <+X.XX>pp / RS50 <+X.XX>pp / screen=<reason>`.
 - Reject candidates failing the liquidity filter (thin average volume / wide quoted spread — also guards against stale-open quotes).
 - **Macro-window (v3.2):** from the economic-calendar result, determine whether any Tier-1
   binary (NFP, CPI, PPI, Core PCE, FOMC decision/minutes, Powell presser) falls on T+1 or

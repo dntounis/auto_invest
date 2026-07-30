@@ -52,23 +52,96 @@ done
 
 ---
 
-## STEP 0 — Rule 18: cadence sweep (FIRST action, v3.2)
+## STEP 0 — Rule 18: cadence sweep + catch-up (FIRST action, v3.2; recovery added v3.3)
 
 Before pulling state, resolve `DATE=$(TZ=America/Chicago date +%Y-%m-%d)` and verify today's
 prior routines logged. On a US market holiday (no session) skip this sweep — the routines
-correctly no-op.
-- **pre-market** → `memory/RESEARCH-LOG.md` MUST have a `$DATE` entry.
-- **market-open** → `memory/TRADE-LOG.md` MUST have a `market-open $DATE` row.
-- **midday** → `memory/TRADE-LOG.md` MUST have a `$DATE — Midday Run` row.
-For each missing routine:
+correctly no-op. **A row that is itself, or wraps, a `MISSING ROUTINE` placeholder for
+that routine does NOT count as evidence the routine ran.** Rule 18's own placeholder
+output must never satisfy Rule 18's own detection — this applies to all three checks
+below, not just midday.
+- **pre-market** → `memory/RESEARCH-LOG.md` MUST have a `$DATE` entry that is not
+  itself a `MISSING ROUTINE` placeholder.
+- **market-open** → `memory/TRADE-LOG.md` MUST have a `market-open $DATE` row that
+  is not itself a `MISSING ROUTINE` placeholder.
+- **midday** → `memory/TRADE-LOG.md` MUST have a `- midday $DATE:` row that is not
+  itself a `MISSING ROUTINE` placeholder *(v3.3 — corrected from the stale
+  `$DATE — Midday Run` token. That token's defect wasn't staleness — it is still
+  written on 2026-07-21/22/23 — the real bug is that the header is *also* emitted
+  as a wrapper around daily-summary's own `MISSING ROUTINE: midday` placeholder:
+  on 2026-07-22, the one genuine midday cron skip in this history, `## 2026-07-22
+  — Midday Run` IS present, wrapping the placeholder, so the old check would have
+  concluded midday ran on the exact day it didn't. `- midday $DATE:` is midday's
+  actual per-run line, written only on a real run — mandatory on every path,
+  including NO-ACTION and the Rule 14 abort, per `routines/midday.md` STEP 6)*.
+
+For each missing routine, send the alert and write the placeholder as before:
 ```
 bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — MISSING ROUTINE: <name> did not log today. Investigate cron. (Rule 18)"
 ```
-and append a placeholder to that routine's log:
 ```
 ### $DATE — MISSING ROUTINE: <name> (Rule 18 cadence guardrail)
 - No <name> entry found for $DATE at daily-summary sweep; cron skip suspected. Investigate.
 ```
+
+**Then, if the missing routine is `midday`, RUN ITS EVALUATION NOW (v3.3 catch-up).**
+A missed midday is a missed Rule 7 hard-close, a missed Rule 8 ladder step and a
+break in the Rule 16 consecutiveness chain — detection alone let all three lapse on
+2026-07-22. Pull `bash scripts/alpaca.sh positions` and `bash scripts/alpaca.sh orders open`
+early (before STEP 2 if needed) and execute midday's STEP 3 + STEP 4 decision logic
+verbatim — same Rule 15 same-day filter, same `sizing.py ladder` / `scaleout` / `decay`
+calls, same Rule 14 pre-flight (midday STEP 2's `DTC` / `DTC_SOURCE` resolution,
+including `source=error` → treat as `none`).
+
+"Verbatim" includes midday STEP 4's **two-attribute binding** *(v3.3)*: bind `TIER`
+(portfolio role, `core`|`satellite`, from the BUY row's `Tier:` field) **and**
+`LADDER_TIER` (instrument type, `etf`|`stock`) separately, and pass `LADDER_TIER` —
+never `TIER` — to `sizing.py ladder --tier`, which accepts only `etf|stock`. Derive
+`LADDER_TIER` from what the instrument actually is (sector/broad-market fund → `etf`;
+one company's shares → `stock`), not by assuming `core == etf`; fall back to
+`core`→`etf` / `satellite`→`stock` only if the instrument type is undeterminable, and
+mark it as a fallback in the row.
+
+**A Rule 14 abort inside this catch-up blocks sells only — it must NEVER end this
+routine** *(v3.3)*. Since every sell in the catch-up is deferred anyway (see the
+third bullet below), an unresolvable count changes almost nothing here: record it
+in the `CATCH-UP PENDING` rows and continue. Under no circumstances may a Rule 14
+abort skip **STEP 4 (Rule 13 trailing-stop placement)** or **STEP 6 (the EOD
+snapshot)** — placing a stop is not a sell, it is precisely what protects a
+position the gate has just refused to let the bot exit, and daily-summary is the
+*only* placer of Rule 13 stops. Exiting early here would leave every position
+opened today permanently stop-less: market-open will not place one (Rule 13), and
+midday only tightens a stop that already exists.
+
+Then split the outcome by whether it requires a market sell:
+
+- **Stop tightenings (Rule 8 `target_trail_pct`) — EXECUTE NOW.** `bash scripts/alpaca.sh
+  replace-stop OID TICKER QTY $target_trail_pct`. A stop replacement is a GTC order,
+  not a sell: no fill risk at the close, no `DTC` impact, and Rule 9 still applies
+  (only ever tighten, never within 3% of price). Log the normal `STOP UPDATE` row with
+  `(Rule 18 catch-up)` appended to its Trigger line.
+- **`DECAY-FLAG` rows (Rule 16) — ALWAYS WRITE.** This is the state the next midday
+  reads for consecutiveness; skipping it is what left the chain ambiguous on Jul 22.
+  Write the row exactly as midday would.
+- **Market sells AND Rule 8 scale-outs — DEFER.** This bucket is Rule 7 hard-close,
+  Rule 16 `rotate == 1`, Rule 10 sector-kill, **and** a Rule 8 `sizing.py scaleout`
+  call that returns `reason == "ok"`. A scale-out is a partial market sell
+  (`bash scripts/alpaca.sh scale-out`), not a GTC order — it carries the identical
+  closing-bell fill risk as a full exit and belongs here, not in the stop-tightening
+  bucket above. Do NOT sell any quantity at the closing bell; fill quality is poor
+  and the order may not complete. Instead write one row per ticker:
+```
+### $DATE — CATCH-UP PENDING: TICKER action=<hard-close|rotate-exit|sector-kill|scale-out>
+- Missed midday $DATE (Rule 18). Evaluation run at daily-summary; a sell is owed.
+- Trigger: <Rule 7 unrealized -X% | Rule 16 2nd consecutive decay flag | Rule 10 sector S | Rule 8 scale-out due, tier=<core|satellite> (role), ladder=<etf|stock> (instrument type passed to --tier)>
+- Qty (scale-out only): <N shares from sizing.py scaleout at this evaluation — informational; next market-open re-derives against live qty and never reuses this number>
+- Deferred to next market-open STEP 0 (closing-bell fill risk). Position is aged → Rule 15 safe.
+```
+  and send `bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — CATCH-UP PENDING: TICKER <action> owed from missed midday; next market-open will execute. (Rule 18)"`.
+
+If `market-open` is the missing routine, no catch-up is possible — the entry window has
+closed. Write the placeholder only.
+
 Then continue to STEP 1. If all three logged, proceed silently.
 
 ## STEP 1 — Read memory for continuity
@@ -92,7 +165,7 @@ bash scripts/alpaca.sh orders
 - **Day P&L** ($ and %) = today's equity − yesterday's equity from STEP 1
 - **Phase cumulative P&L** ($ and %) = today's equity − $10,000 starting baseline
 - **Trades today**: count BUY rows in TRADE-LOG.md committed today by `market-open` (`grep -c "^### .* — TRADE: .* side=buy" memory/TRADE-LOG.md` filtered by today's date) AND EXIT rows committed today by `midday` (`side=sell`). Format as `<N opened, K closed>`.
-- **Trades this week** running total: count BUY rows since Monday's date (use TRADE-LOG.md tail). Hard cap at 3 per Rule 4.
+- **Trades this week** running total: count BUY rows since Monday's date (use TRADE-LOG.md tail). Hard cap at 5 per Rule 4 *(v3.3 — corrected; Rule 4 has been 5, not 3, since v3)*.
 
 ## STEP 4 — Place trailing stops for today's new positions (Rule 13, visa-aware)
 
@@ -154,9 +227,13 @@ Otherwise empty string. The prefix gets prepended to the EOD Telegram body in ST
 
 ## STEP 6 — Append EOD snapshot to `memory/TRADE-LOG.md`
 
-Match the schema at the top of `TRADE-LOG.md` exactly:
+Match the schema at the top of `TRADE-LOG.md` exactly. **The header is `##`, not
+`###`** *(v3.3 — the template said `###` while all 63 snapshots in the log history
+use `##` and `pre-market` STEP 0's Rule 18 detector greps for `## <MMM DD> — EOD
+Snapshot`. Producer, detector and history now agree; a `###` snapshot would be
+invisible to the detector and report a false missing daily-summary.)*
 ```
-### MMM DD — EOD Snapshot (Day N, Weekday)
+## MMM DD — EOD Snapshot (Day N, Weekday)
 **Portfolio:** $X | **Cash:** $X (X%) | **Day P&L:** ±$X (±X%) | **Phase P&L:** ±$X (±X%)
 
 | Ticker | Shares | Entry | Close | Day Chg | Unrealized P&L | Stop |

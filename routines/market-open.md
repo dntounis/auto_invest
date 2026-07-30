@@ -38,6 +38,24 @@ done
   If it contains `api.alpaca.markets` (without `paper-`), STOP, Telegram-alert, exit.
 - Sanity check: `TRADING_ENABLED` MUST equal `true` in v2. If not, STOP, Telegram-alert, exit.
 
+**Before exiting on ANY of the three STOPs above** *(v3.3 — mandatory)*: append the
+Market-Open Run row (STEP 7 format) to `memory/TRADE-LOG.md` recording the
+environment failure, then run STEP 9's commit-and-push so the row actually
+persists. An environment STOP that writes nothing is indistinguishable from a cron
+skip: Rule 18's cadence sweep would report a false MISSING ROUTINE, and — worse —
+any `CATCH-UP PENDING` rows owed from a previous day would never be cleared,
+because STEP 0 is the only thing that clears them and it never ran.
+```
+- market-open $DATE: 0 orders placed, 0 filled. HALTED before STEP 0 — environment
+  check failed: <missing var | endpoint is not paper-api | TRADING_ENABLED=<value>>.
+  No STEP 0 catch-up attempted; any CATCH-UP PENDING rows remain unresolved for the
+  next market-open. Telegram alert sent.
+- Rule 14 DTC: n/a (halted before gate evaluation)
+```
+If the commit/push itself cannot be performed (e.g. `GITHUB_TOKEN` is the missing
+var), say so explicitly in the Telegram alert — the halt is then invisible to the
+next run and needs human eyes.
+
 ## IMPORTANT — PERSISTENCE
 
 - This workspace is a fresh clone. File changes VANISH unless you commit and push to `main`.
@@ -47,14 +65,108 @@ done
 
 - **Rule 13:** This routine NEVER places trailing stops. Stops are placed by
   `daily-summary` at 15:00 CT (market close) so they cannot fire same-day.
-- **Rule 14:** This routine only places BUY orders. No sells. The pre-flight
-  `daytrade_count` check is enforced at midday and weekly-review where sells
-  may occur.
-- **Rule 15:** Same-day exits are forbidden. Since this routine never sells,
-  Rule 15 does not constrain it directly — but it must NOT cancel an existing
-  position or close anything.
+- **Rule 14:** The **ordinary path of this routine places BUY orders only.**
+  There is exactly **one** exception *(v3.3)*: **STEP 0's Rule 18 catch-up**,
+  which executes sells that a *previous* day's missed `midday` already owed and
+  recorded as `CATCH-UP PENDING` rows. No other step of this routine may sell.
+  **Do NOT skip STEP 0 on the strength of "this routine only buys"** — that
+  reading silently disables the entire Rule 18 recovery path, leaving a missed
+  hard-close, rotation or scale-out owed indefinitely.
+  Why the exception is visa-safe: (i) **every** catch-up sell carries the full
+  Rule 14 pre-flight — `bash scripts/alpaca.sh dtc` resolved by midday's STEP 5
+  mid-loop procedure, aborting the sell and every remaining row on `DTC >= 2`,
+  `source=none` or `source=error`, re-checked before each individual sell in a
+  batch; and (ii) the position was open at the **prior** session's close, so it
+  is aged by definition and Rule 15 cannot be breached (see below).
+  The pre-flight is enforced at **midday, market-open STEP 0, weekly-review and
+  the manual `/trade` command** *(v3.3 — corrected: it is no longer "midday and
+  weekly-review" only)*, i.e. at every site Rule 14 in `TRADING-STRATEGY.md`
+  names.
+- **Rule 15:** Same-day exits are forbidden. This routine never sells a position
+  it opened today. STEP 0's catch-up sells are aged **by construction** — the
+  ticker was held through the prior session's close, which is precisely what made
+  the catch-up owed — but STEP 0 still verifies the entry date per row rather than
+  assuming it. Outside STEP 0, do NOT cancel an existing position or close
+  anything.
 
 ---
+
+## STEP 0 — Rule 18: clear pending catch-ups (FIRST action, v3.3)
+
+Before reading research or gating any idea, scan **the last 10 trading days or the
+last 200 rows of `memory/TRADE-LOG.md`, whichever is shorter** (same lookback bound
+as Rule 10's sector-kill scan) for **unresolved** `CATCH-UP PENDING` rows. A
+`CATCH-UP PENDING: TICKER` row dated `<pending-date>` (its own `$DATE` header) is
+unresolved unless a `CATCH-UP CLEARED: TICKER` row appears **strictly below it in
+the file** whose "Resolves the CATCH-UP PENDING row of ..." line **names that same
+`<pending-date>`** — matching on ticker alone is not enough, since a ticker can
+cycle through several PENDING/CLEARED incidents over time and a stale CLEARED row
+from an earlier incident must never be read as covering a newer PENDING row. If an
+unresolved row falls outside this lookback window, do NOT silently age it out —
+send a Telegram URGENT flagging it for manual review, then continue with the rows
+inside the window.
+
+For each unresolved row, in order:
+
+1. **Re-evaluate against live state.** Pull `bash scripts/alpaca.sh positions`. If the
+   ticker is no longer held (its GTC trailing stop fired overnight), the sell is moot:
+   write `CATCH-UP CLEARED: TICKER reason=already-exited` and move on.
+2. **Re-check the trigger.**
+   - `action=hard-close|rotate-exit|sector-kill`: recompute the condition that
+     raised it (Rule 7 `unrealized_pl_pct <= -7`; Rule 16 via `sizing.py decay`;
+     Rule 10 sector-kill). If it no longer holds — the position recovered
+     overnight — write `CATCH-UP CLEARED: TICKER reason=trigger-no-longer-met`
+     and move on. Do not sell.
+   - `action=scale-out`: recompute the ladder tier via `sizing.py ladder` against
+     the position's **live** `unrealized_pl_pct` / hwm-gain. Bind `LADDER_TIER`
+     first — the **instrument** type, `etf` | `stock`, derived from what the
+     symbol actually is (sector/broad-market fund → `etf`; one company's shares →
+     `stock`), falling back to `core`→`etf` / `satellite`→`stock` only if that is
+     undeterminable — and pass **that** to `--tier`. Never pass the position's
+     portfolio role (`core` | `satellite`); `sizing.py` accepts only `etf|stock`
+     and a role value aborts the call *(v3.3)*. If the tier that
+     triggered the scale-out no longer holds (the position pulled back below it
+     overnight), write `CATCH-UP CLEARED: TICKER reason=trigger-no-longer-met`
+     and move on. If it still holds, **re-run `sizing.py scaleout` against the
+     position's live `qty`** — the lot may have changed overnight. Never sell the
+     quantity recorded in the PENDING row; it is informational only and may be stale.
+3. **Otherwise execute the sell.** Resolve `DTC`/`DTC_SOURCE` using **midday's
+   STEP 5 mid-loop procedure, not STEP 3's buy-side gate** — the buy-side gate is
+   deliberately permissive on `source=none` (a buy can't itself create a day
+   trade), which is the wrong behavior for a sell: `bash scripts/alpaca.sh dtc` →
+   `source=api` → use it; `source=unavailable` (the call succeeded, the field is
+   simply absent) → derive the count locally exactly as midday STEP 2 does
+   (`bash scripts/alpaca.sh activities` as primary evidence over the last 5
+   business days, TRADE-LOG same-day buy+sell pairs as corroboration, `max` of the
+   two), **then add the number of sells already executed earlier in this STEP 0
+   batch** (their TRADE-LOG rows haven't been written yet, so the raw scan would
+   undercount them); `source=error` — the `dtc` HTTP call itself failed, so
+   nothing is known — is treated exactly like `source=none` and must NEVER fall
+   back to the local derivation (structurally 0, hence a fail-open); anything else
+   is `source=none`. **ABORT this sell and every remaining unresolved row** if
+   `DTC >= 2`, `source=none` or `source=error` — send Telegram URGENT, commit
+   progress made so far on already-cleared rows, and proceed to STEP 1, leaving
+   the rest unresolved for the next market-open. Then apply the Rule 15 same-day
+   filter (a catch-up position is aged by construction — it was open at
+   yesterday's close — so Rule 15 cannot block it, but verify rather than
+   assume). Then:
+   - `action=hard-close|rotate-exit`: `bash scripts/alpaca.sh close TICKER`.
+   - `action=sector-kill`: the sector-kill batch for Rule 10 (re-check `DTC`
+     before each individual sell within the batch, same as midday STEP 5).
+   - `action=scale-out`: `bash scripts/alpaca.sh scale-out TICKER $SELL_QTY`
+     using the freshly recomputed quantity from step 2 above — never the
+     PENDING row's recorded quantity.
+   Write the normal EXIT (or SCALE-OUT) row, then `CATCH-UP CLEARED: TICKER
+   reason=executed`.
+
+Row format:
+```
+### $DATE — CATCH-UP CLEARED: TICKER reason=<executed|already-exited|trigger-no-longer-met>
+- Resolves the CATCH-UP PENDING row of <original date>.
+```
+
+Send one Telegram per cleared row. If there are no unresolved rows, proceed silently
+to STEP 1.
 
 ## STEP 1 — Read memory for context
 
@@ -64,19 +176,77 @@ done
 - Tail of `memory/TRADE-LOG.md` (positions opened today, week's trade count)
 
 If today's RESEARCH-LOG entry does not exist (e.g., pre-market failed to commit),
-STOP, send Telegram alert "market-open $DATE: no RESEARCH-LOG entry found — skipping execution",
-exit. Do NOT make up trade ideas.
+STOP, send Telegram alert "market-open $DATE: no RESEARCH-LOG entry found — skipping execution".
+**Before exiting** *(v3.3)*, append the mandatory Market-Open Run row to
+`memory/TRADE-LOG.md` (same format as STEP 7) recording the halt:
+```
+- market-open $DATE: 0 orders placed, 0 filled. HALTED at STEP 1 — no RESEARCH-LOG
+  entry for today. Upstream pre-market failure; no ideas evaluated. Telegram alert sent.
+- Rule 14 DTC: n/a (halted before gate evaluation)
+```
+Then exit. Do NOT make up trade ideas.
 
 Note on historical RESEARCH-LOG entries: pre-T6 entries do not have `pm-YYYY-MM-DD-TICKER`
 IDs. If today's entry lacks IDs, treat it as v1-format and STOP — do not synthesize IDs.
+Send Telegram alert "market-open $DATE: today's RESEARCH-LOG entry is v1-format
+(no pm- IDs) — skipping execution" *(v3.3 — this path had no alert before; added
+so the row below can truthfully say one was sent)*.
+**Before exiting** *(v3.3)*, append the same mandatory Market-Open Run row to
+`memory/TRADE-LOG.md`, adapting the reason:
+```
+- market-open $DATE: 0 orders placed, 0 filled. HALTED at STEP 1 — RESEARCH-LOG
+  entry is v1-format, no pm- IDs. Upstream pre-market failure; no ideas evaluated.
+  Telegram alert sent.
+- Rule 14 DTC: n/a (halted before gate evaluation)
+```
+Then exit.
 
 ## STEP 2 — Pull live paper-account state
 
 ```
-bash scripts/alpaca.sh account     # equity, cash, buying_power, daytrade_count
+bash scripts/alpaca.sh account     # equity, cash, buying_power
 bash scripts/alpaca.sh positions   # currently held tickers
 bash scripts/alpaca.sh orders open # open orders (used for idempotency check)
 ```
+
+From that payload compute, once, for the whole run *(v3.3)*:
+
+```
+DEPLOY_CEILING = 0.85
+HEADROOM = (EQUITY * DEPLOY_CEILING) - LONG_MARKET_VALUE
+
+# --- STEP 2 snapshot, read once from `positions` (+ the Tier:/Sector: fields on
+#     each open position's BUY row in TRADE-LOG.md) ---
+CORE_MV       = sum of market_value over positions whose Tier is core
+SECTOR_MV[s]  = sum of market_value over positions in GICS sector s
+POS_COUNT     = number of positions currently held
+SAT_COUNT[s]  = number of satellite names currently held in sector s
+
+# --- Running totals for THIS run. Every gate in STEP 3 and STEP 5c evaluates
+#     against snapshot + committed, NEVER the bare snapshot (v3.3) ---
+COMMITTED_COST      = 0    # dollars reserved by ideas already sized this run
+COMMITTED_CORE_MV   = 0    # of that, dollars going into tier=core names
+COMMITTED_SECTOR_MV = {}   # sector -> dollars committed this run
+COMMITTED_POS       = 0    # new names (not already held) committed this run
+COMMITTED_SAT       = {}   # sector -> new satellite names committed this run
+```
+
+`HEADROOM` is the dollar room remaining before the Rule 5 deployment ceiling.
+`COMMITTED_COST` tracks the running total reserved by ideas already sized in this
+run *(v3.3 — see STEP 5c)*. `HEADROOM` may be negative (book already over the
+ceiling) — in that case no buy of any size is permitted; skip every idea and log
+`deployment ceiling: already at X% — no headroom, 0 buys`.
+
+**Why the other accumulators exist** *(v3.3)*. Before this version the deployment
+ceiling was the only gate that re-asserted against a running total; the ETF-core
+floor, the 50% sector cap and "total positions ≤ 6" each evaluated against the
+STEP 2 snapshot, so N ideas in one run were all measured against a book that
+already assumed none of the others filled. Worked example: equity $10,000, LMV
+$4,000 = core $3,000 + satellite $1,000, two satellite ideas at $1,600 each. Each
+passes the core floor individually ($3,000/$5,600 = 53.6%), but after both fill
+core is $3,000/$7,200 = **41.7%** — floor breached. The same arithmetic breaks the
+sector cap. Multi-buy runs were nearly unreachable before this branch; enabling
+them is the branch's whole purpose, so this is now the normal case.
 
 Idempotency (DECIDED H): if today's orders already include any BUY for a ticker
 that's also a candidate today, SKIP that ticker. The routine ran already — don't
@@ -85,22 +255,55 @@ double-buy.
 ## STEP 3 — Apply buy-side gate to each idea
 
 First, read the `**Decision:**` line from today's RESEARCH-LOG entry.
-- If `Decision: HOLD` → log "market-open $DATE: pre-market Decision=HOLD — skipping execution", send Telegram "market-open $DATE (paper) — pre-market HOLD decision: no orders placed", then skip to STEP 8.
+- If `Decision: HOLD` → send Telegram "market-open $DATE (paper) — pre-market HOLD decision: no orders placed", then skip to **STEP 7** (NOT STEP 8 — STEP 7 must still write the mandatory Market-Open Run row, or Rule 18 will report a false cron skip).
 - If `Decision: TRADE` → proceed with gate checks below.
 
 For each idea in today's RESEARCH-LOG entry, run the Buy-Side Gate from
 `TRADING-STRATEGY.md`. Skip and log reason for any failure:
 
-- Total positions after this fill ≤ 6
+**All four portfolio-shape gates below accumulate** *(v3.3)*. Each evaluates
+against the STEP 2 snapshot **plus everything already committed earlier in this
+run**, not the bare snapshot. At this point the idea has not been sized yet, so use
+a provisional `position_cost` — the pm idea line's planned clip, else
+`min(0.16 * EQUITY, HEADROOM)` — and treat this as a screen. STEP 5c re-asserts all
+four against the **actual** sized cost, and that re-assertion is the binding check.
+The clip-shrink direction is safe: a headroom-clamped clip only ever makes these
+ratios easier to satisfy, so a gate that passes here on the provisional estimate
+cannot be turned into a breach by sizing. This is accumulation, not a sizing change.
+
+- **Total positions after this fill ≤ 6:** `POS_COUNT + COMMITTED_POS + 1 ≤ 6`
+  (count the idea only if the ticker is not already held — an add to an existing
+  name does not create a new position).
 - Trades placed this week (incl. this one) ≤ 5
 - Position cost ≤ 20% of account equity
 - Position cost ≤ available cash
-- **(v3, satellite only)** If this idea's `tier` is `satellite`: ETF-core market value after this fill stays ≥ 45% of deployed equity (sum of all position market values from `positions`). Skip + log if it would breach the core floor.
-- **(v3, satellite only)** If this idea's `tier` is `satellite`: ≤ 2 satellite names (existing + pending) in this idea's GICS sector after the fill. Skip + log if it would make 3.
-- **(v3.1, all ideas)** Sector concentration cap: compute `deployed_after = long_market_value + position_cost` and `sector_after = (sum of this sector's existing position market values) + position_cost`. If `sector_after / deployed_after > 0.50`, skip + log "sector cap: TICKER sector would be X% of deployed (> 50%)".
-- **(v3.1, all ideas)** Deployment ceiling: if `(long_market_value + position_cost) / equity > 0.85`, skip + log "deployment ceiling: post-fill X% > 85% — deferring add".
+- **(v3, satellite only)** ETF-core floor. Compute:
+  ```
+  deployed_after = LONG_MARKET_VALUE + COMMITTED_COST + position_cost
+  core_after     = CORE_MV + COMMITTED_CORE_MV        # a satellite adds nothing to core
+  ```
+  Require `core_after / deployed_after >= 0.45`. Skip + log if it would breach the
+  core floor, quoting both the individual and the post-run ratio.
+- **(v3, satellite only)** ≤ 2 satellite names in this idea's GICS sector after the
+  fill: `SAT_COUNT[sector] + COMMITTED_SAT[sector] + 1 <= 2`. Skip + log if it would
+  make 3. ("existing + pending" now has a precise definition: pending = committed
+  earlier in this run.)
+- **(v3.1, all ideas)** Sector concentration cap:
+  ```
+  deployed_after = LONG_MARKET_VALUE + COMMITTED_COST + position_cost
+  sector_after   = SECTOR_MV[sector] + COMMITTED_SECTOR_MV[sector] + position_cost
+  ```
+  If `sector_after / deployed_after > 0.50`, skip + log "sector cap: TICKER sector
+  would be X% of deployed (> 50%)".
+- **(v3.1, all ideas — restated v3.3)** Deployment ceiling: this gate no longer refuses an idea pre-sizing. `HEADROOM` (STEP 2) is passed to the sizer in STEP 5c, which shrinks the clip to fit. Here, only skip the idea outright if `HEADROOM <= 0` — log "deployment ceiling: already at X% — no headroom, 0 buys". After sizing, STEP 5c re-asserts `(LONG_MARKET_VALUE + COMMITTED_COST + cost) / equity <= 0.85` — the running total, not the bare snapshot — as a belt-and-braces check and skips + logs if it somehow fails.
 - **(v3.2, satellite only)** Macro-binary proximity: read the idea's `macro-window:` tag. If `tier` is `satellite` AND the tag names a Tier-1 binary on T+1/T+2 (anything other than `clear`), skip + log "macro-binary gate: TICKER blocked by <BINARY> at T+N". `tier: core` ideas (tag `n/a (core)`) bypass this check.
-- `account.daytrade_count` MUST be ≤ 1 to allow new entries (Rule 14 buffer).
+- Resolve `DTC` / `DTC_SOURCE` via `bash scripts/alpaca.sh dtc` using the same
+  four-source procedure as midday STEP 2 *(v3.3 — `api` | `local` | `none` |
+  `error`)*. `DTC` MUST be ≤ 1 to allow new entries (Rule 14 buffer). If
+  `DTC_SOURCE` is `none` **or** `error`, allow buys but log the degraded state —
+  a buy cannot itself create a day trade (Rule 13 defers the stop to market
+  close), so this gate fails safe on the buy side. (This permissiveness is
+  buy-side only: STEP 0's catch-up sells treat `none` and `error` as hard aborts.)
   WHY: a buy today could trigger a stop-fired sell tomorrow, bumping DTC by 1; a
   buffer of 1 keeps us well below the FINRA PDT threshold of 4 day trades in 5
   rolling business days even if a same-day stop fires unexpectedly (rare but
@@ -113,7 +316,7 @@ For each idea in today's RESEARCH-LOG entry, run the Buy-Side Gate from
 - Already ranked by R:R descending in pre-market output (DECIDED C).
 - `weekly_cap_remaining = 5 - trades_this_week` (from TRADE-LOG.md tally read in STEP 1) *(v3 — cap raised to 5)*
 - Take `min(len(passing_ideas), weekly_cap_remaining)`. May be zero — in which
-  case skip to STEP 8 with no orders placed.
+  case skip to STEP 7 (which still writes the mandatory Market-Open Run row) with no orders placed.
 
 ## STEP 5 — Per-idea: fetch live quote, extract trail, compute size (DECIDED D)
 
@@ -163,14 +366,72 @@ to `trail_pct / 100`. Then call the unit-tested sizer:
 ```
 SLIPPAGE_PCT=${MAX_ENTRY_SLIPPAGE_PCT:-0.10}
 SIZE_JSON=$(python3 scripts/sizing.py size \
-    --equity "$EQUITY" --price "$LIVE_ASK" --stop-frac "$STOP_FRAC")
+    --equity "$EQUITY" --price "$LIVE_ASK" --stop-frac "$STOP_FRAC" \
+    --headroom "$HEADROOM")
 ```
 
-Parse `shares` and `clamped` from `SIZE_JSON`. If `clamped == "floor_skip"` or
-`shares < 1`, skip the idea and log the reason (`floor_skip` = cap/risk budget too
-small). This replaces the prior hand-computed `shares_by_risk`/`shares_by_cap`
-formula (same risk-parity logic — 2% equity at risk, clamped to the 20% Rule 3 cap —
-now deterministic and unit-tested in `tests/test_sizing.sh`).
+Parse `shares`, `cost` and `clamped` from `SIZE_JSON`.
+
+- If `clamped == "floor_skip"` or `shares < 1`: skip the idea and log the reason
+  (`floor_skip` = the risk budget, the 16% cap, or the remaining headroom left too
+  little to build a position above the 5%-of-equity minimum — a dust position is
+  worse than no position).
+- If `clamped == "headroom"`: the clip was deliberately shrunk to fit the remaining
+  deployment room *(v3.3)*. This is a normal, expected outcome — proceed with the
+  order and log `sized to headroom: TICKER N sh ($COST, X.X% of equity, full clip
+  would have been $RAW)`.
+- If `clamped == "cap"` or `"none"`: full risk-parity or 16%-capped clip; proceed.
+
+**Re-assert the four accumulating gates against the ACTUAL sized cost** *(v3.3)*,
+before reserving anything. STEP 3 screened this idea on a provisional cost; now
+`cost` is known, so redo those checks with it, still against snapshot + committed:
+```
+deployed_after = LONG_MARKET_VALUE + COMMITTED_COST + cost
+core_after     = CORE_MV + COMMITTED_CORE_MV + (cost if tier == core else 0)
+sector_after   = SECTOR_MV[sector] + COMMITTED_SECTOR_MV[sector] + cost
+
+positions:  POS_COUNT + COMMITTED_POS + (0 if already held else 1) <= 6
+core floor: core_after / deployed_after >= 0.45          (satellite ideas only)
+sat/sector: SAT_COUNT[sector] + COMMITTED_SAT[sector] + 1 <= 2  (satellite only)
+sector cap: sector_after / deployed_after <= 0.50
+ceiling:    deployed_after / EQUITY <= 0.85              (belt-and-braces, Rule 5)
+```
+If any fails, skip the idea, log which gate and by how much, and reserve nothing.
+This is the binding evaluation of these gates; STEP 3's is a screen. A ceiling
+failure here should be unreachable — `--headroom` already shrank the clip to fit —
+so log "deployment ceiling re-assert failed", skip the idea, and send a Telegram
+note: it indicates a headroom computation bug.
+
+**Then reserve at sizing time, not order-placement time**: immediately after a
+successful `cost` (any outcome other than `floor_skip`) clears the re-assertion
+above, and before moving on to size the next idea:
+```
+COMMITTED_COST                 += cost
+COMMITTED_CORE_MV              += cost   if tier == core   else 0
+COMMITTED_SECTOR_MV[sector]    += cost
+COMMITTED_POS                  += 1      unless the ticker is already held
+COMMITTED_SAT[sector]          += 1      if tier == satellite and not already held
+HEADROOM                        -= cost
+```
+This must happen here, in STEP 5c, and not in STEP 6 — STEP 5 sizes *every*
+idea first ("After all ideas are processed, proceed to STEP 6"), and STEP 6 is
+a separate loop that places orders afterwards. If the reservation were deferred
+to order-placement time, no order would yet exist when idea 2 is sized, so two
+ideas in one session would each be sized against the same, undecremented
+headroom **and each be gated against the same, unchanged core/sector/position
+snapshot** — the exact double-consumption bug this reservation exists to prevent.
+
+After the reservation, `(LONG_MARKET_VALUE + COMMITTED_COST) / EQUITY` is exactly
+the `deployed_after / EQUITY` you just asserted `<= 0.85`, and the accumulators now
+describe the book as it will stand if every reserved order fills — which is what
+the next idea is gated against.
+
+If an order is later rejected or expires unfilled in STEP 6, the reservation
+is simply released for the next session — do not attempt to re-size mid-run.
+
+This keeps the same risk-parity logic (2% equity at risk, clamped to the 16% v3.3
+sizing target and to remaining headroom) deterministic and unit-tested in
+`tests/test_sizing.sh`.
 
 **5d. Compute limit price**
 
@@ -209,9 +470,38 @@ DO NOT place a trailing stop here — that is `daily-summary`'s job (Rule 13).
 
 ## STEP 7 — Append entries to `memory/TRADE-LOG.md`
 
-**Filled orders only** — append a full TRADE row matching the schema at the top
-of `TRADE-LOG.md`:
+**This step is MANDATORY on every execution path — including a pre-market HOLD,
+a gate-rejected-everything run, and a zero-fill run.** Rule 18's cadence sweep
+looks for the literal token `- market-open $DATE:` in this file; a run that
+writes nothing is indistinguishable from a cron skip. This gap tripped Rule 18
+on 2026-07-08, 2026-07-14 and 2026-07-24.
 
+**Always, first — the Market-Open Run row.** Before any per-order rows, append:
+
+```
+## $DATE — Market-Open Run (Day N, <Weekday>, Week W Day D)
+
+- market-open $DATE: <N> orders placed, <K> filled. Pre-market Decision=<TRADE|HOLD>.
+  <One paragraph: for each idea, whether it passed or which gate rejected it and by
+  how much; HEADROOM at STEP 2; deployment %, ETF-core % of deployed, sector spread;
+  satellite slots used; week trade budget used/5; Rule 13/14/15 applicability.>
+- Rule 14 DTC: <N> (source=api|local|none|error) — <buy-side buffer check only, no
+  sells this run | buy-side buffer check + STEP 0 Rule 18 catch-up: <K> catch-up
+  sell(s) executed, each with its own pre-flight>. If this row is written from a
+  STEP 1 halt (before STEP 3 ever ran), record `n/a (halted before gate evaluation)`
+  instead of a number/source.
+```
+
+The `Rule 14 DTC:` line is the literal token the weekly review greps for to
+confirm the gate genuinely ran on the buy side too — write it every time this row
+is written, including the STEP 1 halt copies of this row (see STEP 1), using the
+`n/a` form there since STEP 3's `alpaca.sh dtc` call hasn't happened yet.
+
+On a HOLD or zero-order run this row is the *entire* output of the step — write it
+and proceed to STEP 8. Never skip STEP 7.
+
+**Filled orders** — additionally append a full TRADE row matching the schema at the
+top of `TRADE-LOG.md`:
 ```
 ### YYYY-MM-DD — TRADE: TICKER side=buy qty=N
 - Entry: $X

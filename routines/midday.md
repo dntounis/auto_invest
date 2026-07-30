@@ -28,13 +28,33 @@ done
 ```
 - Sanity checks: `ALPACA_ENDPOINT` contains `paper-api.alpaca.markets`; `TRADING_ENABLED == "true"`.
   If either fails, STOP, Telegram-alert, exit.
+- **On an environment STOP, deliberately write NOTHING to TRADE-LOG.md** *(v3.3 —
+  do not "fix" this by analogy with `market-open`, which does write a halt row)*.
+  The asymmetry is intentional: a missing `- midday $DATE:` row is exactly the
+  signal `daily-summary`'s Rule 18 sweep uses to fire the midday catch-up and run
+  the Rule 7/8/16 evaluation this run never reached. Writing a cadence token here
+  would tell the sweep midday ran and **suppress the recovery** — the opposite of
+  what the token is for. `market-open` writes a halt row precisely because it has
+  no recoverer and because its STEP 0 catch-ups must not be misread as cleared.
+  The Rule 14 abort paths are different again: those *did* evaluate, so they DO
+  write the cadence line (STEP 5, STEP 6).
 
 ## IMPORTANT — VISA-AWARE RULES (read before acting)
 
-- **Rule 14 (pre-flight):** Before placing ANY sell, you MUST read
-  `account.daytrade_count` from STEP 2. If it is ≥ 2, ABORT all sell actions,
-  send a Telegram URGENT alert "midday $DATE: aborted sells, daytrade_count=N",
-  commit a no-op note to TRADE-LOG.md, and exit. Do not work around this.
+- **Rule 14 (pre-flight):** Before placing ANY sell, you MUST resolve `DTC` and
+  `DTC_SOURCE` per STEP 2 *(v3.3 — `alpaca.sh dtc`, with an activities-primary
+  local fallback; never treat an absent field as 0)*. If `DTC >= 2`, or
+  `DTC_SOURCE` is `none` or `error`, **ABORT all sell actions** — and *only* the
+  sell actions. Send a Telegram URGENT alert "midday $DATE: aborted sells,
+  daytrade_count=N source=S" and write the abort note to TRADE-LOG.md.
+  **A Rule 14 abort blocks sells; it does not end the run** *(v3.3 — the previous
+  "and exit" wording contradicted STEP 2 and Rule 14 itself, and propagated into
+  daily-summary's catch-up, where obeying it would have skipped STEP 4 and left
+  today's new positions with no Rule 13 stop at all)*. Still perform every
+  non-sell action: stop tightenings via `replace-stop`, `DECAY-FLAG` state rows,
+  STEP 6's mandatory `- midday $DATE:` cadence line and `Rule 14 DTC:` audit line,
+  STEP 7's Telegram and STEP 8's commit. Already-placed GTC stops are unaffected.
+  Do not work around the sell block.
 - **Rule 15 (same-day skip):** A position is "actionable" only if
   `entry_date < today`. Same-day positions (opened earlier today by market-open)
   are READ-ONLY in this routine. Do not close them. Do not adjust their stops.
@@ -60,19 +80,83 @@ done
 ## STEP 2 — Pull live paper-account state
 
 ```
-bash scripts/alpaca.sh account     # equity + daytrade_count (CRITICAL for Rule 14)
+bash scripts/alpaca.sh dtc         # day-trade count + source (CRITICAL for Rule 14)
+bash scripts/alpaca.sh account     # equity
 bash scripts/alpaca.sh positions   # current positions with avg_entry_price + market_value
 bash scripts/alpaca.sh orders open # open trailing-stop orders (for replace-stop)
 ```
 
-Capture `account.daytrade_count` as `DTC`. If `DTC >= 2`, jump immediately to
-the abort path described in Rule 14 (skip steps 3–6, write the abort note to
-TRADE-LOG.md, Telegram URGENT, commit, exit).
+**Resolve `DTC` and `DTC_SOURCE` (Rule 14, v3.3 — fail safe, never fail open):**
 
-On DTC abort, append to memory/TRADE-LOG.md:
+1. Parse `bash scripts/alpaca.sh dtc`. If `source == "api"`, set `DTC` to
+   `daytrade_count` and `DTC_SOURCE=api`. Done.
+2. If `source == "unavailable"` — the call **succeeded** but the paper endpoint
+   omits the field — derive the count locally per the procedure below, with
+   `DTC_SOURCE=local`.
+3. If `source == "error"` — the `dtc` HTTP call itself failed (non-zero curl
+   status or a non-JSON body: 5xx, timeout, DNS, bad creds) — **nothing** is known
+   about the account. Set `DTC_SOURCE=error` and go to (4). Do **NOT** fall back to
+   the local derivation: under Rules 13/15 it is structurally 0, so treating a
+   transport failure as `unavailable` would silently downgrade this visa-critical
+   gate to a derived zero and let a whole sell batch through. `unavailable` means
+   "the broker answered and genuinely has no field"; `error` means "the broker did
+   not answer".
+4. If `DTC_SOURCE == error`, or `source == "unavailable"` but TRADE-LOG.md cannot
+   be read at all (`DTC_SOURCE=none`): **block every routine-initiated sell**, send
+   Telegram URGENT ("Rule 14: day-trade count unresolvable (source=none|error) —
+   sells blocked, manual review required"), and continue with non-sell actions only
+   (stop tightenings are not sells and remain permitted; already-placed GTC stops
+   are unaffected).
+
+**Local derivation (used only for `source == "unavailable"`) — v3.3, broker-first.**
+The bot's own log records only what the bot itself did; a GTC trailing stop that
+filled on a day the bot also traded that name, a partial-fill re-entry, or any
+manual action taken in the Alpaca UI is invisible to it. So consult the broker
+first:
+- **Primary evidence — `bash scripts/alpaca.sh activities`** (read-only, no
+  kill-switch gate; takes an optional `YYYY-MM-DD` arg and defaults to today in
+  America/Chicago). Call it once per business day over the **last 5 business days**
+  and count symbols with BOTH a `FILL`/`PARTIAL_FILL` on `side=buy` AND one on
+  `side=sell` on the **same** activity date. That count is the day-trade count.
+- **Corroboration — `memory/TRADE-LOG.md`.** Scan the same 5 business days for
+  tickers with BOTH a `side=buy` row AND a `side=sell` / `SCALE-OUT` /
+  `ROTATE-EXIT` row dated the same calendar day. Take `DTC = max(activities_count,
+  tradelog_count)` — never the minimum, and never the TRADE-LOG figure alone. If
+  the two disagree, the broker saw a round trip the bot did not log: send a
+  Telegram URGENT naming the ticker and date.
+- If `activities` fails for any day in the window, fall back to the TRADE-LOG
+  figure for the whole window and note `source=local (activities unavailable)` in
+  the audit line — a degraded but still non-zero-capable derivation.
+Rules 13 and 15 make this count structurally 0. If it is **not** 0 from either
+evidence source, send a Telegram URGENT ("Rule 14: local day-trade count is N —
+Rule 13/15 may have been bypassed") and treat it as a genuine DTC.
+
+Never record "field absent, treated 0". Every routine that evaluates Rule 14 MUST
+log the literal token `Rule 14 DTC: <N> (source=api|local|none|error)` in its
+TRADE-LOG row so the weekly review can audit whether the gate was genuinely
+exercised.
+
+If `DTC >= 2` (from any source), or `DTC_SOURCE` is `none` or `error`, take the
+abort path described in Rule 14. **The abort blocks sells only — it does not end
+the run** *(v3.3)*:
+- **Skipped:** every sell in STEP 5 — Rule 7 hard-close, Rule 8 scale-out, Rule 16
+  rotation exit, Rule 10 sector-kill. List them in the abort note as
+  "would-be actions" instead of executing them.
+- **Still performed:** STEP 3's actionable filter and STEP 4's evaluation (you
+  cannot list the would-be actions without them); Rule 8/9 stop tightenings via
+  `replace-stop` (a GTC order, not a sell, and the only protection left on a
+  position the gate has just refused to let you exit); `DECAY-FLAG` rows (the
+  Rule 16 consecutiveness state — dropping it corrupts the next midday's chain);
+  STEP 6's mandatory `- midday $DATE:` cadence line and `Rule 14 DTC:` audit line
+  *(the old "skip steps 3–6" language silently dropped the Rule 18 cadence token
+  on an abort day, making a DTC abort indistinguishable from a cron skip to
+  daily-summary's sweep)*; then the abort note, Telegram URGENT, commit at STEP 8.
+
+On DTC abort, append to memory/TRADE-LOG.md — STEP 6's mandatory `- midday $DATE:`
+and `Rule 14 DTC:` lines first, then:
 ```
-### YYYY-MM-DD — MIDDAY ABORT: daytrade_count=N
-- Reason: Rule 14 pre-flight tripped (DTC >= 2)
+### YYYY-MM-DD — MIDDAY ABORT: daytrade_count=N (source=api|local|none|error)
+- Reason: Rule 14 pre-flight tripped (DTC >= 2, or source=none|error)
 - Pending actions skipped: <list of would-be actions>
 - Resolution: manual human review required
 ```
@@ -94,7 +178,9 @@ For each position, compute:
 - `unrealized_pl_pct = (current_price - avg_entry_price) / avg_entry_price * 100`
 
 Drop positions where `entry_date == today` (Rule 15). The remaining list is
-"actionable". If the list is empty, skip to STEP 7.
+"actionable". If the list is empty, skip to STEP 6 — it still writes the
+mandatory `- midday $DATE:` cadence line and Rule 14 audit line even with zero
+actionable positions — then continue to STEP 7.
 
 ## STEP 4 — Decide actions per actionable position
 
@@ -103,8 +189,34 @@ fires, skip the rest for that position. The profit ladder (2) may both scale out
 AND tighten in the same run; momentum-decay (3) only ever fires on losers below
 entry, so (2) and (3) are mutually exclusive in practice.
 
-Determine each position's `tier` (`core` | `satellite`) from its latest BUY row in
-TRADE-LOG.md (the `Tier:` field). Default to `core` if the field is absent.
+Determine **two different attributes** for each position, and keep them distinct
+*(v3.3 — this section previously introduced a single `tier` in role vocabulary and
+then passed it straight into an instrument-typed flag)*:
+
+- **`TIER` — the position's portfolio ROLE**, `core` | `satellite`, read from the
+  `Tier:` field on its latest BUY row in TRADE-LOG.md. Default to `core` if the
+  field is absent. This is what the ETF-core floor, the ≤3-satellite limit and the
+  ≤2-satellites-per-sector cap count, and what the audit rows record.
+- **`LADDER_TIER` — the INSTRUMENT type**, `etf` | `stock`. This is the **only**
+  value that may be passed to `sizing.py ladder --tier`. The `LADDERS` table in
+  `scripts/sizing.py` is keyed on instrument type because the thresholds differ by
+  how a broad fund moves versus a single name (`etf` +4/+7/+10/+15 vs `stock`
+  +6/+10/+15/+25).
+
+**Derive `LADDER_TIER` from what the instrument actually is** — a sector or
+broad-market fund (XLE, XLK, SPY, …) is `etf`; one company's shares is `stock` —
+**not** by assuming `core == etf`. The two vocabularies line up today only because
+every core holding happens to be an ETF; they are not synonyms. The first time a
+core position is a single stock, or a satellite is an ETF, the role→instrument
+shortcut would select the wrong ladder *and the call would still succeed*, so the
+error would be invisible.
+
+**Fallback only**, when the instrument type genuinely cannot be determined:
+`core` → `etf`, `satellite` → `stock`. That is a fallback, not the definition —
+say so in the row that records it.
+
+`sizing.py ladder` accepts only `etf|stock`; passing a role value aborts the call.
+Bind `LADDER_TIER` explicitly here, before any ladder call, and pass that.
 
 1. **Hard-close** (Rule 7) — `unrealized_pl_pct ≤ -7`:
    - Action: market sell entire position
@@ -116,7 +228,10 @@ TRADE-LOG.md (the `Tier:` field). Default to `core` if the field is absent.
    # OID/QTY/trail_percent). hwm is the peak price Alpaca tracked since the stop was placed.
    # HWM_GAIN = (hwm - avg_entry_price) / avg_entry_price * 100
    # If the position has no open trailing stop yet (no hwm), omit --hwm-pct entirely.
-   LADDER_JSON=$(python3 scripts/sizing.py ladder --tier "$TIER" --unrealized-pct "$UPCT" --hwm-pct "$HWM_GAIN")
+   #
+   # --tier takes LADDER_TIER (the INSTRUMENT type, etf|stock) — never $TIER, which
+   # is the portfolio role (core|satellite) and is not a valid value for this flag.
+   LADDER_JSON=$(python3 scripts/sizing.py ladder --tier "$LADDER_TIER" --unrealized-pct "$UPCT" --hwm-pct "$HWM_GAIN")
    ```
    `--hwm-pct` makes `target_trail_pct` reflect the highest tier the position reached
    intraday (catching a post-midday spike that reversed), while `scaleouts_due` stays on
@@ -191,15 +306,82 @@ bash scripts/alpaca.sh scale-out TICKER $SELL_QTY   # $SELL_QTY from sizing.py s
 bash scripts/alpaca.sh replace-stop EXISTING_ORDER_ID TICKER QTY NEW_TRAIL_PCT
 ```
 
-After each individual sell, refresh `account.daytrade_count`:
+After each individual sell, re-resolve `DTC` / `DTC_SOURCE` via the same
+four-source procedure as STEP 2 — **never** re-read `account.daytrade_count`
+directly; the paper endpoint omits the field and an unguarded
+`['daytrade_count']` subscript raises, leaving `DTC` empty and the loop
+fail-open by default:
 ```
-DTC=$(bash scripts/alpaca.sh account | python3 -c "import json,sys; print(json.load(sys.stdin)['daytrade_count'])")
+bash scripts/alpaca.sh dtc
 ```
+- `source == "api"`: set `DTC` to the returned `daytrade_count`, `DTC_SOURCE=api`.
+- `source == "unavailable"`: re-derive the local count exactly as in STEP 2
+  (`activities` as primary evidence, TRADE-LOG as corroboration, `max` of the two),
+  then ADD the number of sells already executed earlier in *this* STEP 5 loop —
+  those sells may not yet appear in `activities` and definitely haven't hit
+  TRADE-LOG.md yet (STEP 6 logs after the loop finishes), so the raw scan would
+  undercount them. The sum is `DTC`, `DTC_SOURCE=local`.
+- `source == "error"`: the `dtc` call itself failed — `DTC_SOURCE=error`. Abort as
+  below. Never substitute the local derivation here (see STEP 2 (3)).
+- Any other outcome — unparseable value, missing `source`, or TRADE-LOG.md
+  unreadable for the local fallback — is `DTC_SOURCE=none`.
+- On `DTC_SOURCE` of `error` **or** `none`: **ABORT all remaining sells in this
+  batch immediately** (do not place another sell and do not continue the loop on a
+  guess), send a Telegram URGENT ("Rule 14: day-trade count unresolvable mid-loop
+  (source=none|error) — remaining sells blocked, manual review required"), then
+  **proceed to STEP 6 — do NOT exit** *(v3.3, see below)*. An empty, unparseable,
+  or missing value is never a pass.
 
-If `DTC` reaches 2 mid-loop, ABORT remaining sells (sector-kill or otherwise),
-send URGENT Telegram, commit progress so far, exit.
+If `DTC >= 2` (from any source) mid-loop, ABORT remaining sells (sector-kill or
+otherwise), send URGENT Telegram, then **proceed to STEP 6 — do NOT exit**.
+
+**A mid-loop abort obeys the same contract as every other Rule 14 abort: it blocks
+sells, it does not end the run** *(v3.3 — this path previously said "commit
+progress so far, exit", contradicting the preamble, STEP 2 and Rule 14 itself)*.
+After aborting the remaining sells, still:
+- write STEP 6's mandatory `- midday $DATE:` cadence line and the `Rule 14 DTC:`
+  audit line (both are mandatory on **every** path, this one included);
+- write the rows already earned in this run — EXIT / `SCALE-OUT` rows for sells that
+  completed *before* the abort, plus every stop tightening and `DECAY-FLAG` row from
+  STEP 4, none of which are sells;
+- send STEP 7's Telegram and commit at STEP 8.
+
+Exiting here instead would write no cadence token, so `daily-summary`'s Rule 18
+sweep would read the day as a cron skip, re-run midday's evaluation and write
+**duplicate `DECAY-FLAG` rows** on a day that already had correct ones — corrupting
+the Rule 16 consecutiveness chain — and the weekly `Rule 14 DTC:` audit sweep would
+report a spurious audit gap for a day the gate actually ran and did its job.
 
 ## STEP 6 — Append action rows to `memory/TRADE-LOG.md`
+
+**MANDATORY on every execution path, without exception (v3.3)** — a NO-ACTION day
+(STEP 3 finds zero actionable positions, or STEP 4 schedules zero actions), **every
+Rule 14 abort path — STEP 2's pre-flight abort and STEP 5's mid-loop abort alike** —
+and every ordinary run. No abort, at any step, may reach `exit` without passing
+through this step first. Before anything else, append the literal Rule 18 cadence
+token:
+```
+- midday $DATE: <N> sells, <K> scale-outs, <M> stop-tightenings, <P> decay-flags (or "DTC ABORT (STEP 2 pre-flight)" / "DTC ABORT (STEP 5 mid-loop, K sells completed before abort)" if this run aborted).
+```
+This is the line `daily-summary`'s Rule 18 cadence sweep searches for to confirm
+midday genuinely ran today. Writing nothing here — on a NO-ACTION day or a DTC
+abort — is indistinguishable from a cron skip, and worse: if daily-summary wrongly
+concludes midday didn't run, it re-runs the evaluation and writes duplicate
+DECAY-FLAG rows on a day that already had correct ones, corrupting the Rule 16
+consecutiveness chain (v3.3 catch-up). Never skip this line, on any path, for any
+reason.
+
+**Then, first among the rest — the Rule 14 audit line.** Before any action-specific
+rows below — and even if STEP 3 found zero actionable positions or STEP 4 scheduled
+zero actions — append one line to `memory/TRADE-LOG.md`, on every run:
+```
+- Rule 14 DTC: <N> (source=api|local|none|error) (sell attempted: yes|no)
+```
+Use the final resolved `DTC` / `DTC_SOURCE` for this run: the last STEP 5
+mid-loop refresh if any sell was attempted, otherwise the STEP 2 value. This is
+the literal token the weekly review greps for to confirm Rule 14 genuinely ran
+— a run that writes nothing is indistinguishable from the fourteen weeks where
+the gate silently never executed. Never skip this line.
 
 For each completed sell, append an EXIT trade row:
 ```
@@ -216,14 +398,20 @@ For each completed sell, append an EXIT trade row:
 For each stop tightening, append a STOP UPDATE row:
 ```
 ### YYYY-MM-DD — STOP UPDATE: TICKER trail %X -> %Y
-- Trigger: Rule 8 profit ladder, tier=<core|satellite>, unrealized +X%
+- Trigger: Rule 8 profit ladder, tier=<core|satellite>, ladder=<etf|stock>, unrealized +X%
 - New stop order ID: <id from replace-stop response>
 ```
+Record **both** vocabularies: `tier=` is the portfolio role, `ladder=` is the
+instrument type actually passed to `sizing.py ladder --tier` *(v3.3 — historical
+rows recorded sometimes one and sometimes the other, e.g. `ladder, tier=core` in
+early rows and `ladder (tier=etf)` from v3.2 on, which is precisely the ambiguity
+this split removes)*. If `ladder=` came from the fallback rather than from the
+instrument, append `(fallback)`.
 
 For each scale-out partial sell, append a SCALE-OUT row (v3):
 ```
 ### YYYY-MM-DD — SCALE-OUT: TICKER qty=N (scale-out slice, M before)
-- Tier: <core|satellite>
+- Tier: <core|satellite> (role) | Ladder: <etf|stock> (instrument type passed to --tier)
 - Trigger: Rule 8 ladder, unrealized +X% (scale-out #K of 2)
 - Realized P&L on slice: $X (X.X%)
 ```

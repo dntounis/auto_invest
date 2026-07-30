@@ -25,6 +25,7 @@ bash scripts/alpaca.sh positions
 # Note: activities is a single-day filter (?date=). For week trade data,
 # rely on TRADE-LOG.md (read in Step 1).
 bash scripts/alpaca.sh activities    # today only sanity check
+bash scripts/alpaca.sh bars SPY 1Day 10  # benchmark (v3.3)
 ```
 
 ## Step 3 — Compute grade card
@@ -34,17 +35,27 @@ bash scripts/alpaca.sh activities    # today only sanity check
 | Starting portfolio | EOD snapshot from prior Friday (or Day 0 baseline if week 1) |
 | Ending portfolio | `account.equity` |
 | Week return | (ending - starting) / starting * 100, $ and % |
-| S&P 500 week | from Perplexity if available, else "n/a" |
-| Bot vs S&P | week_return - S&P 500 week (positive = beat the market) |
-| Alpha vs SPX (v3) | headline alpha = Bot vs S&P, stated explicitly |
+| S&P 500 week | **`bash scripts/alpaca.sh bars SPY 1Day 10` (v3.3) — never web search. Chain from prior WEEKLY-REVIEW.md entry, never re-query.** `prior_review_close` from prior entry's recorded `last_close` (protects against Alpaca's retroactive adjustments). Only `last_close` from fresh bars pull. Bootstrap: if prior entry has no recorded SPY close, take `prior_close` from bars query and note "bootstrapped" in provenance. If target date is holiday or absent in 10 bars, use most recent trading day's close (note date used) or retry with 20 bars. Mark "n/a" only if no trading day found — never substitute a web figure. Report: `X.XX% (SPY $A <prior-date> → $B <last-date>, Alpaca bars)`. |
+| Bot vs S&P | `week_return - spy_week_return`; both legs from Alpaca prices |
+| Alpha vs SPX (v3) | same as Bot vs S&P. **Never revise a prior week's benchmark figure** — append footnote to CURRENT entry naming the prior week, never edit historical entry |
 | Core/satellite attribution (v3) | P&L of `Tier: core` vs `Tier: satellite` positions (no Tier field = core) |
 | Trades placed | count of BUY rows in TRADE-LOG.md this week |
 | Win rate | (closed winners) / (closed total) |
 | Best trade | highest realized P&L % |
 | Worst trade | lowest realized P&L % |
 | Profit factor | sum(gains) / abs(sum(losses)) |
-| daytrade_count delta | `account.daytrade_count` now vs last week's `WEEKLY-REVIEW.md` entry (or 0 / "n/a (week 1)") |
-| Rule violations | scan TRADE-LOG.md for: positions > 20%, missing trailing stops, -7% closes that exceeded -10%, Rule 13 violations, Rule 14 abort events |
+| daytrade_count delta | **`bash scripts/alpaca.sh dtc`, never raw `account.daytrade_count`** *(v3.3 — absent on paper)*. Resolve per midday Step 2 (`api` → use it; `unavailable` → derive locally, activities-primary; `none`/`error` → unresolvable). Compare vs last week's `WEEKLY-REVIEW.md` entry (or 0 / "n/a (week 1)"). Report the source alongside: `0 -> 1 (source=api)`, `unresolvable (source=error)` |
+| Rule violations | scan TRADE-LOG.md for: positions > 20%, missing trailing stops, -7% closes that exceeded -10%, Rule 13 violations, Rule 14 abort events, **Rule 14 audit gaps (below)** |
+
+**Rule 14 audit-token sweep (v3.3).** `grep -c 'Rule 14 DTC:'` over this week's
+TRADE-LOG rows (`WEEK_START`..`DATE`). market-open and midday each must write the
+token once per trading session on every path (HOLD, zero-fill, NO-ACTION, DTC
+abort), so expect `2 × sessions` plus one per manual `/trade`. Check session by
+session and **name every session missing either token as a `Rule 14 audit gap`** —
+a gap is a finding even with no sell attempted, because the gate cannot be shown to
+have run. Prompts are re-pasted by hand, so a stale paste drops the token silently;
+this sweep is the only detector, and its previous absence is the missing-detector
+shape that let the original Rule 14 fail-open survive fourteen weeks.
 
 ## Step 4 — Append week-summary to `memory/TRADE-LOG.md` (locally)
 ```

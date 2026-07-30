@@ -63,16 +63,25 @@ Save. Smoke-test with Run now before relying on cron.
 
 The v2 system avoids day trades by construction:
 
-- `market-open` only places BUYs. It cannot create a same-day exit.
+- `market-open` places BUYs on its ordinary path. Its one exception is STEP 0's
+  Rule 18 catch-up, which executes sells a *previous* day's missed `midday`
+  already owed — aged positions by construction, so no same-day exit is
+  possible *(v3.3)*.
 - `daily-summary` places trailing stops at 15:00 CT (= market close). They
   enter the GTC book but cannot fire same-day (regular session is over and
-  `extended_hours: false`). Earliest possible fire is T+1.
-- `midday` and `weekly-review` skip positions opened today (Rule 15) and
-  pre-flight `account.daytrade_count` before any sell (Rule 14).
+  `extended_hours: false`). Earliest possible fire is T+1. If `daily-summary`
+  is skipped, the next `pre-market` places the stops it owed *(v3.3)*.
+- `midday`, `market-open` STEP 0, `weekly-review` and `/trade` skip positions
+  opened today (Rule 15) and run the Rule 14 pre-flight before any sell —
+  via `bash scripts/alpaca.sh dtc`, **never** a raw `account.daytrade_count`
+  read, which is absent on the paper endpoint and must never be read as 0
+  *(v3.3)*.
 
-If `daytrade_count` ever reaches 2, the routines abort all sells and Telegram
+If the day-trade count ever reaches 2, the routines abort all sells and Telegram
 URGENT — leaving manual sells to a human review (one buffer slot before the
-PDT designation threshold of 4).
+PDT designation threshold of 4). The same abort fires when the count cannot be
+resolved (`source=none` or `source=error`). An abort blocks **sells only**: stop
+placement, stop tightenings, log rows and commits all still happen.
 
 ## Why "no `.env` file in cloud"
 

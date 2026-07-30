@@ -20,7 +20,7 @@ In v1, only EOD snapshots are written (by the `daily-summary` routine). Trade ro
 
 ### EOD snapshot (v1)
 ```
-### MMM DD — EOD Snapshot (Day N, Weekday)
+## MMM DD — EOD Snapshot (Day N, Weekday)
 **Portfolio:** $X | **Cash:** $X (X%) | **Day P&L:** ±$X (±X%) | **Phase P&L:** ±$X (±X%)
 
 | Ticker | Shares | Entry | Close | Day Chg | Unrealized P&L | Stop |
