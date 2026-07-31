@@ -1831,3 +1831,31 @@ Pre-market Decision: HOLD / TRADE-READY (conditional TRADE per rationale); three
 - Catalyst: pm-2026-07-31-XLV (link to RESEARCH-LOG entry)
 - Target: $196.22 (R:R 2:1)
 - Realized P&L: n/a (open position)
+
+### 2026-07-31 — DECAY-FLAG: XLU flag=1
+- unrealized -2.59% | 10-session pos -1.25% vs SPY +0.25% | prior_flag=1 | rotate=1
+
+### 2026-07-31 — TRADE: XLU side=sell qty=44
+- Exit: $44.58
+- Stop level: <was: trail 10% $41.9625 GTC fa8eb3f2 (hwm $46.625) — fired: no; cancelled at 12:04 CT to free qty_available for the rotation exit, then position closed; no orphan order>
+- Sector: Utilities (S&P 500 Utilities Select Sector SPDR ETF)
+- Thesis: closed via Rule 16 momentum-decay rotation — 2nd consecutive midday flag (Jul 30 flag=1 -> Jul 31 flag=1), below entry AND lagging SPY 10-session
+- Catalyst: links back to pm-2026-07-15-XLU
+- Target: <was $50.38, R:R 2:1>
+- Realized P&L: -$53.68 (-2.66%)
+
+### 2026-07-31 — MIDDAY: ROTATE-EXIT XLU (Rule 16 momentum-decay, 2nd consecutive flag)
+- midday 2026-07-31 (Day 71, Fri, Week 14 Day 5): env verified (ALPACA_ENDPOINT=paper-api ✓, TRADING_ENABLED=true ✓).
+- **Rule 14 pre-flight:** `alpaca.sh dtc` → `{"daytrade_count": null, "source": "unavailable"}` (paper endpoint omits the field; the call itself SUCCEEDED, so this is `unavailable`, not `error` → local derivation permitted per STEP 2(2)). Broker-first local derivation over the last 5 business days (Jul 27/28/29/30/31): `activities` shows Jul 31 buys only (XLV 6 sh, BIIB 7 sh), Jul 29 a lone XLI *sell*, Jul 27/28 empty, Jul 30 fee rows only → **zero symbols with both a buy and a sell fill on the same date → activities_count=0**. TRADE-LOG corroboration over the same window agrees (XLI sell Jul 29 was a GTC stop on a May-13 entry; BIIB/XLV Jul 31 are buys with no matching sell) → tradelog_count=0. `DTC = max(0,0) = 0`, **DTC_SOURCE=local**, sources agree (no URGENT). 0 < 2 → **sells PERMITTED**.
+- **5 open positions; 2 opened today (BIIB, XLV) → Rule 15 READ-ONLY, excluded. 3 actionable**: XLB (entered 2026-05-18), XLRE (2026-07-13), XLU (2026-07-15) — all entry_date < today, all have BUY rows (no desync). TIER (role) = core for all three; LADDER_TIER (instrument) = **etf** for all three, derived from the instrument itself (SPDR sector funds), not from the role shortcut.
+- Unrealized vs entry (positions.current_price, not quote.ap): **XLB +0.99%** ($50.575 vs $50.08, hwm-gain +6.45% hwm $53.31), **XLRE +0.77%** ($45.135 vs $44.79, hwm-gain +3.72% hwm $46.455), **XLU -2.59%** ($44.615 vs $45.80).
+- **Rule 7 hard-close (≤-7%):** none (worst XLU -2.59%).
+- **Rule 8 ladder (`sizing.py ladder --tier etf`, hwm-aware):** **XLB** target_trail=7% == current stop 7% → not strictly less, Rule 9 no-tighten; scaleouts_due=0 → no action. **XLRE** target=null (hwm-gain +3.72% below the +4% tier), scaleouts_due=0 → no action. **XLU** below entry → not ladder-eligible. **0 scale-outs, 0 tightenings.**
+- **Rule 16 momentum-decay:** XLU the only below-entry (flag-eligible) name. 10-session returns from `alpaca.sh bars ... 1Day 11` (last close vs close 10 bars earlier): XLU $44.605 vs $45.17 = **-1.25%**; SPY $745.13 vs $743.29 = **+0.25%** → XLU lags SPY by 1.50pp. `decay(upct -2.5873, pos_ret -1.2508, spy_ret 0.2476, prior_flag 1)` = **flag=1, rotate=1** — **2nd consecutive midday flag → ROTATION FIRES** (Jul 30 armed the chain, Jul 31 confirmed it). XLB/XLRE above entry → not eligible, no rows.
+- **Rule 10 sector-kill:** held sectors Materials / Real Estate / Utilities / Health Care; scan of the last 20 exits shows losses only in Consumer Staples (Jun 3, Jul 10 — 2 consecutive, doomed but **not held**), Energy (Jun 15, 1), Info Tech (Jul 2, 1); last Industrials exit (XLI Jul 29) was a WIN → **no doomed sector among held names.**
+- **Execution:** `close XLU` first returned **HTTP 403** — all 44 sh were `qty_available: 0`, reserved by the open GTC trailing stop. Cancelled stop `fa8eb3f2` (a cancel, not a sell — no DTC impact), re-verified `qty_available: 44`, then re-issued the close: order `53b0abdb-df77-45fd-8ec7-7e6e9875e180`, market sell 44 sh, **filled in 4 partials all @ $44.58** (36+1+6+1). Realized **-$53.68 (-2.66%)**. Not a day trade — XLU held since 2026-07-15 (~2.5 weeks).
+- **Post-sell Rule 14 re-check:** `dtc` again `source=unavailable` → re-derived locally (activities Jul 31 now shows XLU *sells* but still no XLU buy today → no round trip, count 0) **+ 1 sell executed earlier in this STEP 5 loop** per the conservative STEP 5 rule = **DTC 1 (source=local)**, still < 2. No further sells were scheduled.
+- **Book after:** 4/6 positions — BIIB (Health Care, satellite) / XLB (Materials, core) / XLRE (Real Estate, core) / XLV (Health Care, core). Utilities exposure now **zero**. Rule 17: no unresolved STOP-PLACEMENT-FAILED markers; XLB 9b627571 (7%) and XLRE 16d5a6b2 (10%) remain armed and untouched; XLU's stop was consumed by the rotation (no orphan). **BIIB and XLV still carry `Stop level: pending` — daily-summary must arm both at 15:00 CT per Rule 13.**
+- **Telegram: sent** (rotation is a money-moving action).
+- midday 2026-07-31: 1 sells, 0 scale-outs, 0 stop-tightenings, 1 decay-flags.
+- Rule 14 DTC: 1 (source=local) (sell attempted: yes)
