@@ -244,6 +244,56 @@ invisible to the detector and report a false missing daily-summary.)*
 Notes should mention what the morning's research said, how many positions were opened
 or closed today, and whether any trailing stops were placed.
 
+## STEP 6b — Append the machine-readable metrics record (v3.4, MANDATORY)
+
+The EOD snapshot in STEP 6 is prose for humans. This step writes the same
+session as one JSON line for `weekly-review`'s scorecard. **It runs on every
+session, including no-action days** — a missing line is indistinguishable from a
+missing session and will FAIL the cadence criterion.
+
+Compute the base record deterministically — never by hand:
+
+```
+# SPY closes: last two daily bars. spy_prior_close is the second-to-last.
+bash scripts/alpaca.sh bars SPY 1Day 3
+BASE=$(python3 scripts/metrics.py daily \
+    --date "$DATE" --mode "${TRADING_MODE:-paper}" \
+    --equity "$EQUITY" --prior-equity "$PRIOR_EQUITY" --lmv "$LONG_MARKET_VALUE" \
+    --spy-close "$SPY_CLOSE" --spy-prior-close "$SPY_PRIOR_CLOSE" \
+    --positions "$POS_COUNT")
+```
+
+Then merge in the observed fields for the session and append **one single-line**
+JSON object to `memory/METRICS.jsonl` (compact, no indentation — one record per
+line, the file is append-only and is never rewritten):
+
+| Field | Source |
+|---|---|
+| `rule14.dtc` / `.source` | today's `Rule 14 DTC:` audit token |
+| `rule14.tokens_expected` | `2` on a normal session (market-open + midday); `1` if a routine legitimately did not run (holiday) |
+| `rule14.tokens_found` | count of `Rule 14 DTC:` tokens in today's TRADE-LOG rows |
+| `rule14.accurate` | `false` if the recorded count differs from the true same-day round-trip count, else `true` *(see Task 6)* |
+| `rule16.rotations` | ROTATE-EXIT rows written today |
+| `rule16.suppressed` | `DECAY-SUPPRESSED` rows written today *(Task 4)* |
+| `rule16.shallow_rotations` | rotations today whose position was shallower than **-2.0%** vs entry AND where SPY's 10-session return exceeded **+3.0%** — the exact condition the Task 3 guard exists to prevent. Should be 0 once the guard ships |
+| `rule5.triggered` | `true` if today's market-open armed the re-deployment trigger *(Task 5)* |
+| `rule8.scaleouts` / `.tightenings` | SCALE-OUT and STOP UPDATE rows today |
+| `ops.routines_expected` | `4` on a normal session (pre-market, market-open, midday, daily-summary) |
+| `ops.routines_logged` | how many of those four actually logged, per STEP 0's sweep |
+| `ops.missing` | array of names STEP 0 found missing (`[]` when clean) |
+| `ops.unprotected_positions` | held positions with no open GTC trailing stop after STEP 4 |
+| `ops.stops_placed` | stops placed this session |
+| `trades.buys` / `.sells` | fills today |
+| `breaches` | array of one-line descriptions of any money-moving rule breach observed today (`[]` when clean). A day trade, a stop moved down, a -7% position left open, or a sell placed with `DTC >= 2` all belong here |
+
+Add `memory/METRICS.jsonl` to STEP 8's `git add`.
+
+**Never rewrite or reorder existing lines.** If today's line is already present
+(a re-run), replace only that line and leave every other line byte-identical.
+Every other session — including a pure no-action HOLD day with zero fills, zero
+rotations and zero stops — still gets exactly one appended line; there is no
+condition under which this step is skipped while STEP 6 runs.
+
 ## STEP 7 — Send ONE Telegram message (always)
 
 ≤ 15 lines. Always include the `(paper)` suffix.
@@ -266,7 +316,7 @@ does, an env var is missing; treat it as a routine failure and stop.
 ## STEP 8 — COMMIT AND PUSH (mandatory)
 
 ```
-git add memory/TRADE-LOG.md memory/HEARTBEAT.md
+git add memory/TRADE-LOG.md memory/HEARTBEAT.md memory/METRICS.jsonl
 git commit -m "EOD snapshot $DATE"
 git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/dntounis/auto_invest.git"
 git push origin main

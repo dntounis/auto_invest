@@ -116,6 +116,31 @@ If `HOURS_SINCE >= 48`, set `HEARTBEAT_PREFIX="Heartbeat: ${HOURS_SINCE}h silenc
 ## Step 6 — Append EOD snapshot to `memory/TRADE-LOG.md`
 Use the schema at the top of TRADE-LOG.md. v2 positions table is no longer empty; include open positions with current prices, day chg, unrealized P&L, and active stop levels.
 
+## Step 6b — Append the metrics record (v3.4, MANDATORY — every session, incl. no-action days)
+A missing line == a missing session for the cadence criterion, so this always runs, even on a
+pure HOLD day with zero fills/rotations/stops.
+```
+bash scripts/alpaca.sh bars SPY 1Day 3   # spy_prior_close = 2nd-to-last close
+BASE=$(python3 scripts/metrics.py daily --date "$DATE" --mode "${TRADING_MODE:-paper}" \
+    --equity "$EQUITY" --prior-equity "$PRIOR_EQUITY" --lmv "$LONG_MARKET_VALUE" \
+    --spy-close "$SPY_CLOSE" --spy-prior-close "$SPY_PRIOR_CLOSE" --positions "$POS_COUNT")
+```
+Merge in and append **one compact single-line** JSON object to `memory/METRICS.jsonl`
+(append-only — never rewrite or reorder prior lines; a re-run replaces only today's line):
+- `rule14.dtc`/`.source` (today's `Rule 14 DTC:` token), `.tokens_expected` (2 normal, 1 if a
+  routine legitimately skipped), `.tokens_found` (count of today's tokens), `.accurate`
+  (`false` if the recorded count != true same-day round-trip count — Task 6)
+- `rule16.rotations` (ROTATE-EXIT rows today), `.suppressed` (`DECAY-SUPPRESSED` rows — Task 4),
+  `.shallow_rotations` (rotations today shallower than -2.0% vs entry AND SPY 10-session > +3.0%
+  — the Task 3 guard condition; should be 0 once shipped)
+- `rule5.triggered` (re-deployment trigger armed today — Task 5)
+- `rule8.scaleouts`/`.tightenings` (SCALE-OUT / STOP UPDATE rows today)
+- `ops.routines_expected` (4 normal), `.routines_logged` (per Step 0's sweep), `.missing`
+  (`[]` when clean), `.unprotected_positions` (held, no open GTC trail after Step 4), `.stops_placed`
+- `trades.buys`/`.sells` (fills today)
+- `breaches` (`[]` when clean; else one-liners — day trade, stop moved down, -7% left open, sell
+  with `DTC >= 2`)
+
 ## Step 7 — Send ONE Telegram via `telegram.sh`
 ```
 bash scripts/telegram.sh "${HEARTBEAT_PREFIX}*EOD <MMM DD>* (paper)
