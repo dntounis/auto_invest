@@ -267,12 +267,23 @@ Then merge in the observed fields for the session and append **one single-line**
 JSON object to `memory/METRICS.jsonl` (compact, no indentation — one record per
 line, the file is append-only and is never rewritten):
 
+A normal session logs **two** `Rule 14 DTC:` tokens (market-open + midday), not one, and they
+can disagree — Aug 7 2026 logged `0` at market-open and `2` at midday. Task 6 additionally
+extends the token format to `Rule 14 DTC: <N> (source=…) [conservative: <M>]`. The four
+`rule14.*` fields below are defined across *all* of the session's tokens, not the last one
+written, precisely so a future editor cannot "simplify" this into last-writer-wins: `dtc` and
+`dtc_conservative` take the **maximum**, because the higher count is the session's actual risk
+position for the `>= 2` abort regardless of which routine logged it later; `source` takes the
+**weakest**, because a session is only as trustworthy as its worst-sourced token, not its best.
+
 | Field | Source |
 |---|---|
-| `rule14.dtc` / `.source` | today's `Rule 14 DTC:` audit token |
+| `rule14.dtc` | the **maximum `N`** across every `Rule 14 DTC:` token logged this session, where `N` is the count *before* any `[conservative: M]` bracket — `N` is the figure that gates the ≤1 buffer and the `>= 2` abort |
+| `rule14.dtc_conservative` | the **maximum `M`** across the session's tokens where a `[conservative: M]` bracket is present (Task 6); `null` when no token carries the bracket, which is every session until Task 6 ships — include the field from the first record so the series doesn't change shape mid-window |
+| `rule14.source` | the **weakest** source across the session's tokens, ranked `api` (most trustworthy) > `local` > `none`/`error` |
 | `rule14.tokens_expected` | `2` on a normal session (market-open + midday); `1` if a routine legitimately did not run (holiday) |
 | `rule14.tokens_found` | count of `Rule 14 DTC:` tokens in today's TRADE-LOG rows |
-| `rule14.accurate` | `false` if the recorded count differs from the true same-day round-trip count, else `true` *(see Task 6)* |
+| `rule14.accurate` | `false` when **any** recorded `N` in the session differs from the true same-day round-trip count, `true` otherwise *(see Task 6)* |
 | `rule16.rotations` | ROTATE-EXIT rows written today |
 | `rule16.suppressed` | `DECAY-SUPPRESSED` rows written today *(Task 4)* |
 | `rule16.shallow_rotations` | rotations today whose position was shallower than **-2.0%** vs entry AND where SPY's 10-session return exceeded **+3.0%** — the exact condition the Task 3 guard exists to prevent. Should be 0 once the guard ships |

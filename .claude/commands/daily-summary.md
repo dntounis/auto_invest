@@ -127,9 +127,19 @@ BASE=$(python3 scripts/metrics.py daily --date "$DATE" --mode "${TRADING_MODE:-p
 ```
 Merge in and append **one compact single-line** JSON object to `memory/METRICS.jsonl`
 (append-only — never rewrite or reorder prior lines; a re-run replaces only today's line):
-- `rule14.dtc`/`.source` (today's `Rule 14 DTC:` token), `.tokens_expected` (2 normal, 1 if a
-  routine legitimately skipped), `.tokens_found` (count of today's tokens), `.accurate`
-  (`false` if the recorded count != true same-day round-trip count — Task 6)
+- A normal session logs 2 `Rule 14 DTC:` tokens (market-open + midday) and they can disagree
+  (Aug 7 2026: `0` at market-open, `2` at midday); Task 6 adds a `[conservative: M]` bracket.
+  Take max/weakest across *all* of the session's tokens, not last-writer-wins, because the
+  higher count is the real risk position and a session is only as trustworthy as its
+  worst-sourced token:
+  `rule14.dtc` = max `N` across the session's tokens (`N` = count before any `[conservative: M]`
+  bracket — the figure that gates the ≤1 buffer / `>= 2` abort);
+  `.dtc_conservative` = max `M` where present, else `null` (always `null` pre-Task 6, included
+  from the first record so the schema doesn't change shape mid-window);
+  `.source` = weakest source across the session's tokens (`api` > `local` > `none`/`error`);
+  `.tokens_expected` (2 normal, 1 if a routine legitimately skipped);
+  `.tokens_found` (count of today's tokens);
+  `.accurate` = `false` when *any* recorded `N` this session != true same-day round-trip count
 - `rule16.rotations` (ROTATE-EXIT rows today), `.suppressed` (`DECAY-SUPPRESSED` rows — Task 4),
   `.shallow_rotations` (rotations today shallower than -2.0% vs entry AND SPY 10-session > +3.0%
   — the Task 3 guard condition; should be 0 once shipped)
