@@ -116,5 +116,48 @@ out=$(python3 scripts/metrics.py scorecard --file tests/.tmp/fail6.jsonl --since
 assert_contains "$out" '"verdict": "FAIL"'
 assert_contains "$out" 'breaches'
 
-rm -rf tests/.tmp/m.jsonl tests/.tmp/pass.jsonl tests/.tmp/fail*.jsonl
+# --- deployment grace-window boundary (pins REDEPLOY_GRACE_SESSIONS=2) ---
+# Every criterion besides deployment is clean in these fixtures, so the
+# verdict tracks the deployment criterion exactly and a boundary shift is
+# visible as a flipped PASS/FAIL rather than hiding behind another failure.
+start_test "scorecard boundary: exactly 2 consecutive out-of-band sessions PASSes"
+cat > tests/.tmp/boundary2.jsonl <<'EOF'
+{"date":"2026-08-03","daily_alpha_pp":1.0,"cash_drag_pp":0.0,"selection_alpha_pp":1.0,"in_band":false,"deployment_pct":60.0,"ops":{"routines_expected":4,"routines_logged":4,"missing":[],"unprotected_positions":0},"rule14":{"dtc":0,"source":"api","tokens_expected":2,"tokens_found":2,"accurate":true},"rule16":{"rotations":0,"suppressed":0,"shallow_rotations":0},"rule5":{"triggered":false},"breaches":[]}
+{"date":"2026-08-04","daily_alpha_pp":1.0,"cash_drag_pp":0.0,"selection_alpha_pp":1.0,"in_band":false,"deployment_pct":60.0,"ops":{"routines_expected":4,"routines_logged":4,"missing":[],"unprotected_positions":0},"rule14":{"dtc":0,"source":"api","tokens_expected":2,"tokens_found":2,"accurate":true},"rule16":{"rotations":0,"suppressed":0,"shallow_rotations":0},"rule5":{"triggered":false},"breaches":[]}
+EOF
+out=$(python3 scripts/metrics.py scorecard --file tests/.tmp/boundary2.jsonl --since 2026-08-01 2>&1)
+assert_contains "$out" '"verdict": "PASS"'
+
+start_test "scorecard boundary: exactly 3 consecutive out-of-band sessions FAILs deployment with the count named"
+cat > tests/.tmp/boundary3.jsonl <<'EOF'
+{"date":"2026-08-03","daily_alpha_pp":1.0,"cash_drag_pp":0.0,"selection_alpha_pp":1.0,"in_band":false,"deployment_pct":60.0,"ops":{"routines_expected":4,"routines_logged":4,"missing":[],"unprotected_positions":0},"rule14":{"dtc":0,"source":"api","tokens_expected":2,"tokens_found":2,"accurate":true},"rule16":{"rotations":0,"suppressed":0,"shallow_rotations":0},"rule5":{"triggered":false},"breaches":[]}
+{"date":"2026-08-04","daily_alpha_pp":1.0,"cash_drag_pp":0.0,"selection_alpha_pp":1.0,"in_band":false,"deployment_pct":60.0,"ops":{"routines_expected":4,"routines_logged":4,"missing":[],"unprotected_positions":0},"rule14":{"dtc":0,"source":"api","tokens_expected":2,"tokens_found":2,"accurate":true},"rule16":{"rotations":0,"suppressed":0,"shallow_rotations":0},"rule5":{"triggered":false},"breaches":[]}
+{"date":"2026-08-05","daily_alpha_pp":1.0,"cash_drag_pp":0.0,"selection_alpha_pp":1.0,"in_band":false,"deployment_pct":60.0,"ops":{"routines_expected":4,"routines_logged":4,"missing":[],"unprotected_positions":0},"rule14":{"dtc":0,"source":"api","tokens_expected":2,"tokens_found":2,"accurate":true},"rule16":{"rotations":0,"suppressed":0,"shallow_rotations":0},"rule5":{"triggered":false},"breaches":[]}
+EOF
+out=$(python3 scripts/metrics.py scorecard --file tests/.tmp/boundary3.jsonl --since 2026-08-01 2>&1)
+assert_contains "$out" '"verdict": "FAIL"'
+assert_contains "$out" '3 consecutive sessions'
+
+start_test "scorecard boundary: an in-band session resets the consecutive-OOB run"
+cat > tests/.tmp/boundary-reset-inband.jsonl <<'EOF'
+{"date":"2026-08-03","daily_alpha_pp":1.0,"cash_drag_pp":0.0,"selection_alpha_pp":1.0,"in_band":false,"deployment_pct":60.0,"ops":{"routines_expected":4,"routines_logged":4,"missing":[],"unprotected_positions":0},"rule14":{"dtc":0,"source":"api","tokens_expected":2,"tokens_found":2,"accurate":true},"rule16":{"rotations":0,"suppressed":0,"shallow_rotations":0},"rule5":{"triggered":false},"breaches":[]}
+{"date":"2026-08-04","daily_alpha_pp":1.0,"cash_drag_pp":0.0,"selection_alpha_pp":1.0,"in_band":false,"deployment_pct":60.0,"ops":{"routines_expected":4,"routines_logged":4,"missing":[],"unprotected_positions":0},"rule14":{"dtc":0,"source":"api","tokens_expected":2,"tokens_found":2,"accurate":true},"rule16":{"rotations":0,"suppressed":0,"shallow_rotations":0},"rule5":{"triggered":false},"breaches":[]}
+{"date":"2026-08-05","daily_alpha_pp":1.0,"cash_drag_pp":0.0,"selection_alpha_pp":1.0,"in_band":true,"deployment_pct":80.0,"ops":{"routines_expected":4,"routines_logged":4,"missing":[],"unprotected_positions":0},"rule14":{"dtc":0,"source":"api","tokens_expected":2,"tokens_found":2,"accurate":true},"rule16":{"rotations":0,"suppressed":0,"shallow_rotations":0},"rule5":{"triggered":false},"breaches":[]}
+{"date":"2026-08-06","daily_alpha_pp":1.0,"cash_drag_pp":0.0,"selection_alpha_pp":1.0,"in_band":false,"deployment_pct":60.0,"ops":{"routines_expected":4,"routines_logged":4,"missing":[],"unprotected_positions":0},"rule14":{"dtc":0,"source":"api","tokens_expected":2,"tokens_found":2,"accurate":true},"rule16":{"rotations":0,"suppressed":0,"shallow_rotations":0},"rule5":{"triggered":false},"breaches":[]}
+{"date":"2026-08-07","daily_alpha_pp":1.0,"cash_drag_pp":0.0,"selection_alpha_pp":1.0,"in_band":false,"deployment_pct":60.0,"ops":{"routines_expected":4,"routines_logged":4,"missing":[],"unprotected_positions":0},"rule14":{"dtc":0,"source":"api","tokens_expected":2,"tokens_found":2,"accurate":true},"rule16":{"rotations":0,"suppressed":0,"shallow_rotations":0},"rule5":{"triggered":false},"breaches":[]}
+EOF
+out=$(python3 scripts/metrics.py scorecard --file tests/.tmp/boundary-reset-inband.jsonl --since 2026-08-01 2>&1)
+assert_contains "$out" '"verdict": "PASS"'
+
+start_test "scorecard boundary: a Rule 5 trigger resets the consecutive-OOB run"
+cat > tests/.tmp/boundary-reset-rule5.jsonl <<'EOF'
+{"date":"2026-08-03","daily_alpha_pp":1.0,"cash_drag_pp":0.0,"selection_alpha_pp":1.0,"in_band":false,"deployment_pct":60.0,"ops":{"routines_expected":4,"routines_logged":4,"missing":[],"unprotected_positions":0},"rule14":{"dtc":0,"source":"api","tokens_expected":2,"tokens_found":2,"accurate":true},"rule16":{"rotations":0,"suppressed":0,"shallow_rotations":0},"rule5":{"triggered":false},"breaches":[]}
+{"date":"2026-08-04","daily_alpha_pp":1.0,"cash_drag_pp":0.0,"selection_alpha_pp":1.0,"in_band":false,"deployment_pct":60.0,"ops":{"routines_expected":4,"routines_logged":4,"missing":[],"unprotected_positions":0},"rule14":{"dtc":0,"source":"api","tokens_expected":2,"tokens_found":2,"accurate":true},"rule16":{"rotations":0,"suppressed":0,"shallow_rotations":0},"rule5":{"triggered":true},"breaches":[]}
+{"date":"2026-08-05","daily_alpha_pp":1.0,"cash_drag_pp":0.0,"selection_alpha_pp":1.0,"in_band":false,"deployment_pct":60.0,"ops":{"routines_expected":4,"routines_logged":4,"missing":[],"unprotected_positions":0},"rule14":{"dtc":0,"source":"api","tokens_expected":2,"tokens_found":2,"accurate":true},"rule16":{"rotations":0,"suppressed":0,"shallow_rotations":0},"rule5":{"triggered":false},"breaches":[]}
+{"date":"2026-08-06","daily_alpha_pp":1.0,"cash_drag_pp":0.0,"selection_alpha_pp":1.0,"in_band":false,"deployment_pct":60.0,"ops":{"routines_expected":4,"routines_logged":4,"missing":[],"unprotected_positions":0},"rule14":{"dtc":0,"source":"api","tokens_expected":2,"tokens_found":2,"accurate":true},"rule16":{"rotations":0,"suppressed":0,"shallow_rotations":0},"rule5":{"triggered":false},"breaches":[]}
+EOF
+out=$(python3 scripts/metrics.py scorecard --file tests/.tmp/boundary-reset-rule5.jsonl --since 2026-08-01 2>&1)
+assert_contains "$out" '"verdict": "PASS"'
+
+rm -rf tests/.tmp/m.jsonl tests/.tmp/pass.jsonl tests/.tmp/fail*.jsonl tests/.tmp/boundary*.jsonl
 print_summary

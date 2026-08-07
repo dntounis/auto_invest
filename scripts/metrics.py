@@ -12,10 +12,9 @@ series became unusable precisely because it was prose.
   metrics.py rollup    --file F --since DATE
   metrics.py scorecard --file F --since DATE
 """
-import argparse, json, sys
+import argparse, json
 
 BAND_LO, BAND_HI = 75.0, 85.0        # Rule 5 deployment band, inclusive
-MELTUP_SHALLOW_FLOOR = -2.0          # Rule 16 guard: drawdown floor (pct vs entry)
 REDEPLOY_GRACE_SESSIONS = 2          # sessions out of band before Rule 5 must arm
 
 
@@ -124,8 +123,15 @@ def cmd_scorecard(a):
 
     if not rows:
         return {"verdict": "FAIL",
+                "window": None,
+                "sessions": 0,
                 "criteria": [{"name": "data", "pass": False,
-                              "detail": "no sessions in window"}]}
+                              "detail": "no sessions in window"}],
+                "alpha_informational": {
+                    "cum_alpha_pp": None,
+                    "cum_cash_drag_pp": None,
+                    "cum_selection_alpha_pp": None,
+                }}
 
     slots_exp = sum(r["ops"]["routines_expected"] for r in rows)
     slots_got = sum(r["ops"]["routines_logged"] for r in rows)
