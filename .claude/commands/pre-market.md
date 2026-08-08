@@ -78,7 +78,7 @@ If no unresolved marker exists, proceed to STEP 1.
 - Tail of `memory/TRADE-LOG.md`
 - Tail of `memory/RESEARCH-LOG.md`
 
-## Step 2 — Pull live paper-account state
+## Step 2 — Pull live account state
 ```
 bash scripts/alpaca.sh account
 bash scripts/alpaca.sh positions

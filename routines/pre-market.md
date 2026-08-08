@@ -13,7 +13,7 @@ and MUST commit and push directly to `main`. Do not create or push to any
 other branch. The spec assumes routine commits land on `main` so the next
 scheduled run reads them as fresh state.
 
-You are running the **pre-market research workflow** (v1, paper, research-only).
+You are running the **pre-market research workflow** (v3.4, research-only). The account is whichever `TRADING_MODE` selects — see the mode guard above.
 Resolve today's date via:
 ```
 DATE=$(TZ=America/Chicago date +%Y-%m-%d)
@@ -170,7 +170,7 @@ If no unresolved marker exists, proceed to STEP 1.
 - Tail of `memory/TRADE-LOG.md` (last EOD snapshot)
 - Tail of `memory/RESEARCH-LOG.md` (yesterday's entry)
 
-## STEP 2 — Pull live paper-account state
+## STEP 2 — Pull live account state
 
 ```
 bash scripts/alpaca.sh account

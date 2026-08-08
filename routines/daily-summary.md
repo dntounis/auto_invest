@@ -14,7 +14,7 @@ other branch. Tomorrow's pre-market routine reads `tail of TRADE-LOG.md` from
 a fresh `main` clone — if today's EOD lands on a feature branch, tomorrow's
 Day P&L computation breaks.
 
-You are running the **daily-summary workflow** (v2, paper, EOD snapshot + stop placement + heartbeat).
+You are running the **daily-summary workflow** (v3.4, EOD snapshot + stop placement + heartbeat). The account is whichever `TRADING_MODE` selects — see the mode guard above.
 Resolve today's date via:
 ```
 DATE=$(TZ=America/Chicago date +%Y-%m-%d)

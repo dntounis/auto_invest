@@ -13,7 +13,7 @@ reads them as fresh state. Specifically: next Monday's pre-market reads
 this Friday's WEEKLY-REVIEW.md and TRADE-LOG.md week summary from a fresh
 clone of main.
 
-You are running the **weekly-review workflow** (v2, paper, Friday end-of-week grading).
+You are running the **weekly-review workflow** (v3.4, Friday end-of-week grading). The account is whichever `TRADING_MODE` selects — see the mode guard above.
 Resolve today's date via:
 ```
 DATE=$(TZ=America/Chicago date +%Y-%m-%d)

@@ -13,7 +13,7 @@ and MUST commit and push directly to `main`. Do not create or push to any
 other branch. The spec assumes routine commits land on `main` so the next
 scheduled run reads them as fresh state.
 
-You are running the **market-open execution workflow** (v2, paper, entries only).
+You are running the **market-open execution workflow** (v3.4, entries only). The account is whichever `TRADING_MODE` selects — see the mode guard above.
 Resolve today's date via:
 ```
 DATE=$(TZ=America/Chicago date +%Y-%m-%d)
@@ -230,7 +230,7 @@ so the row below can truthfully say one was sent)*.
 ```
 Then exit.
 
-## STEP 2 — Pull live paper-account state
+## STEP 2 — Pull live account state
 
 ```
 bash scripts/alpaca.sh account     # equity, cash, buying_power
