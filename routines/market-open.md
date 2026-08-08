@@ -267,10 +267,20 @@ ceiling) — in that case no buy of any size is permitted; skip every idea and l
 `deployment ceiling: already at X% — no headroom, 0 buys`.
 
 **Rule 5 re-deployment trigger** *(v3.4)*. Count how many consecutive prior
-sessions closed below the 75% floor by reading `memory/METRICS.jsonl` backwards
-from the most recent line, counting entries with `"in_band": false` until the
-first `true`. `SESSIONS_BELOW_BAND = 0` in all three of these cases: the last
-line is in band; the file is absent; the file exists but contains zero lines
+sessions closed **below the 75% floor** by reading `memory/METRICS.jsonl`
+backwards from the most recent line, counting entries whose
+**`deployment_pct` is strictly less than `75.0`** until the first entry that is
+not. **Count on `deployment_pct`, NOT on `"in_band": false`** *(v3.4 —
+corrected)*: `in_band` is also false *above* the 85% ceiling, which the book can
+reach on a rally because the ceiling gates new buys, not mark-to-market. Counting
+those would arm the trigger early — two sessions closing at 86% and 87%, a stop
+fires, day three opens at 70%, and `SESSIONS_BELOW_BAND` is already 2, so the
+trigger arms on the very first below-floor session and Rule 5's 2-session grace
+silently evaporates. An above-ceiling session ends the run exactly like an
+in-band one.
+
+`SESSIONS_BELOW_BAND = 0` in all three of these cases: the last line is at or
+above the floor; the file is absent; the file exists but contains zero lines
 (a truncated or first-run file — do not infer a count, treat it exactly like
 "absent"). Then:
 
@@ -284,9 +294,25 @@ Parse `triggered`, `rr_floor` and `restore_dollars`. When `triggered` is true:
 - The R:R floor for **`tier: core` ideas only** drops to `rr_floor` (1.5). Satellites
   keep 2:1 in every regime.
 - Size core ballast adds to restore the band — target `restore_dollars`, and never
-  exceed it purely to fill headroom.
+  exceed it purely to fill headroom. **This bound is enforced, not advisory**
+  *(v3.4)*: initialise a running budget alongside the STEP 2 accumulators and
+  decrement it exactly as `COMMITTED_COST` decrements `HEADROOM`:
+  ```
+  RESTORE_REMAINING = restore_dollars   # 0 when the trigger is not armed
+  ```
+  STEP 5c clamps the sizer's `--headroom` to `RESTORE_REMAINING` for **`rr-relaxed`
+  core ideas only** and decrements it as each such idea is reserved. Why it needs a
+  mechanism: `HEADROOM` is the room to the 85% *ceiling* and is always strictly
+  larger than the room to the 75% *floor*, so passing `HEADROOM` to the sizer lets
+  the relaxation spend the whole ceiling. Equity $10,000, LMV $6,000, armed →
+  `restore_dollars` $1,500 but `HEADROOM` $2,500; two core ideas at 1.6:1 and 1.55:1,
+  both admitted **only** by the relaxation, together consume $2,500 — $1,000 of it
+  bought at a discounted R:R the rulebook never authorised. Stating the bound in two
+  documents and enforcing it in none is the same defect shape Rule 5 itself had.
 - Record the trigger in the mandatory Market-Open Run row (STEP 7) as
   `Rule 5 REDEPLOY: armed (deployment X%, N sessions below band, restore $Y, R:R floor 1.5)`.
+  If any `rr-relaxed` idea filled, append `— relaxed spend $Z of $Y` so
+  `daily-summary` can set `rule5.acted` from this line.
 
 When `triggered` is false, note `Rule 5 REDEPLOY: not armed` in the same row. Task 2's
 metrics record reads this line for `rule5.triggered`, so it must appear on every run.
@@ -427,11 +453,28 @@ Use the idea's **stop width** as `stop-frac`: parse `stop width N%` from the pm 
 line (e.g. core ETF 0.10, satellite stock 0.13). If no explicit stop width, fall back
 to `trail_pct / 100`. Then call the unit-tested sizer:
 
+**First bind this idea's headroom** *(v3.4 — Rule 5 restore clamp)*:
+
+```
+if the idea is tier=core AND carries `rr-relaxed: yes (Rule 5 redeploy)`:
+    IDEA_HEADROOM = min(HEADROOM, RESTORE_REMAINING)
+else:
+    IDEA_HEADROOM = HEADROOM
+```
+
+An idea that qualified at the normal 2:1 floor is **unaffected** — it keeps the
+full `HEADROOM`. The clamp applies only to ideas that exist in this run *because*
+the relaxation admitted them, which is exactly the set Rule 5 says must be "sized
+only to restore the band". If `RESTORE_REMAINING <= 0` for such an idea (earlier
+`rr-relaxed` fills in this same run already consumed the restore budget), skip it
+and log `Rule 5 REDEPLOY: TICKER skipped — restore budget exhausted ($Y spent of
+$Y); relaxed R:R buys ballast back to the floor, not to the ceiling`.
+
 ```
 SLIPPAGE_PCT=${MAX_ENTRY_SLIPPAGE_PCT:-0.10}
 SIZE_JSON=$(python3 scripts/sizing.py size \
     --equity "$EQUITY" --price "$LIVE_ASK" --stop-frac "$STOP_FRAC" \
-    --headroom "$HEADROOM")
+    --headroom "$IDEA_HEADROOM")
 ```
 
 Parse `shares`, `cost` and `clamped` from `SIZE_JSON`.
@@ -476,7 +519,11 @@ COMMITTED_SECTOR_MV[sector]    += cost
 COMMITTED_POS                  += 1      unless the ticker is already held
 COMMITTED_SAT[sector]          += 1      if tier == satellite and not already held
 HEADROOM                        -= cost
+RESTORE_REMAINING               -= cost   if this idea was `rr-relaxed` (v3.4)
 ```
+`RESTORE_REMAINING` decrements **only** for `rr-relaxed` ideas — a full-2:1 core
+add is an ordinary entry, not a Rule 5 ballast add, and must not eat the restore
+budget. Floor it at 0 rather than letting it go negative.
 This must happen here, in STEP 5c, and not in STEP 6 — STEP 5 sizes *every*
 idea first ("After all ideas are processed, proceed to STEP 6"), and STEP 6 is
 a separate loop that places orders afterwards. If the reservation were deferred

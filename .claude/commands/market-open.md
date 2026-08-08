@@ -84,11 +84,17 @@ floor individually and breach it jointly (equity $10k, LMV $4k = $3k core + $1k
 satellite, two $1.6k satellites: 53.6% each, 41.7% after both).
 
 **Rule 5 re-deployment trigger** *(v3.4)*. Count consecutive prior sessions
-closed below the 75% floor by reading `memory/METRICS.jsonl` backwards from the
-most recent line, counting `"in_band": false` entries until the first `true`.
-`SESSIONS_BELOW_BAND = 0` if the last line is in band, if the file is absent, OR
-if the file exists but has zero lines (truncated/first-run — treat like absent,
-don't infer a count):
+closed **below the 75% floor** by reading `memory/METRICS.jsonl` backwards from
+the most recent line, counting entries with **`deployment_pct < 75.0`** until the
+first entry that isn't. **Count on `deployment_pct`, not `"in_band": false`**
+*(v3.4 — corrected)*: `in_band` is false above the 85% ceiling too (reachable on a
+rally — the ceiling gates new buys, not mark-to-market), so two sessions at 86%
+and 87% followed by a stop-out to 70% would show `SESSIONS_BELOW_BAND = 2` and arm
+the trigger on the very first below-floor session, evaporating the 2-session
+grace. An above-ceiling session ends the run just like an in-band one.
+`SESSIONS_BELOW_BAND = 0` if the last line is at/above the floor, if the file is
+absent, OR if the file exists but has zero lines (truncated/first-run — treat like
+absent, don't infer a count):
 ```
 REDEPLOY_JSON=$(python3 scripts/sizing.py redeploy \
     --equity "$EQUITY" --lmv "$LONG_MARKET_VALUE" \
@@ -96,11 +102,19 @@ REDEPLOY_JSON=$(python3 scripts/sizing.py redeploy \
 ```
 When `triggered` is true: the R:R floor for **`tier: core` ideas only** drops to
 `rr_floor` (1.5) — satellites stay at 2:1 in every regime — and core ballast adds
-size to restore the band (target `restore_dollars`, never overshoot it to fill
-headroom). Log `Rule 5 REDEPLOY: armed (deployment X%, N sessions below band,
-restore $Y, R:R floor 1.5)` in the Step 7 run row; log `Rule 5 REDEPLOY: not
-armed` otherwise. This line must appear on every run — Task 2's metrics record
-reads it for `rule5.triggered`.
+size to restore the band, never to fill headroom. **Enforce that bound** *(v3.4)*:
+set `RESTORE_REMAINING = restore_dollars` (0 when not armed) as a running budget
+next to `COMMITTED_COST`, clamp the sizer's headroom to it for `rr-relaxed` core
+ideas in Step 5c, and decrement it as each is reserved. `HEADROOM` is the room to
+the 85% *ceiling* and always exceeds the room to the 75% *floor* — equity $10k,
+LMV $6k armed gives `restore_dollars` $1,500 against `HEADROOM` $2,500, so two
+relaxation-only core ideas would spend the full $2,500 with $1,000 bought at a
+discounted R:R nothing authorised. Log `Rule 5 REDEPLOY: armed (deployment X%, N
+sessions below band, restore $Y, R:R floor 1.5)` in the Step 7 run row (append
+`— relaxed spend $Z of $Y` if any `rr-relaxed` idea filled, which is what
+daily-summary reads for `rule5.acted`); log `Rule 5 REDEPLOY: not armed`
+otherwise. This line must appear on every run — the metrics record reads it for
+`rule5.triggered`.
 
 Idempotency: skip any ticker with an existing today BUY (DECIDED H).
 
@@ -183,9 +197,17 @@ This default prevents division-by-zero in the sizing formula below.
 Use the idea's **stop width** as `stop-frac` (parse `stop width N%` from the pm idea
 line; fall back to `trail_pct / 100`). Then:
 
+**Bind this idea's headroom first** *(v3.4 — Rule 5 restore clamp)*: if the idea is
+`tier=core` AND carries `rr-relaxed: yes (Rule 5 redeploy)`, `IDEA_HEADROOM =
+min(HEADROOM, RESTORE_REMAINING)`; otherwise `IDEA_HEADROOM = HEADROOM`. Ideas that
+qualified at the normal 2:1 floor keep the full headroom — the clamp binds only the
+ideas the relaxation itself admitted, which is precisely the set Rule 5 says is
+"sized only to restore the band". If `RESTORE_REMAINING <= 0` for such an idea, skip
+it: `Rule 5 REDEPLOY: TICKER skipped — restore budget exhausted`.
+
 ```
 SIZE_JSON=$(python3 scripts/sizing.py size --equity "$EQUITY" --price "$LIVE_ASK" \
-    --stop-frac "$STOP_FRAC" --headroom "$HEADROOM")
+    --stop-frac "$STOP_FRAC" --headroom "$IDEA_HEADROOM")
 ```
 
 `clamped == "floor_skip"` or `shares < 1` → skip + log. `clamped == "headroom"` →
@@ -213,6 +235,7 @@ COMMITTED_CORE_MV += cost if tier == core else 0
 COMMITTED_SECTOR_MV[sector] += cost
 COMMITTED_POS += 1  unless already held
 COMMITTED_SAT[sector] += 1  if tier == satellite and not already held
+RESTORE_REMAINING -= cost  only if this idea was `rr-relaxed` (v3.4; floor at 0)
 ```
 Must happen here — Step 5 sizes every idea before Step 6 places any order, so a
 decrement deferred to order-placement time would never fire and two ideas could

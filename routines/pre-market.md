@@ -231,8 +231,11 @@ in the research-log entry's Sources section.** If `alpaca.sh bars` is unavailabl
 
 **Rule 5 relaxed R:R** *(v3.4)*. Before screening, compute the re-deployment
 trigger exactly as market-open STEP 2 does (`sizing.py redeploy`, with the
-consecutive-below-band count read from `memory/METRICS.jsonl`). If `triggered`
-is true, a **`tier: core` idea qualifies at R:R ≥ 1.5:1** instead of ≥ 2:1;
+consecutive-below-**floor** count read from `memory/METRICS.jsonl` — count
+entries whose `deployment_pct` is strictly under `75.0`, **not** entries with
+`"in_band": false`, which also match sessions *above* the 85% ceiling and would
+arm the trigger before the 2-session grace has actually elapsed *(v3.4)*). If
+`triggered` is true, a **`tier: core` idea qualifies at R:R ≥ 1.5:1** instead of ≥ 2:1;
 satellites are unchanged at ≥ 2:1. Tag any idea admitted under the relaxed floor
 `rr-relaxed: yes (Rule 5 redeploy)` on its idea line so market-open and the
 weekly review can see which entries used it. When the trigger is not armed, the
