@@ -132,14 +132,22 @@ Merge in and append **one compact single-line** JSON object to `memory/METRICS.j
   Take max/weakest across *all* of the session's tokens, not last-writer-wins, because the
   higher count is the real risk position and a session is only as trustworthy as its
   worst-sourced token:
-  `rule14.dtc` = max `N` across the session's tokens (`N` = count before any `[conservative: M]`
-  bracket — the figure that gates the ≤1 buffer / `>= 2` abort);
-  `.dtc_conservative` = max `M` where present, else `null` (always `null` pre-Task 6, included
-  from the first record so the schema doesn't change shape mid-window);
+  `rule14.dtc` = max `N` across the session's *numeric* tokens (`N` = count before any
+  `[conservative: M]` bracket — the figure that gates the ≤1 buffer / `>= 2` abort);
+  `.dtc_conservative` = max `M` where present on a numeric token, else `null` (always `null`
+  pre-Task 6, included from the first record so the schema doesn't change shape mid-window);
   `.source` = weakest source across the session's tokens (`api` > `local` > `none`/`error`);
   `.tokens_expected` (2 normal, 1 if a routine legitimately skipped);
   `.tokens_found` (count of today's tokens);
-  `.accurate` = `false` when *any* recorded `N` this session != true same-day round-trip count
+  `.accurate` = `false` when *any* numeric recorded `N` this session != true same-day round-trip
+  count, `true` otherwise
+  **`n/a` tokens** (v3.4 — market-open's environment-halt paths emit `Rule 14 DTC: n/a (halted
+  before gate evaluation)`, no numeric `N`): still **count** toward `tokens_expected`/
+  `tokens_found` (the mandated line was still emitted); **excluded** from the `dtc`/
+  `dtc_conservative` maxima (nothing numeric to compare); contribute `none` to the `source`
+  ranking (a halted routine evaluated no source). If **every** token this session is `n/a`:
+  `dtc`=`null`, `dtc_conservative`=`null`, `source`=`none`, and `accurate`=**`true`** — nothing
+  numeric was recorded, so nothing was recorded wrongly.
 - `rule16.rotations` (ROTATE-EXIT rows today), `.suppressed` (`DECAY-SUPPRESSED` rows — Task 4),
   `.shallow_rotations` (rotations today shallower than -2.0% vs entry AND SPY 10-session > +3.0%
   — the Task 3 guard condition; should be 0 once shipped)

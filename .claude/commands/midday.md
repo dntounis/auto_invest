@@ -43,7 +43,8 @@ Resolve Rule 14 via `bash scripts/alpaca.sh dtc` *(v3.3, four sources)*:
   0 and would fail the gate open on a live account.
 - TRADE-LOG unreadable for the local fallback → `source=none`, block sells + URGENT.
 
-Never treat an absent field as 0. Log `Rule 14 DTC: <N> (source=...)`.
+Never treat an absent field as 0. Log `Rule 14 DTC: <N> (source=...) [conservative: <M>]`
+(full format + bracket-omission rule at Step 6, line ~176).
 If `DTC >= 2`, `source=none` or `source=error`, abort sells — but still write Step 6's mandatory
 `- midday $DATE:` cadence line first (v3.3 — an abort must not look like a cron
 skip to Rule 18's sweep).

@@ -276,14 +276,32 @@ written, precisely so a future editor cannot "simplify" this into last-writer-wi
 position for the `>= 2` abort regardless of which routine logged it later; `source` takes the
 **weakest**, because a session is only as trustworthy as its worst-sourced token, not its best.
 
+**The `n/a` case (v3.4 — Task 6 follow-up).** `market-open`'s three environment-STOP paths
+(`routines/market-open.md`'s pre-STEP-0 halts) emit `Rule 14 DTC: n/a (halted before gate
+evaluation)` instead of a numeric token, because STEP 3's `dtc` call never ran. That token is
+still the routine's mandated Rule 14 audit line — the halt is honest, not a missing detector —
+so it **counts** toward `tokens_expected`/`tokens_found`, but it carries no number to fold into
+a maximum and no source to rank, so it is handled separately from the numeric tokens above:
+- An `n/a` token contributes **nothing** to the `rule14.dtc` / `rule14.dtc_conservative` maxima —
+  exclude it from that computation entirely (there is no `N` or `M` to compare).
+- An `n/a` token contributes **`none`** to the `rule14.source` ranking — a halted routine
+  evaluated no source, and under the existing weakest-wins rule `none` correctly drags the
+  session's `rule14.source` down, same as any other unresolvable token would.
+- If **every** `Rule 14 DTC:` token logged this session reads `n/a` (e.g. market-open halted on
+  an environment failure and midday also had nothing numeric to log), then: `rule14.dtc` is
+  `null`, `rule14.dtc_conservative` is `null`, `rule14.source` is `none`, and **`rule14.accurate`
+  is `true`** — nothing numeric was recorded, so nothing numeric was recorded *wrongly*; scoring
+  it `false` would fail the scorecard for a day the gate behaved exactly as designed (it halted
+  before there was anything to gate).
+
 | Field | Source |
 |---|---|
-| `rule14.dtc` | the **maximum `N`** across every `Rule 14 DTC:` token logged this session, where `N` is the count *before* any `[conservative: M]` bracket — `N` is the figure that gates the ≤1 buffer and the `>= 2` abort |
-| `rule14.dtc_conservative` | the **maximum `M`** across the session's tokens where a `[conservative: M]` bracket is present (Task 6); `null` when no token carries the bracket, which is every session until Task 6 ships — include the field from the first record so the series doesn't change shape mid-window |
-| `rule14.source` | the **weakest** source across the session's tokens, ranked `api` (most trustworthy) > `local` > `none`/`error` |
+| `rule14.dtc` | the **maximum `N`** across every *numeric* `Rule 14 DTC:` token logged this session, where `N` is the count *before* any `[conservative: M]` bracket — `N` is the figure that gates the ≤1 buffer and the `>= 2` abort. `n/a` tokens are excluded from this maximum; `null` if every token this session is `n/a` |
+| `rule14.dtc_conservative` | the **maximum `M`** across the session's *numeric* tokens where a `[conservative: M]` bracket is present (Task 6); `null` when no numeric token carries the bracket — either because Task 6 hasn't shipped yet, or because every token this session is `n/a` |
+| `rule14.source` | the **weakest** source across the session's tokens, ranked `api` (most trustworthy) > `local` > `none`/`error`/`n/a` — an `n/a` token ranks alongside `none`/`error` (weakest) since a halted routine evaluated no source |
 | `rule14.tokens_expected` | `2` on a normal session (market-open + midday); `1` if a routine legitimately did not run (holiday) |
-| `rule14.tokens_found` | count of `Rule 14 DTC:` tokens in today's TRADE-LOG rows |
-| `rule14.accurate` | `false` when **any** recorded `N` in the session differs from the true same-day round-trip count, `true` otherwise *(see Task 6)* |
+| `rule14.tokens_found` | count of `Rule 14 DTC:` tokens in today's TRADE-LOG rows — **`n/a` tokens count too**, since emitting the mandated line (even with nothing numeric to report) is exactly what this field audits |
+| `rule14.accurate` | `false` when **any** *numeric* recorded `N` in the session differs from the true same-day round-trip count; `true` when every numeric `N` this session matches the true count, **and also `true`** when every token this session is `n/a` (nothing numeric was recorded, so nothing was recorded wrongly) *(see Task 6)* |
 | `rule16.rotations` | ROTATE-EXIT rows written today |
 | `rule16.suppressed` | `DECAY-SUPPRESSED` rows written today *(Task 4)* |
 | `rule16.shallow_rotations` | rotations today whose position was shallower than **-2.0%** vs entry AND where SPY's 10-session return exceeded **+3.0%** — the exact condition the Task 3 guard exists to prevent. Should be 0 once the guard ships |
