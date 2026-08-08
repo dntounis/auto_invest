@@ -9,7 +9,8 @@ arithmetic. All modes print one JSON object to stdout.
                    [--max-pos-pct 0.16] [--min-pos-pct 0.05] [--headroom H]
   sizing.py ladder --tier etf|stock --unrealized-pct X
   sizing.py decay  --unrealized-pct X --pos-ret-10d A --spy-ret-10d B
-                   --prior-flag 0|1
+                   --prior-flag 0|1 [--meltup-floor -2.0]
+                   [--meltup-benchmark 3.0]
   sizing.py rscreen --rs10 X --rs50 Y --close C --dma50 D --dma50-prior P
 """
 import argparse, json, math
@@ -69,11 +70,34 @@ def cmd_ladder(a):
             "scaleouts_due": scaleouts}
 
 
+# Rule 16 melt-up guard (v3.4). When the benchmark's own 10-session return is
+# large, "lagging SPY" stops meaning "decaying" and starts meaning "not one of
+# the handful of names carrying the index" — every holding lags, and the rule
+# cuts whichever ones happen to be fractionally red. Observed 2026-08-07: SPY
+# 10-session +4.48%, all six holdings lagging, BIIB (-0.39% vs entry) and XLF
+# (-1.01%, held two sessions, best RS50 in the complex) both rotated out.
+MELTUP_DRAWDOWN_FLOOR = -2.0   # shallower than this and the guard may apply
+MELTUP_BENCHMARK_PCT = 3.0     # benchmark 10-session return above this arms it
+
+
 def cmd_decay(a):
-    # Flag when below entry AND lagging SPY over the trailing window.
+    # Flag when below entry AND lagging the benchmark over the trailing window.
     flag = 1 if (a.unrealized_pct < 0 and a.pos_ret_10d < a.spy_ret_10d) else 0
-    rotate = 1 if (flag and a.prior_flag) else 0
-    return {"flag": flag, "rotate": rotate}
+    if not flag:
+        return {"flag": 0, "rotate": 0, "suppressed": 0, "reason": "no_flag"}
+    if not a.prior_flag:
+        return {"flag": 1, "rotate": 0, "suppressed": 0, "reason": "first_flag"}
+    # Second consecutive flag — the rotation is owed. Withhold the SELL (never
+    # the flag) if this is a shallow loser in a fast-rising benchmark. Both
+    # bounds are exclusive, so a position exactly at the floor still rotates.
+    shallow = a.unrealized_pct > a.meltup_floor
+    meltup = a.spy_ret_10d > a.meltup_benchmark
+    if shallow and meltup:
+        # Chain state is preserved: the rotation resumes the moment the
+        # position deepens past the floor or the benchmark cools.
+        return {"flag": 1, "rotate": 0, "suppressed": 1,
+                "reason": "meltup_suppressed"}
+    return {"flag": 1, "rotate": 1, "suppressed": 0, "reason": "rotate"}
 
 
 def cmd_scaleout(a):
@@ -146,6 +170,12 @@ def main():
     d.add_argument("--spy-ret-10d", type=float, required=True, dest="spy_ret_10d")
     d.add_argument("--prior-flag", type=int, choices=[0, 1], required=True,
                    dest="prior_flag")
+    d.add_argument("--meltup-floor", type=float, default=MELTUP_DRAWDOWN_FLOOR,
+                   dest="meltup_floor",
+                   help="drawdown pct vs entry; shallower than this may suppress")
+    d.add_argument("--meltup-benchmark", type=float,
+                   default=MELTUP_BENCHMARK_PCT, dest="meltup_benchmark",
+                   help="benchmark 10-session return pct above which the guard arms")
     d.set_defaults(func=cmd_decay)
 
     so = sub.add_parser("scaleout")
