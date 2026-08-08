@@ -223,4 +223,174 @@ out=$(python3 scripts/sizing.py rscreen --rs10 -0.5 --rs50 10 --close 103 --dma5
 assert_contains "$out" '"pass": 1'
 assert_contains "$out" '"reason": "constructive_pullback"'
 
+# --- v3.4 Rule 16 melt-up guard ---
+
+# baseline unchanged: no flag when above entry
+start_test "decay: above entry -> no flag (unchanged)"
+out=$(python3 scripts/sizing.py decay --unrealized-pct 1.5 --pos-ret-10d 2.0 \
+      --spy-ret-10d 4.48 --prior-flag 0 2>&1)
+assert_contains "$out" '"flag": 0'
+assert_contains "$out" '"rotate": 0'
+assert_contains "$out" '"reason": "no_flag"'
+
+# baseline unchanged: first flag never rotates
+start_test "decay: first flag arms the chain but does not rotate (unchanged)"
+out=$(python3 scripts/sizing.py decay --unrealized-pct -0.39 --pos-ret-10d 1.89 \
+      --spy-ret-10d 4.48 --prior-flag 0 2>&1)
+assert_contains "$out" '"flag": 1'
+assert_contains "$out" '"rotate": 0'
+assert_contains "$out" '"reason": "first_flag"'
+
+# the BIIB case: 2nd flag, -0.39% vs entry, SPY 10-session +4.48% -> SUPPRESSED
+start_test "decay: BIIB case — shallow loser in a melt-up is suppressed"
+out=$(python3 scripts/sizing.py decay --unrealized-pct -0.39 --pos-ret-10d 1.89 \
+      --spy-ret-10d 4.48 --prior-flag 1 2>&1)
+assert_contains "$out" '"flag": 1'
+assert_contains "$out" '"rotate": 0'
+assert_contains "$out" '"suppressed": 1'
+assert_contains "$out" '"reason": "meltup_suppressed"'
+
+# the XLF case: same shape, also suppressed
+start_test "decay: XLF case — shallow loser in a melt-up is suppressed"
+out=$(python3 scripts/sizing.py decay --unrealized-pct -1.01 --pos-ret-10d 2.29 \
+      --spy-ret-10d 4.48 --prior-flag 1 2>&1)
+assert_contains "$out" '"rotate": 0'
+assert_contains "$out" '"suppressed": 1'
+
+# the XLU case: -2.66% is DEEPER than the -2.0% floor -> still rotates
+start_test "decay: XLU case — deep enough to rotate even in a melt-up"
+out=$(python3 scripts/sizing.py decay --unrealized-pct -2.66 --pos-ret-10d -1.25 \
+      --spy-ret-10d 4.48 --prior-flag 1 2>&1)
+assert_contains "$out" '"rotate": 1'
+assert_contains "$out" '"suppressed": 0'
+assert_contains "$out" '"reason": "rotate"'
+
+# calm benchmark: a shallow loser rotates normally (guard must not fire)
+start_test "decay: shallow loser rotates when the benchmark is calm"
+out=$(python3 scripts/sizing.py decay --unrealized-pct -0.39 --pos-ret-10d -1.00 \
+      --spy-ret-10d 0.25 --prior-flag 1 2>&1)
+assert_contains "$out" '"rotate": 1'
+assert_contains "$out" '"suppressed": 0'
+
+# both boundaries are exclusive: exactly -2.0% and exactly +3.0% do NOT suppress
+start_test "decay: guard boundaries are exclusive"
+out=$(python3 scripts/sizing.py decay --unrealized-pct -2.0 --pos-ret-10d 1.0 \
+      --spy-ret-10d 4.48 --prior-flag 1 2>&1)
+assert_contains "$out" '"rotate": 1'
+assert_contains "$out" '"suppressed": 0'
+out=$(python3 scripts/sizing.py decay --unrealized-pct -0.39 --pos-ret-10d 1.0 \
+      --spy-ret-10d 3.0 --prior-flag 1 2>&1)
+assert_contains "$out" '"rotate": 1'
+assert_contains "$out" '"suppressed": 0'
+
+# suppression must NOT reset the chain — flag stays 1 so the next session can act
+start_test "decay: suppression preserves the flag chain"
+out=$(python3 scripts/sizing.py decay --unrealized-pct -0.39 --pos-ret-10d 1.89 \
+      --spy-ret-10d 4.48 --prior-flag 1 2>&1)
+assert_contains "$out" '"flag": 1'
+
+# thresholds are overridable
+start_test "decay: thresholds are overridable"
+out=$(python3 scripts/sizing.py decay --unrealized-pct -0.39 --pos-ret-10d 1.89 \
+      --spy-ret-10d 4.48 --prior-flag 1 --meltup-benchmark 99 2>&1)
+assert_contains "$out" '"rotate": 1'
+assert_contains "$out" '"suppressed": 0'
+
+# --meltup-floor is overridable too, pinned in both directions so a dropped
+# override (e.g. cmd_decay hardcoding MELTUP_DRAWDOWN_FLOOR instead of reading
+# a.meltup_floor) cannot pass either way.
+# BIIB shape (default floor would suppress): overriding the floor to 0 makes
+# -0.39% no longer "shallower than the floor" -> the guard must not fire.
+start_test "decay: --meltup-floor override to 0 forces a rotate"
+out=$(python3 scripts/sizing.py decay --unrealized-pct -0.39 --pos-ret-10d 1.89 \
+      --spy-ret-10d 4.48 --prior-flag 1 --meltup-floor 0 2>&1)
+assert_contains "$out" '"rotate": 1'
+assert_contains "$out" '"suppressed": 0'
+
+# same BIIB shape, floor overridden to -5: still shallower than -5, so the
+# guard still fires. Paired with the case above, this pins the argument in
+# both directions -- a hardcoded default could only satisfy one of the two.
+start_test "decay: --meltup-floor override to -5 still suppresses"
+out=$(python3 scripts/sizing.py decay --unrealized-pct -0.39 --pos-ret-10d 1.89 \
+      --spy-ret-10d 4.48 --prior-flag 1 --meltup-floor -5 2>&1)
+assert_contains "$out" '"suppressed": 1'
+assert_contains "$out" '"reason": "meltup_suppressed"'
+
+# --- v3.4 Rule 5 re-deployment trigger ---
+
+# in band -> not triggered, full 2:1
+start_test "redeploy: in band -> no trigger, R:R stays 2.0"
+out=$(python3 scripts/sizing.py redeploy --equity 10000 --lmv 8000 \
+      --sessions-below-band 0 2>&1)
+assert_contains "$out" '"below_band": false'
+assert_contains "$out" '"triggered": false'
+assert_contains "$out" '"rr_floor": 2.0'
+
+# first session below band -> below_band true but NOT yet triggered (grace)
+start_test "redeploy: first session below band is grace, not a trigger"
+out=$(python3 scripts/sizing.py redeploy --equity 10000 --lmv 6400 \
+      --sessions-below-band 1 2>&1)
+assert_contains "$out" '"below_band": true'
+assert_contains "$out" '"triggered": false'
+assert_contains "$out" '"rr_floor": 2.0'
+
+# the Aug 3 case: 64.11% deployed for a 6th consecutive session -> triggered
+start_test "redeploy: Aug 3 case — 2+ sessions below band arms the trigger"
+out=$(python3 scripts/sizing.py redeploy --equity 10120.56 --lmv 6492.89 \
+      --sessions-below-band 6 2>&1)
+assert_contains "$out" '"triggered": true'
+assert_contains "$out" '"rr_floor": 1.5'
+
+# restore_dollars is the gap to the 75% floor, never negative
+start_test "redeploy: restore_dollars is the gap to the 75% floor"
+out=$(python3 scripts/sizing.py redeploy --equity 10000 --lmv 6400 \
+      --sessions-below-band 2 2>&1)
+assert_contains "$out" '"restore_dollars": 1100.0'
+
+start_test "redeploy: restore_dollars is 0 when in band"
+out=$(python3 scripts/sizing.py redeploy --equity 10000 --lmv 8000 \
+      --sessions-below-band 0 2>&1)
+assert_contains "$out" '"restore_dollars": 0.0'
+
+# above the ceiling is not "below band" and never triggers
+start_test "redeploy: above the ceiling never triggers"
+out=$(python3 scripts/sizing.py redeploy --equity 10000 --lmv 8600 \
+      --sessions-below-band 0 2>&1)
+assert_contains "$out" '"below_band": false'
+assert_contains "$out" '"triggered": false'
+
+# --- v3.4 Rule 5 boundary pinning (review follow-up) ---
+# Pins the two comparisons a mutation-tester can silently flip and still ship
+# green: `<` vs `<=` on the below-band check, `>=` vs `>` on the grace check.
+
+# exactly at the 75.0 floor -> NOT below band (strict <), so triggered stays
+# false even with plenty of consecutive sessions recorded. Catches `<` -> `<=`.
+start_test "redeploy: exactly 75.0 deployment is in band (strict <), no trigger"
+out=$(python3 scripts/sizing.py redeploy --equity 10000 --lmv 7500 \
+      --sessions-below-band 6 2>&1)
+assert_contains "$out" '"deployment_pct": 75.0'
+assert_contains "$out" '"below_band": false'
+assert_contains "$out" '"triggered": false'
+
+# a hair under 75.0 -> below band. Brackets the floor from the other side.
+start_test "redeploy: just under 75.0 deployment is below band"
+out=$(python3 scripts/sizing.py redeploy --equity 10000 --lmv 7499 \
+      --sessions-below-band 0 2>&1)
+assert_contains "$out" '"deployment_pct": 74.99'
+assert_contains "$out" '"below_band": true'
+
+# exactly 2 consecutive sessions below band -> triggered (grace has elapsed).
+# Catches `>=` -> `>` on the grace comparison.
+start_test "redeploy: exactly 2 sessions below band triggers (grace boundary)"
+out=$(python3 scripts/sizing.py redeploy --equity 10000 --lmv 6400 \
+      --sessions-below-band 2 2>&1)
+assert_contains "$out" '"triggered": true'
+
+# exactly 1 session below band -> still grace, not triggered. Pins the same
+# boundary from the other side (paired with the case immediately above).
+start_test "redeploy: exactly 1 session below band does not trigger (grace boundary)"
+out=$(python3 scripts/sizing.py redeploy --equity 10000 --lmv 6400 \
+      --sessions-below-band 1 2>&1)
+assert_contains "$out" '"triggered": false'
+
 print_summary

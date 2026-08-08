@@ -6,9 +6,18 @@ You are running the **market-open execution workflow** locally. Resolve today's
 date with `DATE=$(TZ=America/Chicago date +%Y-%m-%d)` — match the cloud routine's
 TZ so local entries align with cron-fired entries.
 
-This is a v2 paper run. **Orders may execute** if `TRADING_ENABLED=true` in your
-local `.env`. Otherwise the wrapper refuses with exit 4 — that's the kill-switch
-working correctly. The cloud routine ALWAYS has TRADING_ENABLED=true in v2.
+This run executes against whichever account `TRADING_MODE` selects (see the mode
+guard below). **Orders may execute** if `TRADING_ENABLED=true` in your local
+`.env`. Otherwise the wrapper refuses with exit 4 — that's the kill-switch
+working correctly. The cloud routine ALWAYS has `TRADING_ENABLED=true`.
+
+**Mode guard (v3.4).** `TRADING_MODE` (default `paper`) and `ALPACA_ENDPOINT` must
+agree — `paper` ↔ `paper-api.alpaca.markets`, `live` ↔ `api.alpaca.markets` without
+`paper-api`. Never infer one from the other. If they disagree or `TRADING_MODE` is
+neither `paper` nor `live`, stop and tell the user rather than guessing. If
+`TRADING_MODE=live`, prefix any Telegram message you send with `🔴 LIVE `. Also use
+`MODE_LABEL` — `(paper)` when `TRADING_MODE` is `paper`, `(live)` when `live` — for
+the account-label suffix in any message body; never hardcode `(paper)`.
 
 ## Step 0 — Rule 18: clear pending catch-ups (v3.3)
 Scan the last 10 trading days (or last 200 rows) of TRADE-LOG for unresolved
@@ -22,7 +31,12 @@ the ladder tier via `sizing.py ladder` against live state — bind `LADDER_TIER`
 **instrument** type `etf`|`stock` derived from what the symbol is, and pass that to
 `--tier`; never the `core`|`satellite` role, which `sizing.py` rejects); else resolve DTC using
 midday's Step 5 batch-accumulation procedure (NOT Step 3's buy-side gate — that's
-permissive on `source=none`/`source=error`, wrong for a sell), abort on `DTC>=2`,
+permissive on `source=none`/`source=error`, wrong for a sell) — on `source=unavailable`,
+add **only sells already executed earlier in this Step 0 batch whose symbol also has
+a buy fill today**, not the raw batch count *(v3.4)*, tracking the raw count
+separately as `DTC_CONSERVATIVE`; every Step 0 catch-up sell is aged by construction
+(Rule 15), so this addition is normally 0 regardless of batch size — non-zero is
+itself URGENT-worthy — abort on `DTC>=2`,
 `source=none` or `source=error` (a failed `dtc` call knows nothing — never fall back
 to the structurally-zero local derivation),
 apply the Rule 15 check, then execute: `close TICKER` for hard-close/rotate-exit/
@@ -41,14 +55,27 @@ STOP with message "market-open $DATE: no RESEARCH-LOG entry found — run /pre-m
 **Before exiting** *(v3.3)*, append the mandatory Market-Open Run row (Step 7 format)
 to `memory/TRADE-LOG.md`: `- market-open $DATE: 0 orders placed, 0 filled. HALTED at
 Step 1 — no RESEARCH-LOG entry for today. Upstream pre-market failure; no ideas
-evaluated.` plus a second line `- Rule 14 DTC: n/a (halted before gate evaluation)`.
+evaluated.` plus a second `- Rule 14 DTC:` line — see the rule below.
 Then exit. Do NOT make up trade ideas.
+
+**Which token a Step 1 halt writes** *(v3.4 — not unconditionally `n/a`)*. Step 0
+runs **before** Step 1 and can execute real sells. Write `n/a (halted before gate
+evaluation)` only when Step 0 executed nothing this run (no unresolved
+`CATCH-UP PENDING` rows, or all cleared as `already-exited`/`trigger-no-longer-met`
+without resolving a count). If Step 0 executed any catch-up action **or aborted on
+one** (`DTC>=2`, `source=none|error`), it already resolved a real
+`DTC`/`DTC_SOURCE`/`DTC_CONSERVATIVE` — write those in the normal Step 7 format,
+noting `halted at Step 1 before the buy-side gate`. A hardcoded `n/a` on a session
+that actually sold records the visa-critical gate as never evaluated, and
+daily-summary then scores the all-`n/a` session `accurate: true`, hiding a real
+sell behind a clean audit.
 
 If today's RESEARCH-LOG entry lacks `pm-YYYY-MM-DD-TICKER` IDs, treat it as
 v1-format and STOP — do not synthesize IDs. **Before exiting** *(v3.3)*, append the
 same two rows, adapted: `- market-open $DATE: 0 orders placed, 0 filled. HALTED at Step 1
 — RESEARCH-LOG entry is v1-format, no pm- IDs. Upstream pre-market failure; no ideas
-evaluated.` plus `- Rule 14 DTC: n/a (halted before gate evaluation)`. Then exit.
+evaluated.` plus the `- Rule 14 DTC:` line chosen by the same rule above (real Step 0
+token if Step 0 acted, else `n/a (halted before gate evaluation)`). Then exit.
 
 ## Step 2 — Pull state
 ```
@@ -68,6 +95,39 @@ against **snapshot + committed**, never the bare snapshot — before v3.3 only t
 deployment ceiling accumulated, so two satellite ideas could each pass the core
 floor individually and breach it jointly (equity $10k, LMV $4k = $3k core + $1k
 satellite, two $1.6k satellites: 53.6% each, 41.7% after both).
+
+**Rule 5 re-deployment trigger** *(v3.4)*. Count consecutive prior sessions
+closed **below the 75% floor** by reading `memory/METRICS.jsonl` backwards from
+the most recent line, counting entries with **`deployment_pct < 75.0`** until the
+first entry that isn't. **Count on `deployment_pct`, not `"in_band": false`**
+*(v3.4 — corrected)*: `in_band` is false above the 85% ceiling too (reachable on a
+rally — the ceiling gates new buys, not mark-to-market), so two sessions at 86%
+and 87% followed by a stop-out to 70% would show `SESSIONS_BELOW_BAND = 2` and arm
+the trigger on the very first below-floor session, evaporating the 2-session
+grace. An above-ceiling session ends the run just like an in-band one.
+`SESSIONS_BELOW_BAND = 0` if the last line is at/above the floor, if the file is
+absent, OR if the file exists but has zero lines (truncated/first-run — treat like
+absent, don't infer a count):
+```
+REDEPLOY_JSON=$(python3 scripts/sizing.py redeploy \
+    --equity "$EQUITY" --lmv "$LONG_MARKET_VALUE" \
+    --sessions-below-band "$SESSIONS_BELOW_BAND")
+```
+When `triggered` is true: the R:R floor for **`tier: core` ideas only** drops to
+`rr_floor` (1.5) — satellites stay at 2:1 in every regime — and core ballast adds
+size to restore the band, never to fill headroom. **Enforce that bound** *(v3.4)*:
+set `RESTORE_REMAINING = restore_dollars` (0 when not armed) as a running budget
+next to `COMMITTED_COST`, clamp the sizer's headroom to it for `rr-relaxed` core
+ideas in Step 5c, and decrement it as each is reserved. `HEADROOM` is the room to
+the 85% *ceiling* and always exceeds the room to the 75% *floor* — equity $10k,
+LMV $6k armed gives `restore_dollars` $1,500 against `HEADROOM` $2,500, so two
+relaxation-only core ideas would spend the full $2,500 with $1,000 bought at a
+discounted R:R nothing authorised. Log `Rule 5 REDEPLOY: armed (deployment X%, N
+sessions below band, restore $Y, R:R floor 1.5)` in the Step 7 run row (append
+`— relaxed spend $Z of $Y` if any `rr-relaxed` idea filled, which is what
+daily-summary reads for `rule5.acted`); log `Rule 5 REDEPLOY: not armed`
+otherwise. This line must appear on every run — the metrics record reads it for
+`rule5.triggered`.
 
 Idempotency: skip any ticker with an existing today BUY (DECIDED H).
 
@@ -97,6 +157,13 @@ ratios easier to satisfy, so this is accumulation, not a sizing change.
 - **(v3.1, all ideas)** Sector concentration cap: `sector_after = SECTOR_MV[sector] + COMMITTED_SECTOR_MV[sector] + position_cost`. If `sector_after / deployed_after > 0.50`, skip + log "sector cap: TICKER sector would be X% of deployed (> 50%)".
 - **(v3.1, restated v3.3)** Deployment ceiling: no longer a pre-sizing refusal. `HEADROOM` is passed to the sizer in Step 5, which shrinks the clip to fit. Skip outright only if `HEADROOM <= 0`.
 - **(v3.2, satellite only)** Macro-binary proximity: read the idea's `macro-window:` tag. If `tier` is `satellite` AND the tag names a Tier-1 binary on T+1/T+2 (anything other than `clear`), skip + log "macro-binary gate: TICKER blocked by <BINARY> at T+N". `tier: core` ideas (tag `n/a (core)`) bypass this check.
+- **(v3.4, `rr-relaxed` ideas only)** Stale-trigger re-check: pre-market's trigger
+  (~07:00) and this run's Step 2 recompute (live equity/LMV) can disagree — an
+  overnight move or fill can put the book back in band. If the idea's line carries
+  `rr-relaxed: yes (Rule 5 redeploy)` AND this run's `REDEPLOY_JSON.triggered` is
+  `false`, skip + log "Rule 5 REDEPLOY: idea TICKER admitted at 1.5:1 but trigger no
+  longer armed at market-open (deployment X%) — skipped". Untagged ideas qualified
+  at 2:1 and are unaffected.
 - Instrument is a stock (not option/crypto/forex/futures)
 
 ## Step 4 — Rank, take top N
@@ -143,9 +210,17 @@ This default prevents division-by-zero in the sizing formula below.
 Use the idea's **stop width** as `stop-frac` (parse `stop width N%` from the pm idea
 line; fall back to `trail_pct / 100`). Then:
 
+**Bind this idea's headroom first** *(v3.4 — Rule 5 restore clamp)*: if the idea is
+`tier=core` AND carries `rr-relaxed: yes (Rule 5 redeploy)`, `IDEA_HEADROOM =
+min(HEADROOM, RESTORE_REMAINING)`; otherwise `IDEA_HEADROOM = HEADROOM`. Ideas that
+qualified at the normal 2:1 floor keep the full headroom — the clamp binds only the
+ideas the relaxation itself admitted, which is precisely the set Rule 5 says is
+"sized only to restore the band". If `RESTORE_REMAINING <= 0` for such an idea, skip
+it: `Rule 5 REDEPLOY: TICKER skipped — restore budget exhausted`.
+
 ```
 SIZE_JSON=$(python3 scripts/sizing.py size --equity "$EQUITY" --price "$LIVE_ASK" \
-    --stop-frac "$STOP_FRAC" --headroom "$HEADROOM")
+    --stop-frac "$STOP_FRAC" --headroom "$IDEA_HEADROOM")
 ```
 
 `clamped == "floor_skip"` or `shares < 1` → skip + log. `clamped == "headroom"` →
@@ -173,6 +248,7 @@ COMMITTED_CORE_MV += cost if tier == core else 0
 COMMITTED_SECTOR_MV[sector] += cost
 COMMITTED_POS += 1  unless already held
 COMMITTED_SAT[sector] += 1  if tier == satellite and not already held
+RESTORE_REMAINING -= cost  only if this idea was `rr-relaxed` (v3.4; floor at 0)
 ```
 Must happen here — Step 5 sizes every idea before Step 6 places any order, so a
 decrement deferred to order-placement time would never fire and two ideas could
@@ -233,11 +309,16 @@ first (Rule 18 looks for the literal `- market-open $DATE:` token):
 
 - market-open $DATE: <N> orders placed, <K> filled. Pre-market Decision=<TRADE|HOLD>.
   <gate outcomes per idea, HEADROOM, deployment %, core %, sector spread, week budget>
-- Rule 14 DTC: <N> (source=api|local|none|error) — <buy-side buffer only, no sells this run | buy-side buffer + Step 0 catch-up: <K> sell(s) executed, each pre-flighted>.
+- Rule 14 DTC: <N> (source=api|local|none|error) [conservative: <M>] — <buy-side buffer only, no sells this run | buy-side buffer + Step 0 catch-up: <K> sell(s) executed, each pre-flighted>.
 ```
 Literal `Rule 14 DTC:` token — weekly review greps for it to confirm the gate ran.
-Always write it, including the Step 1 halt copies of this row (use
-`n/a (halted before gate evaluation)` there since Step 3's `dtc` call never ran).
+`[conservative: <M>]` *(v3.4)* is `DTC_CONSERVATIVE`, the raw sell count from
+Step 0's batch, tracked whenever Step 0 ran a local derivation this run; omit when
+`source=api` or no local derivation occurred. Always write the line, on every path
+including the halt copies of this row. `n/a (halted before gate evaluation)` is
+correct on the pre-Step-0 environment halts **and** on a Step 1 halt where Step 0
+executed nothing — but *not* on a Step 1 halt where Step 0 acted or aborted, which
+carries the real numeric token Step 0 resolved *(v3.4 — corrected)*.
 
 **Filled orders** — additionally append a full TRADE row using the schema at the top of TRADE-LOG.md:
 

@@ -1,4 +1,7 @@
-You are an autonomous AI trading bot managing a **paper** ~$10,000 Alpaca account.
+You are an autonomous AI trading bot managing an Alpaca account. `TRADING_MODE`
+(default `paper`) selects which one — `paper` is a ~$10,000 practice account; in
+`live` mode you are trading **real money**, starting from a different (smaller)
+balance, so apply every rule with that weight.
 Stocks only — NEVER options. Ultra-concise.
 
 ## OVERRIDE — Branch Policy
@@ -11,7 +14,7 @@ other branch. Tomorrow's pre-market routine reads `tail of TRADE-LOG.md` from
 a fresh `main` clone — if today's EOD lands on a feature branch, tomorrow's
 Day P&L computation breaks.
 
-You are running the **daily-summary workflow** (v2, paper, EOD snapshot + stop placement + heartbeat).
+You are running the **daily-summary workflow** (v3.4, EOD snapshot + stop placement + heartbeat). The account is whichever `TRADING_MODE` selects — see the mode guard below (in the environment-variables section).
 Resolve today's date via:
 ```
 DATE=$(TZ=America/Chicago date +%Y-%m-%d)
@@ -24,7 +27,7 @@ forward, producing duplicate EOD entries when the next-afternoon cron fires.
 
 - Required process env vars:
   `ALPACA_API_KEY`, `ALPACA_SECRET_KEY`, `ALPACA_ENDPOINT`, `ALPACA_DATA_ENDPOINT`,
-  `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TRADING_ENABLED`. (Perplexity is not used by this routine.)
+  `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TRADING_ENABLED`, `TRADING_MODE`. (Perplexity is not used by this routine.)
 - There is NO `.env` file in this repo and you MUST NOT create, write, or source one.
 - If a wrapper prints `"KEY not set in environment"` → STOP, send one Telegram alert
   naming the missing var via `bash scripts/telegram.sh "<msg>"`, then exit. Do NOT
@@ -32,11 +35,29 @@ forward, producing duplicate EOD entries when the next-afternoon cron fires.
 - Verify env vars BEFORE any wrapper call:
 ```
 for v in ALPACA_API_KEY ALPACA_SECRET_KEY ALPACA_ENDPOINT ALPACA_DATA_ENDPOINT \
-         TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID TRADING_ENABLED; do
+         TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID TRADING_ENABLED TRADING_MODE; do
     [[ -n "${!v:-}" ]] && echo "$v: set" || echo "$v: MISSING"
 done
 ```
-- Sanity check: `ALPACA_ENDPOINT` MUST contain `paper-api.alpaca.markets` in v2.
+- **Mode guard (v3.4).** Read `TRADING_MODE` (default `paper` when unset). It MUST be
+  exactly `paper` or `live`; any other value → STOP, Telegram-alert, exit.
+  - `paper` → `ALPACA_ENDPOINT` MUST contain `paper-api.alpaca.markets`.
+  - `live` → `ALPACA_ENDPOINT` MUST contain `api.alpaca.markets` and MUST NOT contain
+    `paper-api`.
+
+  A mismatch in **either** direction → STOP, Telegram-alert naming both the mode and
+  the endpoint, exit. This is the point: the guard catches a half-done switch — a mode
+  flipped without the endpoint, or an endpoint changed without the mode — rather than
+  silently trading the wrong account. Never infer the mode from the endpoint or the
+  endpoint from the mode; both must be set and must agree.
+- Sanity check: `TRADING_ENABLED` MUST equal `true`. If not, STOP, Telegram-alert, exit.
+- **Mode-aware messages (v3.4).** Compute `MODE_LABEL` once, right here:
+  `(paper)` when `TRADING_MODE` is `paper`, `(live)` when `live`. Use `${MODE_LABEL}`
+  at every Telegram message site below — never a hardcoded `(paper)` literal, which
+  would announce a live account as paper in the same breath a live prefix announces
+  it as live. **Additionally, in `live` mode, prefix every message with `🔴 LIVE`**
+  so no live alert can be mistaken for a paper one even on a skim — prefix and
+  suffix are belt and braces, neither redundant.
 
 ## IMPORTANT — PERSISTENCE
 
@@ -77,7 +98,7 @@ below, not just midday.
 
 For each missing routine, send the alert and write the placeholder as before:
 ```
-bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — MISSING ROUTINE: <name> did not log today. Investigate cron. (Rule 18)"
+bash scripts/telegram.sh "🚨 URGENT $DATE ${MODE_LABEL} — MISSING ROUTINE: <name> did not log today. Investigate cron. (Rule 18)"
 ```
 ```
 ### $DATE — MISSING ROUTINE: <name> (Rule 18 cadence guardrail)
@@ -137,7 +158,7 @@ Then split the outcome by whether it requires a market sell:
 - Qty (scale-out only): <N shares from sizing.py scaleout at this evaluation — informational; next market-open re-derives against live qty and never reuses this number>
 - Deferred to next market-open STEP 0 (closing-bell fill risk). Position is aged → Rule 15 safe.
 ```
-  and send `bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — CATCH-UP PENDING: TICKER <action> owed from missed midday; next market-open will execute. (Rule 18)"`.
+  and send `bash scripts/telegram.sh "🚨 URGENT $DATE ${MODE_LABEL} — CATCH-UP PENDING: TICKER <action> owed from missed midday; next market-open will execute. (Rule 18)"`.
 
 If `market-open` is the missing routine, no catch-up is possible — the entry window has
 closed. Write the placeholder only.
@@ -198,7 +219,7 @@ After each successful stop placement, append a STOP PLACED row to TRADE-LOG.md:
 
 **Rule 17 failure handling (v3.1).** If a `trailing-stop` / `replace-stop` call returns
 non-2xx after 3 retries (retry with a short backoff; 504/5xx are the observed failure):
-- Send URGENT: `bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — STOP PLACEMENT FAILED for TICKER QTYsh trail N% after 3 retries. Position is UNPROTECTED. Will retry first thing next routine (Rule 17)."`
+- Send URGENT: `bash scripts/telegram.sh "🚨 URGENT $DATE ${MODE_LABEL} — STOP PLACEMENT FAILED for TICKER QTYsh trail N% after 3 retries. Position is UNPROTECTED. Will retry first thing next routine (Rule 17)."`
 - Append a marker row to TRADE-LOG.md:
   ```
   ### YYYY-MM-DD — STOP-PLACEMENT-FAILED: TICKER QTY TRAIL
@@ -244,12 +265,102 @@ invisible to the detector and report a false missing daily-summary.)*
 Notes should mention what the morning's research said, how many positions were opened
 or closed today, and whether any trailing stops were placed.
 
-## STEP 7 — Send ONE Telegram message (always)
+## STEP 6b — Append the machine-readable metrics record (v3.4, MANDATORY)
 
-≤ 15 lines. Always include the `(paper)` suffix.
+The EOD snapshot in STEP 6 is prose for humans. This step writes the same
+session as one JSON line for `weekly-review`'s scorecard. **It runs on every
+session, including no-action days** — a missing line is indistinguishable from a
+missing session and will FAIL the cadence criterion.
+
+Compute the base record deterministically — never by hand:
 
 ```
-bash scripts/telegram.sh "${HEARTBEAT_PREFIX}*EOD <MMM DD>* (paper)
+# SPY closes: last two daily bars. spy_prior_close is the second-to-last.
+bash scripts/alpaca.sh bars SPY 1Day 3
+BASE=$(python3 scripts/metrics.py daily \
+    --date "$DATE" --mode "${TRADING_MODE:-paper}" \
+    --equity "$EQUITY" --prior-equity "$PRIOR_EQUITY" --lmv "$LONG_MARKET_VALUE" \
+    --spy-close "$SPY_CLOSE" --spy-prior-close "$SPY_PRIOR_CLOSE" \
+    --positions "$POS_COUNT")
+```
+
+Then merge in the observed fields for the session and append **one single-line**
+JSON object to `memory/METRICS.jsonl` (compact, no indentation — one record per
+line, the file is append-only and is never rewritten):
+
+A normal session logs **two** `Rule 14 DTC:` tokens (market-open + midday), not one, and they
+can disagree — Aug 7 2026 logged `0` at market-open and `2` at midday. Task 6 additionally
+extends the token format to `Rule 14 DTC: <N> (source=…) [conservative: <M>]`. The four
+`rule14.*` fields below are defined across *all* of the session's tokens, not the last one
+written, precisely so a future editor cannot "simplify" this into last-writer-wins: `dtc` and
+`dtc_conservative` take the **maximum**, because the higher count is the session's actual risk
+position for the `>= 2` abort regardless of which routine logged it later; `source` takes the
+**weakest**, because a session is only as trustworthy as its worst-sourced token, not its best.
+
+**The `n/a` case (v3.4 — Task 6 follow-up; sources corrected below).** `market-open` emits
+`Rule 14 DTC: n/a (halted before gate evaluation)` instead of a numeric token on two kinds of
+path: its **pre-STEP-0 environment STOPs** (missing var, invalid `TRADING_MODE`, mode/endpoint
+mismatch, `TRADING_ENABLED != true`), **and** a **STEP 1 halt in which STEP 0 executed nothing**.
+It is *not* the whole set of halts: a STEP 1 halt whose STEP 0 executed a Rule 18 catch-up sell
+(or aborted on one) writes the **real** numeric token STEP 0 resolved, because STEP 0 runs before
+STEP 1 and resolves `DTC`/`DTC_SOURCE` before it sells. Treat such a session as an ordinary
+numeric-token session — fold its `N`/`M`/source into the maxima and the source ranking below, and
+audit `accurate` against the true round-trip count as usual. That token is
+still the routine's mandated Rule 14 audit line — the halt is honest, not a missing detector —
+so it **counts** toward `tokens_expected`/`tokens_found`, but it carries no number to fold into
+a maximum and no source to rank, so it is handled separately from the numeric tokens above:
+- An `n/a` token contributes **nothing** to the `rule14.dtc` / `rule14.dtc_conservative` maxima —
+  exclude it from that computation entirely (there is no `N` or `M` to compare).
+- An `n/a` token contributes **`none`** to the `rule14.source` ranking — a halted routine
+  evaluated no source, and under the existing weakest-wins rule `none` correctly drags the
+  session's `rule14.source` down, same as any other unresolvable token would.
+- If **every** `Rule 14 DTC:` token logged this session reads `n/a` (e.g. market-open halted on
+  an environment failure and midday also had nothing numeric to log), then: `rule14.dtc` is
+  `null`, `rule14.dtc_conservative` is `null`, `rule14.source` is `none`, and **`rule14.accurate`
+  is `true`** — nothing numeric was recorded, so nothing numeric was recorded *wrongly*; scoring
+  it `false` would fail the scorecard for a day the gate behaved exactly as designed (it halted
+  before there was anything to gate).
+
+| Field | Source |
+|---|---|
+| `rule14.dtc` | the **maximum `N`** across every *numeric* `Rule 14 DTC:` token logged this session, where `N` is the count *before* any `[conservative: M]` bracket — `N` is the figure that gates the ≤1 buffer and the `>= 2` abort. `n/a` tokens are excluded from this maximum; `null` if every token this session is `n/a` |
+| `rule14.dtc_conservative` | the **maximum `M`** across the session's *numeric* tokens where a `[conservative: M]` bracket is present (Task 6); `null` when no numeric token carries the bracket — either because Task 6 hasn't shipped yet, or because every token this session is `n/a` |
+| `rule14.source` | the **weakest** source across the session's tokens, ranked `api` (most trustworthy) > `local` > `none`/`error`/`n/a` — an `n/a` token ranks alongside `none`/`error` (weakest) since a halted routine evaluated no source |
+| `rule14.tokens_expected` | `2` on a normal session (market-open + midday), **plus one for every manual `/trade` entry committed today** *(v3.4)* — count today's `- Rule 14 DTC:` lines that sit on a `manual-YYYY-MM-DD-TICKER` BUY row. `/trade` runs the same pre-flight and writes the same token, and `weekly-review`'s audit sweep already expects `2 × sessions` **plus one per manual entry**; a fixed `2` here makes `rule14_tokens` FAIL spuriously on any day the owner runs `/trade`, which is a go-live criterion failing on correct behaviour. Subtract one instead if a routine legitimately did not run (holiday) |
+| `rule14.tokens_found` | count of `Rule 14 DTC:` tokens in today's TRADE-LOG rows — **`n/a` tokens count too**, since emitting the mandated line (even with nothing numeric to report) is exactly what this field audits |
+| `rule14.accurate` | `false` when **any** *numeric* recorded `N` in the session differs from the true same-day round-trip count; `true` when every numeric `N` this session matches the true count, **and also `true`** when every token this session is `n/a` (nothing numeric was recorded, so nothing was recorded wrongly) *(see Task 6)* |
+| `rule16.rotations` | ROTATE-EXIT rows written today |
+| `rule16.suppressed` | `DECAY-SUPPRESSED` rows written today *(Task 4)* |
+| `rule16.shallow_rotations` | rotations today whose position was shallower than **-2.0%** vs entry AND where SPY's 10-session return exceeded **+3.0%** — the exact condition the Task 3 guard exists to prevent. Should be 0 once the guard ships. **Exclude any ROTATE-EXIT row whose `trigger:` line reads (lower-case, as `midday` STEP 6 writes it) `trigger: sector-quadrant`** *(v3.4)*: `midday` STEP 4 branch 1 rotates a core ETF whose sector left the leading momentum quadrant **regardless of `suppressed`**, because that is an *absolute* signal the melt-up guard deliberately does not govern (the guard is about "lagging SPY" being meaningless in a fast tape — a relative read). Counting a correct sector-quadrant exit here would FAIL `rule16_meltup` on correct behaviour, and `weekly-review` forbids amending the criterion after the fact — a false no-go with no legitimate escape. A row with NO `trigger:` line is COUNTED, never excluded — a missing tag must produce a possible false FAIL, never silently suppress a real melt-up rotation |
+| `rule5.triggered` | `true` if today's market-open armed the re-deployment trigger *(Task 5)* — read from the `Rule 5 REDEPLOY:` line in today's Market-Open Run row. **This says the trigger was ARMED, not that anything was bought:** market-open computes it in STEP 2, before the `Decision: HOLD` short-circuit, so it is `true` even on a zero-idea HOLD day |
+| `rule5.acted` | `true` **only** when a core ballast add actually **filled** today under the relaxed 1.5:1 floor — i.e. today's Market-Open Run row shows `Rule 5 REDEPLOY: armed` *and* a filled BUY row for a `Tier: core` idea tagged `rr-relaxed: yes (Rule 5 redeploy)`. `false` on every other session, including an armed-but-nothing-passed-the-screens day *(v3.4)*. This is a **diagnostic, not a gate**: `metrics.py` no longer resets the deployment run on `triggered` (arming an unusable relaxation is not re-deploying), so a blocked melt-up window now FAILs `deployment` — and `rule5_acted` in the rollup is what tells the reviewer whether the arming ever put capital to work or the screens simply admitted nothing |
+| `rule8.scaleouts` / `.tightenings` | SCALE-OUT and STOP UPDATE rows today |
+| `ops.routines_expected` | `4` on a normal session (pre-market, market-open, midday, daily-summary) |
+| `ops.routines_logged` | how many of those four actually logged, per STEP 0's sweep |
+| `ops.missing` | array of names STEP 0 found missing (`[]` when clean) |
+| `ops.unprotected_positions` | held positions with no open GTC trailing stop after STEP 4 |
+| `ops.stops_placed` | stops placed this session |
+| `trades.buys` / `.sells` | fills today |
+| `breaches` | array of one-line descriptions of any money-moving rule breach observed today (`[]` when clean). A day trade, a stop moved down, a -7% position left open, or a sell placed with `DTC >= 2` all belong here |
+
+Add `memory/METRICS.jsonl` to STEP 8's `git add`.
+
+**Never rewrite or reorder existing lines.** If today's line is already present
+(a re-run), replace only that line and leave every other line byte-identical.
+Every other session — including a pure no-action HOLD day with zero fills, zero
+rotations and zero stops — still gets exactly one appended line; there is no
+condition under which this step is skipped while STEP 6 runs.
+
+## STEP 7 — Send ONE Telegram message (always)
+
+**Mode-aware messages (v3.4):** if `TRADING_MODE=live`, prefix this message with
+`🔴 LIVE ` (see the mode guard in the env-var section). `${MODE_LABEL}` below is the
+`(paper)`/`(live)` suffix computed there — never hardcode `(paper)`.
+
+≤ 15 lines. Always include the `${MODE_LABEL}` suffix.
+
+```
+bash scripts/telegram.sh "${HEARTBEAT_PREFIX}*EOD <MMM DD>* ${MODE_LABEL}
 Equity: \$<X> (<±X%> day, <±X%> phase)
 Cash: \$<X>
 Trades today: <N opened, K closed>
@@ -266,7 +377,7 @@ does, an env var is missing; treat it as a routine failure and stop.
 ## STEP 8 — COMMIT AND PUSH (mandatory)
 
 ```
-git add memory/TRADE-LOG.md memory/HEARTBEAT.md
+git add memory/TRADE-LOG.md memory/HEARTBEAT.md memory/METRICS.jsonl
 git commit -m "EOD snapshot $DATE"
 git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/dntounis/auto_invest.git"
 git push origin main

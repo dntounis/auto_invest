@@ -7,6 +7,13 @@
 #
 # State-changing subcommands (gated by TRADING_ENABLED="true"):
 #   order '<json>', cancel ORDER_ID, cancel-all, close SYM, close-all
+#
+# Mode-agnostic (v3.4): this wrapper does not read or validate TRADING_MODE.
+# It simply calls whatever ALPACA_ENDPOINT points at, paper or live. The
+# TRADING_MODE-aware guard — asserting that ALPACA_ENDPOINT matches the
+# declared TRADING_MODE and halting on a mismatch — lives in the routine
+# prompts (routines/*.md), not here. Keeping this wrapper mode-agnostic means
+# there is exactly one place that owns the guard and one place to audit it.
 
 set -euo pipefail
 
@@ -26,7 +33,7 @@ fi
 # Required env vars — fail loudly, never silently default to live URLs.
 : "${ALPACA_API_KEY:?ALPACA_API_KEY not set in environment}"
 : "${ALPACA_SECRET_KEY:?ALPACA_SECRET_KEY not set in environment}"
-: "${ALPACA_ENDPOINT:?ALPACA_ENDPOINT not set in environment (set to https://paper-api.alpaca.markets/v2 for paper, https://api.alpaca.markets/v2 for live)}"
+: "${ALPACA_ENDPOINT:?ALPACA_ENDPOINT not set in environment (paper: https://paper-api.alpaca.markets/v2 with TRADING_MODE=paper; live: https://api.alpaca.markets/v2 with TRADING_MODE=live — the two must agree)}"
 : "${ALPACA_DATA_ENDPOINT:?ALPACA_DATA_ENDPOINT not set in environment (typically https://data.alpaca.markets/v2)}"
 
 API="$ALPACA_ENDPOINT"

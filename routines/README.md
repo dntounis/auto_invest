@@ -24,6 +24,12 @@ In Claude Code cloud → Routines → New Routine:
    - `TELEGRAM_BOT_TOKEN` (from @BotFather, looks like `123456789:ABC...`)
    - `TELEGRAM_CHAT_ID` (your numeric chat ID — visit `https://api.telegram.org/bot<TOKEN>/getUpdates` after sending `/start` to your bot)
    - `TRADING_ENABLED` = `false`
+   - `TRADING_MODE` = `paper` (defaults to `paper` if unset, but set it explicitly).
+     Going live is a **two-variable** change: `TRADING_MODE=live` **and**
+     `ALPACA_ENDPOINT` pointed at the live API, together, in the same routine.
+     Every routine prompt's mode guard halts on a mismatch — a mode flipped
+     without the endpoint, or an endpoint changed without the mode — rather than
+     inferring one from the other.
 5. **"Allow unrestricted branch pushes":** ON
 6. **Cron schedule + timezone** — both routines run in `America/Chicago`:
    - Pre-market: `0 6 * * 1-5` (6:00 AM weekdays)
@@ -119,7 +125,7 @@ Three layers of validation already run **inside Claude's process** (where env va
 
 1. **Routine prompt env-var loop** — the `IMPORTANT — ENVIRONMENT VARIABLES` block in each `routines/*.md` file runs `for v in ALPACA_API_KEY ...; do [[ -n "${!v:-}" ]] && echo "$v: set" || echo "$v: MISSING"; done` and instructs Claude to STOP + Telegram-alert if any var is missing.
 2. **Wrapper script env guards** — every `scripts/*.sh` wrapper has `: "${ALPACA_API_KEY:?ALPACA_API_KEY not set in environment}"`-style guards that exit 1 with a clear message if a required var is unset.
-3. **Sanity-check on `ALPACA_ENDPOINT`** — both routine prompts include an explicit check that the endpoint contains `paper-api.alpaca.markets` to prevent accidental live-mode runs in v1.
+3. **Mode guard on `TRADING_MODE` + `ALPACA_ENDPOINT` (v3.4)** — every routine prompt reads `TRADING_MODE` (default `paper`) and asserts the endpoint matches it: `paper` requires `paper-api.alpaca.markets`, `live` requires `api.alpaca.markets` without `paper-api`. Either variable changed without the other halts the routine and sends a Telegram alert naming both values — this is what makes a live cutover a single env-var change instead of a prompt re-paste.
 
 ### What NOT to put in the setup script
 

@@ -4,6 +4,17 @@ description: Manual one-off trade entry (subject to all v2 buy-side gates and ri
 
 You are running a **manual trade entry**. Args from the user: `TICKER`, optional `THESIS`, optional `STOP_PCT` (default 10).
 
+**Mode guard (v3.4).** `TRADING_MODE` (default `paper`) and `ALPACA_ENDPOINT` must
+agree — `paper` ↔ `paper-api.alpaca.markets`, `live` ↔ `api.alpaca.markets` without
+`paper-api`. Never infer one from the other. If they disagree or `TRADING_MODE` is
+neither `paper` nor `live`, stop and tell the user rather than guessing — this
+command places a real order at Step 5, so a half-done switch here is the
+highest-stakes place it could happen: there is no cron log to cross-check a
+manual run against. If `TRADING_MODE=live`, prefix any Telegram message you send
+with `🔴 LIVE `. Also compute `MODE_LABEL` — `(paper)` when `TRADING_MODE` is
+`paper`, `(live)` when `live` — and use it for the account-label suffix in any
+message body; never hardcode `(paper)`.
+
 ALL routine gates apply: Buy-Side Gate from `TRADING-STRATEGY.md`, Rule 14 daytrade_count pre-flight, Rule 15 same-day skip (not relevant here since this IS a same-day buy — but no sell will happen until T+1 since stop placement is deferred to daily-summary per Rule 13).
 
 ## Step 1 — Read memory
@@ -29,9 +40,9 @@ Per `TRADING-STRATEGY.md`. ALL must pass:
 - Position cost ≤ available cash
 - **Rule 14 pre-flight — `DTC <= 1`** *(v3.3 — resolve via `bash scripts/alpaca.sh dtc`; **never** read `account.daytrade_count` raw. The paper endpoint omits the field, so the raw read silently evaluated to nothing and this gate never ran.)* Use midday Step 2's resolution:
   - `source=api` → `DTC = daytrade_count`, `DTC_SOURCE=api`.
-  - `source=unavailable` (the call succeeded, the field is simply absent) → derive locally over the last 5 business days, `DTC_SOURCE=local`: `bash scripts/alpaca.sh activities` per business day is the primary evidence (symbols with a buy fill AND a sell fill on the same activity date), the TRADE-LOG same-day buy/sell scan is corroboration, take the `max`. Rules 13/15 make this structurally 0 — a non-zero result is itself URGENT-worthy: send the alert and treat it as a genuine DTC.
+  - `source=unavailable` (the call succeeded, the field is simply absent) → derive locally over the last 5 business days, `DTC_SOURCE=local`: `bash scripts/alpaca.sh activities` per business day is the primary evidence (symbols with a buy fill AND a sell fill on the same activity date), the TRADE-LOG same-day buy/sell scan is corroboration, take the `max`. Rules 13/15 make this structurally 0 — a non-zero result is itself URGENT-worthy: send the alert and treat it as a genuine DTC. Track the raw sell-only count alongside it as `DTC_CONSERVATIVE` *(v3.4)* — logged, never gating — exactly as midday/market-open/weekly-review do.
   - `source=error` (the `dtc` HTTP call itself failed — nothing is known) or `DTC_SOURCE=none` → **block any sell** (this command issues none) and send a Telegram URGENT. The BUY may still proceed, logged as a degraded state, on the same reasoning as market-open's buy-side gate: a buy cannot itself create a day trade, because Rule 13 defers the stop to market close. Never fall back to the local derivation on `error`.
-  Buffer rationale: buy today + a possible stop-triggered sell tomorrow could bump DTC; a buffer of 1 keeps us 2 below the PDT threshold of 4. Log `Rule 14 DTC: <N> (source=api|local|none|error)` in the TRADE-LOG row at Step 6.
+  Buffer rationale: buy today + a possible stop-triggered sell tomorrow could bump DTC; a buffer of 1 keeps us 2 below the PDT threshold of 4. Log `Rule 14 DTC: <N> (source=api|local|none|error) [conservative: <M>]` in the TRADE-LOG row at Step 6 — **the bracket is part of the token** *(v3.4)*: Rule 14 requires **every** routine that evaluates it to log that format, and this command does run its own local derivation, so it has an `M` to report. Omit the bracket only when `source=api` or no local derivation ran, same as everywhere else.
 - TICKER is a stock (not option/crypto/forex/futures)
 
 If any check fails, STOP and report which gate tripped.
@@ -84,15 +95,21 @@ DO NOT place a trailing stop — Rule 13: stops go to daily-summary at market cl
 - Catalyst: manual-YYYY-MM-DD-TICKER
 - Target: <user-supplied or "n/a (manual)">
 - Realized P&L: n/a (open position)
-- Rule 14 DTC: <N> (source=api|local|none|error) — buy-side buffer check only, no sells in this command
+- Rule 14 DTC: <N> (source=api|local|none|error) [conservative: <M>] — buy-side buffer check only, no sells in this command
 ```
 The `manual-` prefix distinguishes hand-entered trades from `pm-` routine ideas.
 The `Rule 14 DTC:` line is the literal token the weekly review greps for to confirm
-the gate genuinely ran *(v3.3)* — write it on every manual entry.
+the gate genuinely ran *(v3.3)* — write it on every manual entry, with the
+`[conservative: <M>]` bracket whenever Step 3 ran a local derivation *(v3.4 — the
+rulebook requires the bracket from every routine that evaluates Rule 14; this
+token omitted it while `/trade` does derive locally)*. Each manual entry adds one
+to the week's expected token count, which weekly-review's sweep already allows for
+("plus one per manual `/trade` entry") and which daily-summary's
+`rule14.tokens_expected` must include for any day you run this command.
 
 ## Step 7 — Telegram one fill confirmation
 ```
-bash scripts/telegram.sh "*MANUAL FILL MMM DD* (paper) — TICKER N shares @ \$X (manual entry)"
+bash scripts/telegram.sh "*MANUAL FILL MMM DD* ${MODE_LABEL} — TICKER N shares @ \$X (manual entry)"
 ```
 
 ## Step 8 — Stop placement deferred

@@ -4,11 +4,20 @@ description: Pre-market research run (local mirror of cloud routine; no commit/p
 
 You are running the **pre-market research workflow** locally. Resolve today's date with `DATE=$(TZ=America/Chicago date +%Y-%m-%d)` — match the cloud routine's TZ so local entries align with cron-fired entries.
 
-This is a paper research run. **No buys and no sells, ever.** The only
+This is a research run — **no buys and no sells, ever**, regardless of
+`TRADING_MODE`. The only
 state-changing call this command may make is `trailing-stop`, from Step 0 only
 (Rule 17 retry + the v3.3 Rule 18 recovery of a missed daily-summary) — protective
 GTC orders on aged positions. It is kill-switch-gated; exit 4 means positions are
 unprotected, so alert and log the Rule 17 marker rather than shrugging it off.
+
+**Mode guard (v3.4).** `TRADING_MODE` (default `paper`) and `ALPACA_ENDPOINT` must
+agree — `paper` ↔ `paper-api.alpaca.markets`, `live` ↔ `api.alpaca.markets` without
+`paper-api`. Never infer one from the other. If they disagree or `TRADING_MODE` is
+neither `paper` nor `live`, stop and tell the user rather than guessing. If
+`TRADING_MODE=live`, prefix any Telegram message you send with `🔴 LIVE `. Also use
+`MODE_LABEL` — `(paper)` when `TRADING_MODE` is `paper`, `(live)` when `live` — for
+the account-label suffix in any message body; never hardcode `(paper)`.
 
 ## STEP 0 — Rules 17 + 18: pending-stop retry + cadence check (FIRST action)
 
@@ -33,7 +42,7 @@ the prior trading day (headers use `MMM DD`, e.g. `Jul 02` — NOT ISO). Equival
 robust check: confirm the most-recent `— EOD Snapshot` header in TRADE-LOG is dated
 the prior trading session; if the newest EOD snapshot predates it, the prior
 daily-summary is missing. If it is missing, send
-`bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — MISSING ROUTINE: daily-summary did not log for <prior_date>. Investigate cron. (Rule 18)"` and append a
+`bash scripts/telegram.sh "🚨 URGENT $DATE ${MODE_LABEL} — MISSING ROUTINE: daily-summary did not log for <prior_date>. Investigate cron. (Rule 18)"` and append a
 `### <prior_date> — MISSING ROUTINE: daily-summary (Rule 18)` placeholder to TRADE-LOG.md.
 
 **Then — only on the "snapshot missing" branch — RUN THE MISSED RULE 13 STOP
@@ -69,7 +78,7 @@ If no unresolved marker exists, proceed to STEP 1.
 - Tail of `memory/TRADE-LOG.md`
 - Tail of `memory/RESEARCH-LOG.md`
 
-## Step 2 — Pull live paper-account state
+## Step 2 — Pull live account state
 ```
 bash scripts/alpaca.sh account
 bash scripts/alpaca.sh positions
@@ -114,6 +123,15 @@ Run `bash scripts/perplexity.sh "<query>"` for each:
 If `perplexity.sh` exits 3, fall back to native `WebSearch` and **flag the fallback in the research-log entry** ("Sources: WebSearch fallback used for queries: ..."). If `alpaca.sh bars` is unavailable, degrade the satellite screen to catalyst + liquidity only and flag it.
 
 ## Step 4 — Write a dated entry to `memory/RESEARCH-LOG.md`
+
+**Rule 5 relaxed R:R** *(v3.4)*. Before screening, compute the re-deployment
+trigger exactly as market-open Step 2 does (`sizing.py redeploy`, consecutive-
+below-**floor** count from `memory/METRICS.jsonl` — count entries with
+`deployment_pct < 75.0`, **not** `"in_band": false`, which also matches
+above-ceiling sessions and would arm the trigger early *(v3.4)*). If `triggered` is true, a
+**`tier: core` idea qualifies at R:R ≥ 1.5:1** instead of ≥ 2:1; satellites stay
+at ≥ 2:1. Tag any idea admitted under the relaxed floor `rr-relaxed: yes (Rule 5
+redeploy)` on its idea line. Not armed → floor is 2:1 for everything, no tag.
 
 Use the schema documented at the top of `RESEARCH-LOG.md`. Include:
 

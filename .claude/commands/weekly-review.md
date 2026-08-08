@@ -9,6 +9,31 @@ DATE=$(TZ=America/Chicago date +%Y-%m-%d)
 WEEK_START=$(TZ=America/Chicago date -d 'last Monday' +%Y-%m-%d 2>/dev/null || python3 -c "from datetime import date,timedelta; t=date.today(); print((t - timedelta(days=t.weekday())).isoformat())")
 ```
 
+**Trial window (v3.4).** The go-live scorecard covers the whole trial, never one
+week. Resolve `TRIAL_START` in this order: (1) a `trial_start: YYYY-MM-DD` line in
+`memory/PROJECT-CONTEXT.md` if present — an explicit start always wins; (2) else the
+**earliest** `date` across all lines of `memory/METRICS.jsonl` (min over the file, not
+`head -1`, so a backfilled line can't move the window).
+```
+TRIAL_START=$(grep -m1 '^trial_start: ' memory/PROJECT-CONTEXT.md 2>/dev/null | sed 's/^trial_start: //')
+[[ -z "$TRIAL_START" ]] && TRIAL_START=$(python3 -c "
+import json
+d=[json.loads(l)['date'] for l in open('memory/METRICS.jsonl') if l.strip()]
+print(min(d) if d else '')" 2>/dev/null)
+```
+`--since` is inclusive. If both come back empty, report the go-live scorecard as
+`not computable — no metrics history`; **never fall back to `WEEK_START`**, which
+reinstates the one-week-at-a-time defect.
+
+## Mode guard (v3.4)
+`TRADING_MODE` (default `paper`) and `ALPACA_ENDPOINT` must agree — `paper` ↔
+`paper-api.alpaca.markets`, `live` ↔ `api.alpaca.markets` without `paper-api`.
+Never infer one from the other. If they disagree or `TRADING_MODE` is neither
+`paper` nor `live`, stop and tell the user rather than guessing. If
+`TRADING_MODE=live`, prefix any Telegram message you send with `🔴 LIVE `. Also use
+`MODE_LABEL` — `(paper)` when `TRADING_MODE` is `paper`, `(live)` when `live` — for
+the account-label suffix in any message body; never hardcode `(paper)`.
+
 ## Strategy mutation policy
 `memory/TRADING-STRATEGY.md` is read-only here. Proposed changes go to
 `memory/WEEKLY-REVIEW.md` under `## Proposed strategy changes (NOT auto-applied — human review required)`. Human applies them by hand.
@@ -26,9 +51,27 @@ bash scripts/alpaca.sh positions
 # rely on TRADE-LOG.md (read in Step 1).
 bash scripts/alpaca.sh activities    # today only sanity check
 bash scripts/alpaca.sh bars SPY 1Day 10  # benchmark (v3.3)
+# v3.4 — week's numbers come from the metrics file, not from prose.
+python3 scripts/metrics.py rollup    --file memory/METRICS.jsonl --since "$WEEK_START"
+python3 scripts/metrics.py scorecard --file memory/METRICS.jsonl --since "$WEEK_START"
+# v3.4 — and the GO-LIVE verdict over the full trial window.
+python3 scripts/metrics.py rollup    --file memory/METRICS.jsonl --since "$TRIAL_START"
+python3 scripts/metrics.py scorecard --file memory/METRICS.jsonl --since "$TRIAL_START"
 ```
+Both, always. Two one-week PASSes are not a two-week PASS: `deployment`'s
+consecutive-below-floor counter restarts at each window boundary, so a four-session
+run straddling a Friday scores 2+2 and passes twice; `cadence` and `rule14_tokens`
+share the seam. The weekly run is a progress read; the trial-window run gates.
 
 ## Step 3 — Compute grade card
+
+**Source of record (v3.4).** `Week return`, `Bot vs S&P`, `Alpha vs SPX` and the
+daily attribution come from `metrics.py rollup` — do not recompute by hand. The
+rollup also gives the cash-drag / selection-alpha split
+(`cum_cash_drag_pp` vs `cum_selection_alpha_pp`) — report both; the W14–W15
+reviews had to derive this split by hand. If `memory/METRICS.jsonl` is missing
+sessions for the week, say so and mark the affected figures `incomplete` rather
+than filling gaps by hand.
 
 | Metric | Source |
 |--------|--------|
@@ -44,7 +87,7 @@ bash scripts/alpaca.sh bars SPY 1Day 10  # benchmark (v3.3)
 | Best trade | highest realized P&L % |
 | Worst trade | lowest realized P&L % |
 | Profit factor | sum(gains) / abs(sum(losses)) |
-| daytrade_count delta | **`bash scripts/alpaca.sh dtc`, never raw `account.daytrade_count`** *(v3.3 — absent on paper)*. Resolve per midday Step 2 (`api` → use it; `unavailable` → derive locally, activities-primary; `none`/`error` → unresolvable). Compare vs last week's `WEEKLY-REVIEW.md` entry (or 0 / "n/a (week 1)"). Report the source alongside: `0 -> 1 (source=api)`, `unresolvable (source=error)` |
+| daytrade_count delta | **`bash scripts/alpaca.sh dtc`, never raw `account.daytrade_count`** *(v3.3 — absent on paper)*. Resolve per midday Step 2 (`api` → use it; `unavailable` → derive locally, activities-primary; `none`/`error` → unresolvable). Compare vs last week's `WEEKLY-REVIEW.md` entry (or 0 / "n/a (week 1)"). Report the source alongside: `0 -> 1 (source=api)`, `unresolvable (source=error)`. Same resolution as the Rule 14 audit token, so carry `[conservative: <M>]` too whenever a local derivation ran this session, omitted for `source=api` or no local derivation *(v3.4)* |
 | Rule violations | scan TRADE-LOG.md for: positions > 20%, missing trailing stops, -7% closes that exceeded -10%, Rule 13 violations, Rule 14 abort events, **Rule 14 audit gaps (below)** |
 
 **Rule 14 audit-token sweep (v3.3).** `grep -c 'Rule 14 DTC:'` over this week's
@@ -65,16 +108,48 @@ shape that let the original Rule 14 fail-open survive fourteen weeks.
 - Phase P&L: $X (X.X%)
 - Best: TICKER +X%
 - Worst: TICKER -X%
-- daytrade_count delta: <prior> -> <current>
+- daytrade_count delta: <prior> -> <current> (source=api|local|none|error) [conservative: <M>]
 - Rule violations: <list, or "none">
 ```
 
 ## Step 5 — Append entry to `memory/WEEKLY-REVIEW.md` (locally)
-Use the template at the top of WEEKLY-REVIEW.md. Include `daytrade_count: <N>` in the stats table for next week's delta computation. **(v3)** If the satellite sleeve has underperformed the ETF core per-capital for 3+ consecutive weeks (compare the Core/satellite attribution across the last three entries), propose shrinking the satellite allocation. If proposed strategy changes exist, append `## Proposed strategy changes (NOT auto-applied — human review required)` block.
+Use the template at the top of WEEKLY-REVIEW.md. Include `daytrade_count: <N>` in the stats table for next week's delta computation. **(v3)** If the satellite sleeve has underperformed the ETF core per-capital for 3+ consecutive weeks (compare the Core/satellite attribution across the last three entries), propose shrinking the satellite allocation.
+
+### Go-live scorecard (v3.4)
+Paste the **`--since "$TRIAL_START"`** scorecard verbatim (the trial-window one, not
+the weekly one) and open the section with the window it covers:
+```
+Go-live scorecard — TRIAL WINDOW <TRIAL_START>..<DATE> (<N> sessions). Verdict: <PASS|FAIL>.
+Weekly scorecard (<WEEK_START>..<DATE>, informational only): <PASS|FAIL>.
+```
+The go/no-go verdict is the trial-window one; if the two disagree, it stands and the
+divergence gets a sentence (usually a run straddling a Friday). Then a
+PASS/FAIL/detail table for
+each criterion (`cadence`, `rule14_tokens`, `rule14_accuracy`, `unprotected`,
+`breaches`, `rule16_meltup`, `deployment`), plus the headline `verdict`. **These
+criteria were fixed before the data existed and are process-only — alpha is
+recorded (`alpha_informational`) but is NOT a gate**: two weeks can't measure
+alpha (weekly noise is ~±1pp), so gating on it would gate on a coin flip. **Do
+not edit the criteria to fit the result** — if one looks wrong in hindsight, say
+so and leave the verdict as computed.
+
+Two criteria changed shape in v3.4:
+- `deployment` — >2 consecutive sessions **below the 75% floor** FAILs, full stop.
+  `rule5.triggered` no longer resets the run (it means market-open *armed* the
+  relaxed floor in Step 2, before the HOLD short-circuit, not that anything was
+  bought — which made the criterion unfailable). A screened-out melt-up window now
+  FAILs, and that is the intended verdict. Sessions above the 85% ceiling don't
+  count. When it FAILs, quote the rollup's `rule5_triggers` vs `rule5_acted`:
+  `triggers>0, acted==0` = armed daily but nothing passed the screens (the melt-up
+  RS hole, `docs/LIVE-SMOKE-TEST.md` §8); `triggers==0` = Rule 5 never armed.
+- `rule16_meltup` — counts **decay-chain** rotations only; `trigger: sector-quadrant`
+  exits are excluded (absolute signal, deliberately outside the guard).
+
+If proposed strategy changes exist, append `## Proposed strategy changes (NOT auto-applied — human review required)` block.
 
 ## Step 6 — Telegram (1 message)
 ```
-bash scripts/telegram.sh "*WEEK $WEEK_START → $DATE* (paper)
+bash scripts/telegram.sh "*WEEK $WEEK_START → $DATE* ${MODE_LABEL}
 Week return: \$<X> (<±X%>)
 Trades: <N> (W:<X> / L:<Y> / open:<Z>)
 Best: <TICKER +X%> | Worst: <TICKER -X%>

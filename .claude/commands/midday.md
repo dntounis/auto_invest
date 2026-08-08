@@ -5,7 +5,16 @@ description: Midday position management (local mirror of cloud routine; no commi
 You are running the **midday position-management workflow** locally. Resolve
 today's date with `DATE=$(TZ=America/Chicago date +%Y-%m-%d)`.
 
-This is a v2 paper run. Sells may execute if `TRADING_ENABLED=true`.
+This run executes against whichever account `TRADING_MODE` selects (see the mode
+guard below). Sells may execute if `TRADING_ENABLED=true`.
+
+**Mode guard (v3.4).** `TRADING_MODE` (default `paper`) and `ALPACA_ENDPOINT` must
+agree — `paper` ↔ `paper-api.alpaca.markets`, `live` ↔ `api.alpaca.markets` without
+`paper-api`. Never infer one from the other. If they disagree or `TRADING_MODE` is
+neither `paper` nor `live`, stop and tell the user rather than guessing. If
+`TRADING_MODE=live`, prefix any Telegram message you send with `🔴 LIVE `. Also use
+`MODE_LABEL` — `(paper)` when `TRADING_MODE` is `paper`, `(live)` when `live` — for
+the account-label suffix in any message body; never hardcode `(paper)`.
 
 ## Visa-aware gates (READ FIRST)
 - **Rule 14 (pre-flight):** Resolve `DTC`/`DTC_SOURCE` via `bash scripts/alpaca.sh dtc` (v3.3, see Step 2) BEFORE any sell — never treat an absent field as 0. If `DTC >= 2`, or `DTC_SOURCE` is `none` or `error`, abort all sells and print which sells you would have done. **The abort blocks sells only — it does not end the run** (v3.3): still run Step 3/4's evaluation, still tighten stops via `replace-stop` (a GTC order, not a sell), still write `DECAY-FLAG` rows, and still write Step 6's `- midday $DATE:` cadence line and `Rule 14 DTC:` audit line. Re-check DTC between sells in a sector-kill loop.
@@ -33,13 +42,18 @@ Resolve Rule 14 via `bash scripts/alpaca.sh dtc` *(v3.3, four sources)*:
   GTC stop fill, a partial-fill re-entry, or a manual Alpaca-UI action); the
   TRADE-LOG same-day buy+sell / `SCALE-OUT` / `ROTATE-EXIT` scan is corroboration.
   Take `max` of the two; a disagreement is itself URGENT. Structurally 0 under Rules
-  13/15 — non-zero from either source is URGENT.
+  13/15 — non-zero from either source is URGENT. **Round trips only** *(v3.4)*: a
+  symbol contributes 1 only when it has BOTH a buy fill and a sell fill the same
+  calendar date; a sell with no same-date buy is not a day trade and must NOT
+  increment the count (the prior convention counted every sell and logged `DTC: 2`
+  on 2026-08-07 against a true count of 0).
 - `source=error` (the `dtc` HTTP call itself failed — nothing is known) → block all
   sells + URGENT. **Never** substitute the local derivation here: it is structurally
   0 and would fail the gate open on a live account.
 - TRADE-LOG unreadable for the local fallback → `source=none`, block sells + URGENT.
 
-Never treat an absent field as 0. Log `Rule 14 DTC: <N> (source=...)`.
+Never treat an absent field as 0. Log `Rule 14 DTC: <N> (source=...) [conservative: <M>]`
+(full format + bracket-omission rule at Step 6, line ~176).
 If `DTC >= 2`, `source=none` or `source=error`, abort sells — but still write Step 6's mandatory
 `- midday $DATE:` cadence line first (v3.3 — an abort must not look like a cron
 skip to Rule 18's sweep).
@@ -111,7 +125,14 @@ Hard-close (1) is exclusive; ladder (2) may scale-out AND tighten; decay (3) onl
        on the same-tier trail-tighten below to capture the gain. No `DTC` impact.
      - `reason == "none_due"`: scale-out already logged for this tier — no action.
    - Tighten: if `target_trail_pct` non-null AND < current open stop trail (never raise, never < 3%) → `replace-stop OID TICKER QTY $target_trail_pct`.
-3. **Momentum-decay rotation (Rule 16, v3):** `POS_RET` from `bash scripts/alpaca.sh bars TICKER 1Day 11`, `SPY_RET` from `bash scripts/alpaca.sh bars SPY 1Day 11`, `PRIOR_FLAG` from the latest DECAY-FLAG row for TICKER. `DECAY_JSON=$(python3 scripts/sizing.py decay --unrealized-pct "$UPCT" --pos-ret-10d "$POS_RET" --spy-ret-10d "$SPY_RET" --prior-flag "$PRIOR_FLAG")`. Always log a DECAY-FLAG row. If `rotate==1` and DTC < 2 → `close TICKER` (ROTATE-EXIT). Core ETF also rotates if its sector left the leading quadrant.
+3. **Momentum-decay rotation (Rule 16, v3):** `POS_RET` from `bash scripts/alpaca.sh bars TICKER 1Day 11`, `SPY_RET` from `bash scripts/alpaca.sh bars SPY 1Day 11`, `PRIOR_FLAG` from the latest DECAY-FLAG row for TICKER. `DECAY_JSON=$(python3 scripts/sizing.py decay --unrealized-pct "$UPCT" --pos-ret-10d "$POS_RET" --spy-ret-10d "$SPY_RET" --prior-flag "$PRIOR_FLAG")`.
+   - **Always log a DECAY-FLAG row, on every outcome — including a suppression or a sector-quadrant exit** *(v3.4)*. This is the consecutiveness state the next midday reads; skip it and any of those outcomes silently resets the chain. Unconditional, runs before the branches below.
+   - **Then resolve as a strict if / else-if / else chain — stop at the first branch that applies** *(v3.4)*:
+     1. **Sector-quadrant check first (absolute signal).** Core ETF whose sector left the leading quadrant → treat as `rotate=1` and close, **regardless of `suppressed`**. `sizing.py decay` can't see sector state, so it may say `suppressed=1` on the same position — that's a relative-to-SPY read and doesn't apply here; the sector exit is absolute and wins. DTC<2 → `close TICKER` (ROTATE-EXIT, logged `trigger: sector-quadrant`). DTC≥2 → abort + URGENT.
+     2. **Else if `suppressed == 1`** (melt-up guard): **do NOT sell.** Shallow loser (drawdown shallower than -2.0% vs entry) while SPY's 10-session return > +3.0% — "lagging SPY" here means "not carrying the index", not "decaying". Log a DECAY-SUPPRESSED row (drawdown, benchmark 10-session return, consecutive-suppressed count). No DTC impact.
+     3. **Else if `rotate == 1`** → DTC<2 → `close TICKER` (ROTATE-EXIT, logged `trigger: decay-chain`). DTC≥2 → abort + URGENT.
+     4. **Else:** no Rule 16 action.
+   - **Shadow tracking (v3.4):** before writing today's row, check TRADE-LOG.md for a DECAY-SUPPRESSED row for this ticker on the prior trading day; if found, add `since_suppressed: <pct>` to today's row (DECAY-FLAG or ROTATE-EXIT, whichever applies) so weekly review can judge whether withholding the sell was right. If not found, omit the field — never write it blank.
 4. Sector-kill (Rule 10): scan most recent 20 EXIT rows OR last 30 calendar days (whichever is shorter); if this position's sector has 2 consecutive losses (negative `Realized P&L`, same `Sector:` tag, no winner between them) → close all actionable positions in that sector in a batch. Evaluate sector-kill ONCE per unique sector.
 5. Else: no action.
 
@@ -126,11 +147,15 @@ After each individual sell, re-resolve DTC via `bash scripts/alpaca.sh dtc`
 directly; the field is absent on paper and a raw subscript raises, silently
 leaving DTC empty and fail-open. `source=api` → use the value. `source=unavailable`
 → re-derive locally (Step 2 method: activities-primary, TRADE-LOG corroborating)
-and ADD sells already done earlier in this loop (not yet in activities/TRADE-LOG).
-`source=error` (the call failed) → abort, never re-derive. Anything else —
-unparseable, missing, TRADE-LOG unreadable — is `source=none`: ABORT all remaining
-sells in the batch now, URGENT Telegram, **then proceed to Step 6 — do NOT exit**.
-Never continue the loop on an empty/unparseable value.
+and add **only sells already done earlier in this loop whose symbol also has a
+buy fill today** — not the raw loop count *(v3.4)*. Track the raw count
+separately as `DTC_CONSERVATIVE` and log both; under Rules 13/15 a rotation or
+hard-close can never be a same-day round trip, so this normally stays 0 through
+any number of sells — non-zero means Rule 13/15 was bypassed and is itself
+URGENT-worthy. `source=error` (the call failed) → abort, never re-derive. Anything
+else — unparseable, missing, TRADE-LOG unreadable — is `source=none`: ABORT all
+remaining sells in the batch now, URGENT Telegram, **then proceed to Step 6 — do
+NOT exit**. Never continue the loop on an empty/unparseable value.
 
 Abort if DTC reaches 2 (any source), or source=none, or source=error.
 
@@ -158,11 +183,15 @@ trigger a spurious catch-up re-run that duplicates today's DECAY-FLAG rows.
 **Then — the Rule 14 audit line**, even with zero actionable positions
 or zero scheduled actions:
 ```
-- Rule 14 DTC: <N> (source=api|local|none|error) (sell attempted: yes|no)
+- Rule 14 DTC: <N> (source=api|local|none|error) [conservative: <M>] (sell attempted: yes|no)
 ```
-Use the last resolved `DTC`/`DTC_SOURCE` (Step 5 mid-loop value if a sell was
-attempted, else Step 2's). This is the literal token weekly review greps for to
-confirm Rule 14 actually ran — never skip it.
+`N` is the round-trip count that gates the buffer/abort. `[conservative: <M>]`
+*(v3.4)* is `DTC_CONSERVATIVE` — the raw sell count Step 5's mid-loop tracked
+alongside `N` when it re-derived locally; include it whenever a Step 5 mid-loop
+local derivation ran this run, omit when `source=api` or no local derivation
+occurred. Use the last resolved `DTC`/`DTC_SOURCE` (Step 5 mid-loop value if a
+sell was attempted, else Step 2's). This is the literal token weekly review greps
+for to confirm Rule 14 actually ran — never skip it.
 
 For each completed sell, append an EXIT trade row:
 ```
@@ -198,17 +227,43 @@ For each momentum-decay evaluation (v3 — state for next midday):
 ```
 ### YYYY-MM-DD — DECAY-FLAG: TICKER flag=0|1
 - unrealized %X | 10-session pos %A vs SPY %B | prior_flag=0|1 | rotate=0|1
+- since_suppressed: %Z  [OPTIONAL v3.4 — only if a DECAY-SUPPRESSED row for this
+  ticker exists on the prior trading day; omit the line otherwise, never blank]
 ```
-(A ROTATE-EXIT is logged as a normal sell EXIT row with Thesis "Rule 16 momentum-decay rotation".)
+
+For each melt-up-suppressed rotation (v3.4 — alongside, never instead of, the DECAY-FLAG row above):
+```
+### YYYY-MM-DD — DECAY-SUPPRESSED: TICKER
+- Rule 16 melt-up guard: rotation owed (2nd consecutive flag) but WITHHELD.
+- unrealized %X vs entry (floor -2.0%) | benchmark 10-session %Y (threshold +3.0%)
+- Consecutive suppressed middays: N | since_suppressed: %Z
+- Chain preserved — resumes when the position deepens past the floor or the
+  benchmark cools. No sell placed; no DTC impact.
+```
+On the first suppression (no prior DECAY-SUPPRESSED row to measure since) —
+omit `since_suppressed` entirely, don't write it blank.
+
+(A ROTATE-EXIT is logged as a normal sell EXIT row with Thesis "Rule 16
+momentum-decay rotation" or "sector exited leading quadrant"; it too carries
+`since_suppressed: %Z` [OPTIONAL v3.4, same omit-if-absent rule] when a
+DECAY-SUPPRESSED row for this ticker exists on the prior trading day.)
+
+Every ROTATE-EXIT row MUST also carry `- trigger: sector-quadrant|decay-chain`
+*(v3.4)* naming which Step 4 branch fired. daily-summary's
+`rule16.shallow_rotations` excludes `sector-quadrant` rows: branch 1 rotates
+regardless of `suppressed` because the sector signal is absolute, not
+relative-to-SPY, so counting a correct branch-1 exit would FAIL the
+`rule16_meltup` go-live criterion on correct behaviour. Classify in the log, not
+by re-deriving from the Thesis later.
 
 ## Step 7 — Telegram
 Silent if no actions and DTC < 2. Otherwise one summary message with prefix conventions:
-- `*MIDDAY HARD-CLOSE MMM DD* (paper)` — URGENT, hard-close
-- `*MIDDAY SECTOR-KILL MMM DD* (paper)` — URGENT, sector kill
-- `*MIDDAY ROTATE MMM DD* (paper)` — informational, momentum-decay rotation
-- `*MIDDAY SCALE-OUT MMM DD* (paper)` — informational, Rule 8 partial
-- `*MIDDAY STOP UPDATE MMM DD* (paper)` — informational, stop tightening
-- `*MIDDAY ABORT MMM DD* (paper)` — URGENT, DTC abort
+- `*MIDDAY HARD-CLOSE MMM DD* ${MODE_LABEL}` — URGENT, hard-close
+- `*MIDDAY SECTOR-KILL MMM DD* ${MODE_LABEL}` — URGENT, sector kill
+- `*MIDDAY ROTATE MMM DD* ${MODE_LABEL}` — informational, momentum-decay rotation
+- `*MIDDAY SCALE-OUT MMM DD* ${MODE_LABEL}` — informational, Rule 8 partial
+- `*MIDDAY STOP UPDATE MMM DD* ${MODE_LABEL}` — informational, stop tightening
+- `*MIDDAY ABORT MMM DD* ${MODE_LABEL}` — URGENT, DTC abort
 
 ## Step 8 — Skip commit
 Local mode does not auto-commit.
