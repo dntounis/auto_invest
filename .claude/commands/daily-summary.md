@@ -146,7 +146,11 @@ Merge in and append **one compact single-line** JSON object to `memory/METRICS.j
   `.dtc_conservative` = max `M` where present on a numeric token, else `null` (always `null`
   pre-Task 6, included from the first record so the schema doesn't change shape mid-window);
   `.source` = weakest source across the session's tokens (`api` > `local` > `none`/`error`);
-  `.tokens_expected` (2 normal, 1 if a routine legitimately skipped);
+  `.tokens_expected` (2 normal — market-open + midday — **plus one per manual `/trade` entry
+  committed today** *(v3.4)*, counted from today's `Rule 14 DTC:` lines on `manual-` BUY rows;
+  a fixed 2 FAILs `rule14_tokens` spuriously on any `/trade` day, and weekly-review's sweep
+  already expects `2 × sessions` plus one per manual entry. Minus one if a routine legitimately
+  skipped, e.g. a holiday);
   `.tokens_found` (count of today's tokens);
   `.accurate` = `false` when *any* numeric recorded `N` this session != true same-day round-trip
   count, `true` otherwise

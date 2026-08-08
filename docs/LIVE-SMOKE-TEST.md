@@ -197,9 +197,60 @@ placed at close so they cannot fire same-day") both assume the broker will in
 fact accept a GTC trailing-stop order on request. If the live broker won't
 take that order, then the entire visa-aware safety design — every position
 protected, zero day trades by construction — silently does not hold on the
-live account, even though every routine will believe it does, because nothing
-else in the system checks the stop actually landed.
+live account.
+
+The system *does* detect an unprotected position after the fact: Rule 17 fires
+an URGENT Telegram and writes a `STOP-PLACEMENT-FAILED` marker that the next
+routine retries as its first action, and `ops.unprotected_positions` in the
+nightly metrics record FAILs the `unprotected` go-live criterion. So this is not
+an undetected failure. What makes it a blocker is that **both of those are
+after-the-fact detectors of a condition that would then be permanent**: they
+report and retry, and the retry hits the same broker-side refusal every time.
+Rule 6 ("every position gets a real GTC trailing stop, never mental") and
+Rule 13 ("stops placed at close so they cannot fire same-day") both assume the
+broker will accept the order *eventually*. If it never will, the retry loop
+never converges, every live position rides unprotected, and the alerting just
+tells you so once per routine.
 
 **A rejected trailing stop on live is therefore a hard blocker on going live at
 any size**, not a "note it and proceed." Do not flip `TRADING_MODE=live` on
 any routine until check (d) has passed cleanly at least once.
+
+## 8. Known open failure mode — the melt-up RS hole (NOT fixed)
+
+Recorded deliberately, as a known limitation carried into the trial rather than
+a defect awaiting a patch.
+
+**The shape.** In a strong-breadth melt-up, `sizing.py rscreen` can reject
+*every* satellite candidate: RS10 and RS50 are computed against SPY, and when
+the index itself is the strongest thing in the tape, almost nothing shows
+positive relative strength. Rule 5's re-deployment trigger relaxes the **R:R**
+floor for core ballast (2:1 → 1.5:1); it does **not** relax **RS**. So the book
+can sit below the 75% deployment floor for an extended run with the trigger
+armed every single morning and still buy nothing — pre-market HOLDs, market-open
+has no ideas to gate, and the cash drag compounds against a rising benchmark.
+This is the Week-15 mechanism: −1.78pp of a −1.94pp week, entirely cash drag.
+
+**Why it is not being fixed here.** Loosening RS in exactly the regime where
+relative strength is hardest to demonstrate is how a momentum strategy ends up
+buying laggards at the top. The screen is doing what it was designed to do; the
+question of what the *right* melt-up behaviour is (broad-index ballast? an
+explicit cash-drag budget? nothing?) is a strategy question, not a bug fix, and
+it should not be answered under go-live pressure.
+
+**What was done instead.** The `deployment` go-live criterion is now built to
+**catch** this state rather than mask it (v3.4): `metrics.py` no longer resets
+its consecutive-below-floor run on `rule5.triggered`, because arming a
+relaxation that admits nothing is not re-deployment. More than two consecutive
+sessions below the 75% floor FAILs, whatever the reason. A blocked melt-up
+window is therefore a **no-go**, by design — the go-live decision does not get
+to pass through the exact state that cost the phase 1.78pp.
+
+**Reading it in the review.** When `deployment` FAILs, compare the rollup's
+`rule5_triggers` and `rule5_acted`:
+
+| Pattern | Meaning |
+|---|---|
+| `triggers > 0`, `acted == 0` | this hole: armed daily, screens admitted nothing |
+| `triggers > 0`, `acted > 0` | Rule 5 worked, the adds were just too small or too late |
+| `triggers == 0` | the trigger never armed — Rule 5 itself, not this hole |

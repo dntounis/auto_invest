@@ -13,7 +13,7 @@ and MUST commit and push directly to `main`. Do not create or push to any
 other branch. The spec assumes routine commits land on `main` so the next
 scheduled run reads them as fresh state.
 
-You are running the **pre-market research workflow** (v3.4, research-only). The account is whichever `TRADING_MODE` selects — see the mode guard above.
+You are running the **pre-market research workflow** (v3.4, research-only). The account is whichever `TRADING_MODE` selects — see the mode guard below (in the environment-variables section).
 Resolve today's date via:
 ```
 DATE=$(TZ=America/Chicago date +%Y-%m-%d)

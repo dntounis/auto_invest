@@ -14,7 +14,7 @@ other branch. Tomorrow's pre-market routine reads `tail of TRADE-LOG.md` from
 a fresh `main` clone — if today's EOD lands on a feature branch, tomorrow's
 Day P&L computation breaks.
 
-You are running the **daily-summary workflow** (v3.4, EOD snapshot + stop placement + heartbeat). The account is whichever `TRADING_MODE` selects — see the mode guard above.
+You are running the **daily-summary workflow** (v3.4, EOD snapshot + stop placement + heartbeat). The account is whichever `TRADING_MODE` selects — see the mode guard below (in the environment-variables section).
 Resolve today's date via:
 ```
 DATE=$(TZ=America/Chicago date +%Y-%m-%d)
@@ -326,7 +326,7 @@ a maximum and no source to rank, so it is handled separately from the numeric to
 | `rule14.dtc` | the **maximum `N`** across every *numeric* `Rule 14 DTC:` token logged this session, where `N` is the count *before* any `[conservative: M]` bracket — `N` is the figure that gates the ≤1 buffer and the `>= 2` abort. `n/a` tokens are excluded from this maximum; `null` if every token this session is `n/a` |
 | `rule14.dtc_conservative` | the **maximum `M`** across the session's *numeric* tokens where a `[conservative: M]` bracket is present (Task 6); `null` when no numeric token carries the bracket — either because Task 6 hasn't shipped yet, or because every token this session is `n/a` |
 | `rule14.source` | the **weakest** source across the session's tokens, ranked `api` (most trustworthy) > `local` > `none`/`error`/`n/a` — an `n/a` token ranks alongside `none`/`error` (weakest) since a halted routine evaluated no source |
-| `rule14.tokens_expected` | `2` on a normal session (market-open + midday); `1` if a routine legitimately did not run (holiday) |
+| `rule14.tokens_expected` | `2` on a normal session (market-open + midday), **plus one for every manual `/trade` entry committed today** *(v3.4)* — count today's `- Rule 14 DTC:` lines that sit on a `manual-YYYY-MM-DD-TICKER` BUY row. `/trade` runs the same pre-flight and writes the same token, and `weekly-review`'s audit sweep already expects `2 × sessions` **plus one per manual entry**; a fixed `2` here makes `rule14_tokens` FAIL spuriously on any day the owner runs `/trade`, which is a go-live criterion failing on correct behaviour. Subtract one instead if a routine legitimately did not run (holiday) |
 | `rule14.tokens_found` | count of `Rule 14 DTC:` tokens in today's TRADE-LOG rows — **`n/a` tokens count too**, since emitting the mandated line (even with nothing numeric to report) is exactly what this field audits |
 | `rule14.accurate` | `false` when **any** *numeric* recorded `N` in the session differs from the true same-day round-trip count; `true` when every numeric `N` this session matches the true count, **and also `true`** when every token this session is `n/a` (nothing numeric was recorded, so nothing was recorded wrongly) *(see Task 6)* |
 | `rule16.rotations` | ROTATE-EXIT rows written today |
