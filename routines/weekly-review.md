@@ -161,7 +161,7 @@ Compute from the read-in data:
 | Best trade | highest realized P&L % |
 | Worst trade | lowest realized P&L % |
 | Profit factor | sum(gains) / abs(sum(losses)) |
-| daytrade_count delta | **From `bash scripts/alpaca.sh dtc`, never from a raw `account.daytrade_count` subscript** *(v3.3 — the field is absent on the paper endpoint, so the raw read produced a silent nothing every week)*. Resolve `DTC` / `DTC_SOURCE` exactly as the Rule 14 pre-flight above, then compare against the value recorded in last week's `WEEKLY-REVIEW.md` entry (or 0 on Week 1; "n/a (week 1)" if no prior value exists). **Report the source alongside the number**, e.g. `0 -> 1 (source=api)` or `0 -> 0 (source=local, derived — field absent)` or `unresolvable (source=error)`. A `source=error` row is a finding in its own right: the day-trade gate could not be read this week |
+| daytrade_count delta | **From `bash scripts/alpaca.sh dtc`, never from a raw `account.daytrade_count` subscript** *(v3.3 — the field is absent on the paper endpoint, so the raw read produced a silent nothing every week)*. Resolve `DTC` / `DTC_SOURCE` exactly as the Rule 14 pre-flight above, then compare against the value recorded in last week's `WEEKLY-REVIEW.md` entry (or 0 on Week 1; "n/a (week 1)" if no prior value exists). **Report the source alongside the number**, e.g. `0 -> 1 (source=api)` or `0 -> 0 (source=local, derived — field absent)` or `unresolvable (source=error)`. A `source=error` row is a finding in its own right: the day-trade gate could not be read this week. **Carry `[conservative: <M>]` here too, same as the Rule 14 audit token** *(v3.4)*: this delta uses the identical resolution as the pre-flight above, so it inherits `DTC_CONSERVATIVE` whenever that resolution ran a local derivation this session — e.g. `0 -> 0 (source=local) [conservative: 2]` — and omits the bracket under the same conditions (`source=api`, or no local derivation ran). One resolution, one format, no divergence to explain |
 | Rule violations (audit) | scan TRADE-LOG.md for: positions > 20% (Rule 3); missing trailing stops (Rule 6); -7% closes that exceeded -10% (Rule 7 timeout); Rule 13 violations (stop placed before market close); Rule 14 abort events; **Rule 14 audit-token sweep — see below** |
 
 **Rule 14 audit-token sweep (v3.3).** Three files state that `Rule 14 DTC:` is "the
@@ -200,7 +200,7 @@ by more than 0.25pp, note the divergence and keep the Alpaca figure.
 - Phase P&L: $X (X.X%)
 - Best: TICKER +X%
 - Worst: TICKER -X%
-- daytrade_count delta: 0 -> N (source=api|local|none|error)
+- daytrade_count delta: 0 -> N (source=api|local|none|error) [conservative: <M>]
 - Rule violations: <list, or "none">
 ```
 

@@ -64,7 +64,7 @@ than filling gaps by hand.
 | Best trade | highest realized P&L % |
 | Worst trade | lowest realized P&L % |
 | Profit factor | sum(gains) / abs(sum(losses)) |
-| daytrade_count delta | **`bash scripts/alpaca.sh dtc`, never raw `account.daytrade_count`** *(v3.3 — absent on paper)*. Resolve per midday Step 2 (`api` → use it; `unavailable` → derive locally, activities-primary; `none`/`error` → unresolvable). Compare vs last week's `WEEKLY-REVIEW.md` entry (or 0 / "n/a (week 1)"). Report the source alongside: `0 -> 1 (source=api)`, `unresolvable (source=error)` |
+| daytrade_count delta | **`bash scripts/alpaca.sh dtc`, never raw `account.daytrade_count`** *(v3.3 — absent on paper)*. Resolve per midday Step 2 (`api` → use it; `unavailable` → derive locally, activities-primary; `none`/`error` → unresolvable). Compare vs last week's `WEEKLY-REVIEW.md` entry (or 0 / "n/a (week 1)"). Report the source alongside: `0 -> 1 (source=api)`, `unresolvable (source=error)`. Same resolution as the Rule 14 audit token, so carry `[conservative: <M>]` too whenever a local derivation ran this session, omitted for `source=api` or no local derivation *(v3.4)* |
 | Rule violations | scan TRADE-LOG.md for: positions > 20%, missing trailing stops, -7% closes that exceeded -10%, Rule 13 violations, Rule 14 abort events, **Rule 14 audit gaps (below)** |
 
 **Rule 14 audit-token sweep (v3.3).** `grep -c 'Rule 14 DTC:'` over this week's
@@ -85,7 +85,7 @@ shape that let the original Rule 14 fail-open survive fourteen weeks.
 - Phase P&L: $X (X.X%)
 - Best: TICKER +X%
 - Worst: TICKER -X%
-- daytrade_count delta: <prior> -> <current>
+- daytrade_count delta: <prior> -> <current> (source=api|local|none|error) [conservative: <M>]
 - Rule violations: <list, or "none">
 ```
 
