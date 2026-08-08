@@ -211,9 +211,35 @@ STOP, send Telegram alert "market-open $DATE: no RESEARCH-LOG entry found — sk
 ```
 - market-open $DATE: 0 orders placed, 0 filled. HALTED at STEP 1 — no RESEARCH-LOG
   entry for today. Upstream pre-market failure; no ideas evaluated. Telegram alert sent.
-- Rule 14 DTC: n/a (halted before gate evaluation)
+- Rule 14 DTC: <see "Which token a STEP 1 halt writes" immediately below>
 ```
 Then exit. Do NOT make up trade ideas.
+
+**Which token a STEP 1 halt writes** *(v3.4 — this row is NOT unconditionally
+`n/a`)*. STEP 0 runs **before** STEP 1 and can execute real sells, so:
+
+- **STEP 0 executed nothing this run** — no unresolved `CATCH-UP PENDING` rows, or
+  every row cleared as `reason=already-exited` / `reason=trigger-no-longer-met`
+  without ever resolving a count — then and only then write
+  `Rule 14 DTC: n/a (halted before gate evaluation)`, omitting the bracket.
+- **STEP 0 executed any catch-up action, or aborted on one** — a sell, a
+  sector-kill batch, a scale-out, or a Rule 14 abort on `DTC >= 2` /
+  `source=none|error` — then STEP 0 already resolved a real `DTC`, `DTC_SOURCE`
+  and possibly `DTC_CONSERVATIVE`. Write **those**, in the normal STEP 7 format:
+```
+- Rule 14 DTC: <N> (source=api|local|none|error) [conservative: <M>] — STEP 0 Rule 18
+  catch-up: <K> catch-up sell(s) executed, each with its own pre-flight; halted at
+  STEP 1 before the buy-side gate was reached.
+```
+
+Why: on a multi-day outage there are `CATCH-UP PENDING` rows *and* today's
+pre-market failed. STEP 0 resolves the count and executes a rotate-exit, then
+STEP 1 halts — and a hardcoded `n/a` records the visa-critical gate as never
+evaluated on a session that actually sold. `daily-summary` then folds an
+all-`n/a` session to `rule14.accurate: true` (correctly, by its own rule: nothing
+numeric was recorded, so nothing was recorded wrongly), and a real sell with a
+real day-trade count disappears from the audit trail entirely. `n/a` is honest
+only when nothing was evaluated; here something was.
 
 Note on historical RESEARCH-LOG entries: pre-T6 entries do not have `pm-YYYY-MM-DD-TICKER`
 IDs. If today's entry lacks IDs, treat it as v1-format and STOP — do not synthesize IDs.
@@ -226,7 +252,8 @@ so the row below can truthfully say one was sent)*.
 - market-open $DATE: 0 orders placed, 0 filled. HALTED at STEP 1 — RESEARCH-LOG
   entry is v1-format, no pm- IDs. Upstream pre-market failure; no ideas evaluated.
   Telegram alert sent.
-- Rule 14 DTC: n/a (halted before gate evaluation)
+- Rule 14 DTC: <same rule as above — the real STEP 0 token if STEP 0 acted, else
+  n/a (halted before gate evaluation)>
 ```
 Then exit.
 
@@ -603,14 +630,27 @@ on 2026-07-08, 2026-07-14 and 2026-07-24.
 `[conservative: <M>]` *(v3.4)* carries `DTC_CONSERVATIVE` — the raw sell count
 from STEP 0's batch, tracked whenever STEP 0 ran a local derivation this run.
 Omit the bracket when `source=api`, or when STEP 0 made no local derivation this
-run (nothing to report). If this row is written from a STEP 1 halt (before
-STEP 3 ever ran), record `n/a (halted before gate evaluation)` instead of a
-number/source, and omit the bracket too — there is nothing to derive.
+run (nothing to report).
+
+**The halt copies of this row** *(v3.4 — corrected)*. `n/a (halted before gate
+evaluation)` belongs on:
+- the three **pre-STEP-0 environment halts** (missing var, `TRADING_MODE`
+  invalid, mode/endpoint mismatch, `TRADING_ENABLED != true`) — nothing ran at
+  all; and
+- a **STEP 1 halt in which STEP 0 executed nothing** (no unresolved
+  `CATCH-UP PENDING` rows, or all cleared without resolving a count).
+
+It does **not** belong on a STEP 1 halt where STEP 0 executed a catch-up action or
+aborted on one: STEP 0 precedes STEP 1 and resolves a real `DTC`/`DTC_SOURCE`
+before it sells, so that halt writes the real numeric token plus its bracket (see
+STEP 1's "Which token a STEP 1 halt writes"). The distinction is not cosmetic —
+`n/a` tells `daily-summary` no number was recorded, which makes the session's
+`rule14.accurate` vacuously `true`; using it on a session that actually sold hides
+a real sell behind a clean audit.
 
 The `Rule 14 DTC:` line is the literal token the weekly review greps for to
 confirm the gate genuinely ran on the buy side too — write it every time this row
-is written, including the STEP 1 halt copies of this row (see STEP 1), using the
-`n/a` form there since STEP 3's `alpaca.sh dtc` call hasn't happened yet.
+is written, on every path, halts included.
 
 On a HOLD or zero-order run this row is the *entire* output of the step — write it
 and proceed to STEP 8. Never skip STEP 7.

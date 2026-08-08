@@ -55,14 +55,27 @@ STOP with message "market-open $DATE: no RESEARCH-LOG entry found — run /pre-m
 **Before exiting** *(v3.3)*, append the mandatory Market-Open Run row (Step 7 format)
 to `memory/TRADE-LOG.md`: `- market-open $DATE: 0 orders placed, 0 filled. HALTED at
 Step 1 — no RESEARCH-LOG entry for today. Upstream pre-market failure; no ideas
-evaluated.` plus a second line `- Rule 14 DTC: n/a (halted before gate evaluation)`.
+evaluated.` plus a second `- Rule 14 DTC:` line — see the rule below.
 Then exit. Do NOT make up trade ideas.
+
+**Which token a Step 1 halt writes** *(v3.4 — not unconditionally `n/a`)*. Step 0
+runs **before** Step 1 and can execute real sells. Write `n/a (halted before gate
+evaluation)` only when Step 0 executed nothing this run (no unresolved
+`CATCH-UP PENDING` rows, or all cleared as `already-exited`/`trigger-no-longer-met`
+without resolving a count). If Step 0 executed any catch-up action **or aborted on
+one** (`DTC>=2`, `source=none|error`), it already resolved a real
+`DTC`/`DTC_SOURCE`/`DTC_CONSERVATIVE` — write those in the normal Step 7 format,
+noting `halted at Step 1 before the buy-side gate`. A hardcoded `n/a` on a session
+that actually sold records the visa-critical gate as never evaluated, and
+daily-summary then scores the all-`n/a` session `accurate: true`, hiding a real
+sell behind a clean audit.
 
 If today's RESEARCH-LOG entry lacks `pm-YYYY-MM-DD-TICKER` IDs, treat it as
 v1-format and STOP — do not synthesize IDs. **Before exiting** *(v3.3)*, append the
 same two rows, adapted: `- market-open $DATE: 0 orders placed, 0 filled. HALTED at Step 1
 — RESEARCH-LOG entry is v1-format, no pm- IDs. Upstream pre-market failure; no ideas
-evaluated.` plus `- Rule 14 DTC: n/a (halted before gate evaluation)`. Then exit.
+evaluated.` plus the `- Rule 14 DTC:` line chosen by the same rule above (real Step 0
+token if Step 0 acted, else `n/a (halted before gate evaluation)`). Then exit.
 
 ## Step 2 — Pull state
 ```
@@ -301,9 +314,11 @@ first (Rule 18 looks for the literal `- market-open $DATE:` token):
 Literal `Rule 14 DTC:` token — weekly review greps for it to confirm the gate ran.
 `[conservative: <M>]` *(v3.4)* is `DTC_CONSERVATIVE`, the raw sell count from
 Step 0's batch, tracked whenever Step 0 ran a local derivation this run; omit when
-`source=api` or no local derivation occurred. Always write the line, including the
-Step 1 halt copies of this row (use `n/a (halted before gate evaluation)` there
-since Step 3's `dtc` call never ran, and omit the bracket too).
+`source=api` or no local derivation occurred. Always write the line, on every path
+including the halt copies of this row. `n/a (halted before gate evaluation)` is
+correct on the pre-Step-0 environment halts **and** on a Step 1 halt where Step 0
+executed nothing — but *not* on a Step 1 halt where Step 0 acted or aborted, which
+carries the real numeric token Step 0 resolved *(v3.4 — corrected)*.
 
 **Filled orders** — additionally append a full TRADE row using the schema at the top of TRADE-LOG.md:
 

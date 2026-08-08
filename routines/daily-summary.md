@@ -297,9 +297,15 @@ written, precisely so a future editor cannot "simplify" this into last-writer-wi
 position for the `>= 2` abort regardless of which routine logged it later; `source` takes the
 **weakest**, because a session is only as trustworthy as its worst-sourced token, not its best.
 
-**The `n/a` case (v3.4 — Task 6 follow-up).** `market-open`'s three environment-STOP paths
-(`routines/market-open.md`'s pre-STEP-0 halts) emit `Rule 14 DTC: n/a (halted before gate
-evaluation)` instead of a numeric token, because STEP 3's `dtc` call never ran. That token is
+**The `n/a` case (v3.4 — Task 6 follow-up; sources corrected below).** `market-open` emits
+`Rule 14 DTC: n/a (halted before gate evaluation)` instead of a numeric token on two kinds of
+path: its **pre-STEP-0 environment STOPs** (missing var, invalid `TRADING_MODE`, mode/endpoint
+mismatch, `TRADING_ENABLED != true`), **and** a **STEP 1 halt in which STEP 0 executed nothing**.
+It is *not* the whole set of halts: a STEP 1 halt whose STEP 0 executed a Rule 18 catch-up sell
+(or aborted on one) writes the **real** numeric token STEP 0 resolved, because STEP 0 runs before
+STEP 1 and resolves `DTC`/`DTC_SOURCE` before it sells. Treat such a session as an ordinary
+numeric-token session — fold its `N`/`M`/source into the maxima and the source ranking below, and
+audit `accurate` against the true round-trip count as usual. That token is
 still the routine's mandated Rule 14 audit line — the halt is honest, not a missing detector —
 so it **counts** toward `tokens_expected`/`tokens_found`, but it carries no number to fold into
 a maximum and no source to rank, so it is handled separately from the numeric tokens above:

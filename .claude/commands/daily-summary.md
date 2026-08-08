@@ -150,8 +150,11 @@ Merge in and append **one compact single-line** JSON object to `memory/METRICS.j
   `.tokens_found` (count of today's tokens);
   `.accurate` = `false` when *any* numeric recorded `N` this session != true same-day round-trip
   count, `true` otherwise
-  **`n/a` tokens** (v3.4 — market-open's environment-halt paths emit `Rule 14 DTC: n/a (halted
-  before gate evaluation)`, no numeric `N`): still **count** toward `tokens_expected`/
+  **`n/a` tokens** (v3.4 — market-open emits `Rule 14 DTC: n/a (halted before gate evaluation)`,
+  no numeric `N`, on its **pre-Step-0 environment halts** *and* on a **Step 1 halt where Step 0
+  executed nothing**; a Step 1 halt whose Step 0 ran a catch-up sell or aborted on one writes the
+  real numeric token instead, so treat that session as an ordinary numeric one): still **count**
+  toward `tokens_expected`/
   `tokens_found` (the mandated line was still emitted); **excluded** from the `dtc`/
   `dtc_conservative` maxima (nothing numeric to compare); contribute `none` to the `source`
   ranking (a halted routine evaluated no source). If **every** token this session is `n/a`:
