@@ -33,7 +33,11 @@ Resolve Rule 14 via `bash scripts/alpaca.sh dtc` *(v3.3, four sources)*:
   GTC stop fill, a partial-fill re-entry, or a manual Alpaca-UI action); the
   TRADE-LOG same-day buy+sell / `SCALE-OUT` / `ROTATE-EXIT` scan is corroboration.
   Take `max` of the two; a disagreement is itself URGENT. Structurally 0 under Rules
-  13/15 — non-zero from either source is URGENT.
+  13/15 — non-zero from either source is URGENT. **Round trips only** *(v3.4)*: a
+  symbol contributes 1 only when it has BOTH a buy fill and a sell fill the same
+  calendar date; a sell with no same-date buy is not a day trade and must NOT
+  increment the count (the prior convention counted every sell and logged `DTC: 2`
+  on 2026-08-07 against a true count of 0).
 - `source=error` (the `dtc` HTTP call itself failed — nothing is known) → block all
   sells + URGENT. **Never** substitute the local derivation here: it is structurally
   0 and would fail the gate open on a live account.
@@ -133,11 +137,15 @@ After each individual sell, re-resolve DTC via `bash scripts/alpaca.sh dtc`
 directly; the field is absent on paper and a raw subscript raises, silently
 leaving DTC empty and fail-open. `source=api` → use the value. `source=unavailable`
 → re-derive locally (Step 2 method: activities-primary, TRADE-LOG corroborating)
-and ADD sells already done earlier in this loop (not yet in activities/TRADE-LOG).
-`source=error` (the call failed) → abort, never re-derive. Anything else —
-unparseable, missing, TRADE-LOG unreadable — is `source=none`: ABORT all remaining
-sells in the batch now, URGENT Telegram, **then proceed to Step 6 — do NOT exit**.
-Never continue the loop on an empty/unparseable value.
+and add **only sells already done earlier in this loop whose symbol also has a
+buy fill today** — not the raw loop count *(v3.4)*. Track the raw count
+separately as `DTC_CONSERVATIVE` and log both; under Rules 13/15 a rotation or
+hard-close can never be a same-day round trip, so this normally stays 0 through
+any number of sells — non-zero means Rule 13/15 was bypassed and is itself
+URGENT-worthy. `source=error` (the call failed) → abort, never re-derive. Anything
+else — unparseable, missing, TRADE-LOG unreadable — is `source=none`: ABORT all
+remaining sells in the batch now, URGENT Telegram, **then proceed to Step 6 — do
+NOT exit**. Never continue the loop on an empty/unparseable value.
 
 Abort if DTC reaches 2 (any source), or source=none, or source=error.
 
@@ -165,11 +173,15 @@ trigger a spurious catch-up re-run that duplicates today's DECAY-FLAG rows.
 **Then — the Rule 14 audit line**, even with zero actionable positions
 or zero scheduled actions:
 ```
-- Rule 14 DTC: <N> (source=api|local|none|error) (sell attempted: yes|no)
+- Rule 14 DTC: <N> (source=api|local|none|error) [conservative: <M>] (sell attempted: yes|no)
 ```
-Use the last resolved `DTC`/`DTC_SOURCE` (Step 5 mid-loop value if a sell was
-attempted, else Step 2's). This is the literal token weekly review greps for to
-confirm Rule 14 actually ran — never skip it.
+`N` is the round-trip count that gates the buffer/abort. `[conservative: <M>]`
+*(v3.4)* is `DTC_CONSERVATIVE` — the raw sell count Step 5's mid-loop tracked
+alongside `N` when it re-derived locally; include it whenever a Step 5 mid-loop
+local derivation ran this run, omit when `source=api` or no local derivation
+occurred. Use the last resolved `DTC`/`DTC_SOURCE` (Step 5 mid-loop value if a
+sell was attempted, else Step 2's). This is the literal token weekly review greps
+for to confirm Rule 14 actually ran — never skip it.
 
 For each completed sell, append an EXIT trade row:
 ```

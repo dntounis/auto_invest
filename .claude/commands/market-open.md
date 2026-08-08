@@ -22,7 +22,12 @@ the ladder tier via `sizing.py ladder` against live state — bind `LADDER_TIER`
 **instrument** type `etf`|`stock` derived from what the symbol is, and pass that to
 `--tier`; never the `core`|`satellite` role, which `sizing.py` rejects); else resolve DTC using
 midday's Step 5 batch-accumulation procedure (NOT Step 3's buy-side gate — that's
-permissive on `source=none`/`source=error`, wrong for a sell), abort on `DTC>=2`,
+permissive on `source=none`/`source=error`, wrong for a sell) — on `source=unavailable`,
+add **only sells already executed earlier in this Step 0 batch whose symbol also has
+a buy fill today**, not the raw batch count *(v3.4)*, tracking the raw count
+separately as `DTC_CONSERVATIVE`; every Step 0 catch-up sell is aged by construction
+(Rule 15), so this addition is normally 0 regardless of batch size — non-zero is
+itself URGENT-worthy — abort on `DTC>=2`,
 `source=none` or `source=error` (a failed `dtc` call knows nothing — never fall back
 to the structurally-zero local derivation),
 apply the Rule 15 check, then execute: `close TICKER` for hard-close/rotate-exit/
@@ -259,11 +264,14 @@ first (Rule 18 looks for the literal `- market-open $DATE:` token):
 
 - market-open $DATE: <N> orders placed, <K> filled. Pre-market Decision=<TRADE|HOLD>.
   <gate outcomes per idea, HEADROOM, deployment %, core %, sector spread, week budget>
-- Rule 14 DTC: <N> (source=api|local|none|error) — <buy-side buffer only, no sells this run | buy-side buffer + Step 0 catch-up: <K> sell(s) executed, each pre-flighted>.
+- Rule 14 DTC: <N> (source=api|local|none|error) [conservative: <M>] — <buy-side buffer only, no sells this run | buy-side buffer + Step 0 catch-up: <K> sell(s) executed, each pre-flighted>.
 ```
 Literal `Rule 14 DTC:` token — weekly review greps for it to confirm the gate ran.
-Always write it, including the Step 1 halt copies of this row (use
-`n/a (halted before gate evaluation)` there since Step 3's `dtc` call never ran).
+`[conservative: <M>]` *(v3.4)* is `DTC_CONSERVATIVE`, the raw sell count from
+Step 0's batch, tracked whenever Step 0 ran a local derivation this run; omit when
+`source=api` or no local derivation occurred. Always write the line, including the
+Step 1 halt copies of this row (use `n/a (halted before gate evaluation)` there
+since Step 3's `dtc` call never ran, and omit the bracket too).
 
 **Filled orders** — additionally append a full TRADE row using the schema at the top of TRADE-LOG.md:
 

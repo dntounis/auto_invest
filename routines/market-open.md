@@ -138,9 +138,15 @@ For each unresolved row, in order:
    simply absent) → derive the count locally exactly as midday STEP 2 does
    (`bash scripts/alpaca.sh activities` as primary evidence over the last 5
    business days, TRADE-LOG same-day buy+sell pairs as corroboration, `max` of the
-   two), **then add the number of sells already executed earlier in this STEP 0
-   batch** (their TRADE-LOG rows haven't been written yet, so the raw scan would
-   undercount them); `source=error` — the `dtc` HTTP call itself failed, so
+   two), then add **only those sells already executed earlier in this STEP 0 batch
+   whose symbol also has a buy fill today** — not the raw batch count *(v3.4)*.
+   Track the raw count separately as `DTC_CONSERVATIVE` and log both, per midday's
+   STEP 5 correction. Every STEP 0 catch-up sell is, by construction, a position
+   aged from a prior session (Rule 15) — so in normal operation this addition
+   contributes 0 regardless of how many sells execute in the batch; a non-zero
+   contribution would mean a same-day buy and sell of the same symbol slipped
+   through and is itself URGENT-worthy;
+   `source=error` — the `dtc` HTTP call itself failed, so
    nothing is known — is treated exactly like `source=none` and must NEVER fall
    back to the local derivation (structurally 0, hence a fail-open); anything else
    is `source=none`. **ABORT this sell and every remaining unresolved row** if
@@ -520,12 +526,16 @@ on 2026-07-08, 2026-07-14 and 2026-07-24.
   <One paragraph: for each idea, whether it passed or which gate rejected it and by
   how much; HEADROOM at STEP 2; deployment %, ETF-core % of deployed, sector spread;
   satellite slots used; week trade budget used/5; Rule 13/14/15 applicability.>
-- Rule 14 DTC: <N> (source=api|local|none|error) — <buy-side buffer check only, no
-  sells this run | buy-side buffer check + STEP 0 Rule 18 catch-up: <K> catch-up
-  sell(s) executed, each with its own pre-flight>. If this row is written from a
-  STEP 1 halt (before STEP 3 ever ran), record `n/a (halted before gate evaluation)`
-  instead of a number/source.
+- Rule 14 DTC: <N> (source=api|local|none|error) [conservative: <M>] — <buy-side
+  buffer check only, no sells this run | buy-side buffer check + STEP 0 Rule 18
+  catch-up: <K> catch-up sell(s) executed, each with its own pre-flight>.
 ```
+`[conservative: <M>]` *(v3.4)* carries `DTC_CONSERVATIVE` — the raw sell count
+from STEP 0's batch, tracked whenever STEP 0 ran a local derivation this run.
+Omit the bracket when `source=api`, or when STEP 0 made no local derivation this
+run (nothing to report). If this row is written from a STEP 1 halt (before
+STEP 3 ever ran), record `n/a (halted before gate evaluation)` instead of a
+number/source, and omit the bracket too — there is nothing to derive.
 
 The `Rule 14 DTC:` line is the literal token the weekly review greps for to
 confirm the gate genuinely ran on the buy side too — write it every time this row

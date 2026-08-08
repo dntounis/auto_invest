@@ -91,8 +91,14 @@ bash scripts/alpaca.sh orders open # open trailing-stop orders (for replace-stop
 1. Parse `bash scripts/alpaca.sh dtc`. If `source == "api"`, set `DTC` to
    `daytrade_count` and `DTC_SOURCE=api`. Done.
 2. If `source == "unavailable"` — the call **succeeded** but the paper endpoint
-   omits the field — derive the count locally per the procedure below, with
-   `DTC_SOURCE=local`.
+   omits the field — derive the count locally (full procedure below), with
+   `DTC_SOURCE=local`. That procedure must
+   count same-day **round trips**: a symbol contributes 1 only when `activities`
+   shows BOTH a buy fill AND a sell fill for that symbol on the **same calendar
+   date**. A sell with no same-date buy for that symbol is not a day trade and
+   MUST NOT increment the count *(v3.4 — the prior convention counted every sell,
+   which produced `DTC: 2` on 2026-08-07 when the true count was 0)*. Corroborate
+   against TRADE-LOG.md; on disagreement take the higher and send an URGENT.
 3. If `source == "error"` — the `dtc` HTTP call itself failed (non-zero curl
    status or a non-JSON body: 5xx, timeout, DNS, bad creds) — **nothing** is known
    about the account. Set `DTC_SOURCE=error` and go to (4). Do **NOT** fall back to
@@ -132,9 +138,10 @@ evidence source, send a Telegram URGENT ("Rule 14: local day-trade count is N �
 Rule 13/15 may have been bypassed") and treat it as a genuine DTC.
 
 Never record "field absent, treated 0". Every routine that evaluates Rule 14 MUST
-log the literal token `Rule 14 DTC: <N> (source=api|local|none|error)` in its
-TRADE-LOG row so the weekly review can audit whether the gate was genuinely
-exercised.
+log the literal token `Rule 14 DTC: <N> (source=api|local|none|error) [conservative: <M>]`
+in its TRADE-LOG row so the weekly review can audit whether the gate was genuinely
+exercised. `[conservative: <M>]` *(v3.4, see STEP 5/6)* is omitted here at STEP 2
+since no batch has run yet — it applies once STEP 5's mid-loop tracks it.
 
 If `DTC >= 2` (from any source), or `DTC_SOURCE` is `none` or `error`, take the
 abort path described in Rule 14. **The abort blocks sells only — it does not end
@@ -346,10 +353,13 @@ bash scripts/alpaca.sh dtc
 - `source == "api"`: set `DTC` to the returned `daytrade_count`, `DTC_SOURCE=api`.
 - `source == "unavailable"`: re-derive the local count exactly as in STEP 2
   (`activities` as primary evidence, TRADE-LOG as corroboration, `max` of the two),
-  then ADD the number of sells already executed earlier in *this* STEP 5 loop —
-  those sells may not yet appear in `activities` and definitely haven't hit
-  TRADE-LOG.md yet (STEP 6 logs after the loop finishes), so the raw scan would
-  undercount them. The sum is `DTC`, `DTC_SOURCE=local`.
+  then add **only those sells already executed earlier in this STEP 5 loop whose
+  symbol also has a buy fill today** — not the raw loop count *(v3.4)*. Track the
+  raw count separately as `DTC_CONSERVATIVE` and log both. Under Rules 13 and 15 a
+  rotation or hard-close can never be a same-day round trip, so in normal operation
+  the derived count stays 0 through any number of sells; a non-zero value means
+  Rule 13 or 15 was bypassed and is itself URGENT-worthy. `DTC` is this sum,
+  `DTC_SOURCE=local`.
 - `source == "error"`: the `dtc` call itself failed — `DTC_SOURCE=error`. Abort as
   below. Never substitute the local derivation here (see STEP 2 (3)).
 - Any other outcome — unparseable value, missing `source`, or TRADE-LOG.md
@@ -404,13 +414,21 @@ reason.
 rows below — and even if STEP 3 found zero actionable positions or STEP 4 scheduled
 zero actions — append one line to `memory/TRADE-LOG.md`, on every run:
 ```
-- Rule 14 DTC: <N> (source=api|local|none|error) (sell attempted: yes|no)
+- Rule 14 DTC: <N> (source=api|local|none|error) [conservative: <M>] (sell attempted: yes|no)
 ```
-Use the final resolved `DTC` / `DTC_SOURCE` for this run: the last STEP 5
-mid-loop refresh if any sell was attempted, otherwise the STEP 2 value. This is
-the literal token the weekly review greps for to confirm Rule 14 genuinely ran
-— a run that writes nothing is indistinguishable from the fourteen weeks where
-the gate silently never executed. Never skip this line.
+`N` is the round-trip count from STEP 2 / STEP 5's derivation — the figure that
+gates the ≤1 buffer and the `>= 2` abort. `[conservative: <M>]` *(v3.4)* carries
+`DTC_CONSERVATIVE`, the raw sell count STEP 5's mid-loop tracked alongside `N`
+whenever it re-derived locally — include it whenever a STEP 5 mid-loop local
+derivation ran this run, so the raw figure survives in the audit trail even
+though it no longer gates anything. Omit the bracket entirely when `source=api`
+(the broker figure needs no secondary) or when no STEP 5 mid-loop local
+derivation occurred this run (nothing to report). Use the final resolved `DTC` /
+`DTC_SOURCE` for this run: the last STEP 5 mid-loop refresh if any sell was
+attempted, otherwise the STEP 2 value. This is the literal token the weekly
+review greps for to confirm Rule 14 genuinely ran — a run that writes nothing is
+indistinguishable from the fourteen weeks where the gate silently never executed.
+Never skip this line.
 
 For each completed sell, append an EXIT trade row:
 ```
