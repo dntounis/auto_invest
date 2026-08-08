@@ -268,11 +268,26 @@ Bind `LADDER_TIER` explicitly here, before any ladder call, and pass that.
        --pos-ret-10d "$POS_RET" --spy-ret-10d "$SPY_RET" --prior-flag "$PRIOR_FLAG")
    ```
    - Always append a `DECAY-FLAG TICKER flag=<flag>` row (STEP 6) — this is the state
-     the next midday reads for consecutiveness.
+     the next midday reads for consecutiveness. **Write it on every outcome,
+     including a suppression** *(v3.4 — suppression preserves the chain; dropping
+     the row would silently reset it)*.
+   - If `suppressed == 1` *(v3.4 melt-up guard)*: **do NOT sell.** The position is a
+     shallow loser (drawdown shallower than -2.0% vs entry) in a fast benchmark
+     (SPY 10-session > +3.0%), where "lagging SPY" means "not carrying the index"
+     rather than "decaying". Append a `DECAY-SUPPRESSED` row (STEP 6) recording the
+     drawdown, the benchmark's 10-session return, and how many consecutive middays
+     this name has now been suppressed. No `DTC` impact — nothing is sold.
    - If `rotate == 1`: re-check Rule 14 `DTC`; if `DTC < 2`, `bash scripts/alpaca.sh close TICKER`
      (a ROTATE-EXIT) and Telegram-note it. If `DTC ≥ 2`, abort + URGENT Telegram.
    - A core ETF additionally rotates (treat as `rotate=1`) if its sector has exited the
-     leading momentum quadrant per the rotation read.
+     leading momentum quadrant per the rotation read. **The melt-up guard does not
+     apply to that path** — a sector leaving the leading quadrant is an absolute
+     signal, not a relative one.
+   - **Shadow tracking** *(v3.4)*: before writing today's row, scan TRADE-LOG.md for a
+     `DECAY-SUPPRESSED` row for this ticker on the previous trading day. If one
+     exists, include in today's row what the position has done since that
+     suppression (`since_suppressed: <pct>`) so the weekly review can judge whether
+     withholding the sell was correct. This is the guard's own audit trail.
 
 4. **Sector-kill** (Rule 10) — 2 consecutive losses in this position's sector.
    Lookback: scan the most recent 20 EXIT rows in `memory/TRADE-LOG.md`, or
@@ -425,6 +440,16 @@ For each momentum-decay evaluation, append a DECAY-FLAG row (v3 — state for th
 ```
 ### YYYY-MM-DD — DECAY-FLAG: TICKER flag=0|1
 - unrealized %X | 10-session pos %A vs SPY %B | prior_flag=0|1 | rotate=0|1
+```
+
+For each melt-up-suppressed rotation, append a DECAY-SUPPRESSED row (v3.4):
+```
+### YYYY-MM-DD — DECAY-SUPPRESSED: TICKER
+- Rule 16 melt-up guard: rotation owed (2nd consecutive flag) but WITHHELD.
+- unrealized %X vs entry (floor -2.0%) | benchmark 10-session %Y (threshold +3.0%)
+- Consecutive suppressed middays: N | since_suppressed: %Z (blank on the first)
+- Chain preserved — rotation resumes when the position deepens past the floor or
+  the benchmark cools. No sell placed; no DTC impact.
 ```
 
 For each momentum-decay rotation exit, append a ROTATE-EXIT row (v3):

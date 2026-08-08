@@ -111,7 +111,12 @@ Hard-close (1) is exclusive; ladder (2) may scale-out AND tighten; decay (3) onl
        on the same-tier trail-tighten below to capture the gain. No `DTC` impact.
      - `reason == "none_due"`: scale-out already logged for this tier — no action.
    - Tighten: if `target_trail_pct` non-null AND < current open stop trail (never raise, never < 3%) → `replace-stop OID TICKER QTY $target_trail_pct`.
-3. **Momentum-decay rotation (Rule 16, v3):** `POS_RET` from `bash scripts/alpaca.sh bars TICKER 1Day 11`, `SPY_RET` from `bash scripts/alpaca.sh bars SPY 1Day 11`, `PRIOR_FLAG` from the latest DECAY-FLAG row for TICKER. `DECAY_JSON=$(python3 scripts/sizing.py decay --unrealized-pct "$UPCT" --pos-ret-10d "$POS_RET" --spy-ret-10d "$SPY_RET" --prior-flag "$PRIOR_FLAG")`. Always log a DECAY-FLAG row. If `rotate==1` and DTC < 2 → `close TICKER` (ROTATE-EXIT). Core ETF also rotates if its sector left the leading quadrant.
+3. **Momentum-decay rotation (Rule 16, v3):** `POS_RET` from `bash scripts/alpaca.sh bars TICKER 1Day 11`, `SPY_RET` from `bash scripts/alpaca.sh bars SPY 1Day 11`, `PRIOR_FLAG` from the latest DECAY-FLAG row for TICKER. `DECAY_JSON=$(python3 scripts/sizing.py decay --unrealized-pct "$UPCT" --pos-ret-10d "$POS_RET" --spy-ret-10d "$SPY_RET" --prior-flag "$PRIOR_FLAG")`.
+   - **Always log a DECAY-FLAG row, on every outcome — including a suppression** *(v3.4)*. This is the consecutiveness state the next midday reads; skip it and a suppression silently resets the chain.
+   - **`suppressed == 1` (v3.4 melt-up guard): do NOT sell.** Shallow loser (drawdown shallower than -2.0% vs entry) while SPY's 10-session return > +3.0% — "lagging SPY" here means "not carrying the index", not "decaying". Log a DECAY-SUPPRESSED row (drawdown, benchmark 10-session return, consecutive-suppressed count). No DTC impact.
+   - If `rotate==1` and DTC < 2 → `close TICKER` (ROTATE-EXIT). If DTC ≥ 2, abort + URGENT.
+   - Core ETF also rotates (treat as `rotate=1`) if its sector left the leading quadrant. **Melt-up guard does not apply here** — a sector exiting the leading quadrant is an absolute signal, not a relative one.
+   - **Shadow tracking (v3.4):** before writing today's row, check TRADE-LOG.md for a DECAY-SUPPRESSED row for this ticker on the prior trading day; if found, add `since_suppressed: <pct>` to today's row so weekly review can judge whether withholding the sell was right.
 4. Sector-kill (Rule 10): scan most recent 20 EXIT rows OR last 30 calendar days (whichever is shorter); if this position's sector has 2 consecutive losses (negative `Realized P&L`, same `Sector:` tag, no winner between them) → close all actionable positions in that sector in a batch. Evaluate sector-kill ONCE per unique sector.
 5. Else: no action.
 
@@ -198,6 +203,16 @@ For each momentum-decay evaluation (v3 — state for next midday):
 ```
 ### YYYY-MM-DD — DECAY-FLAG: TICKER flag=0|1
 - unrealized %X | 10-session pos %A vs SPY %B | prior_flag=0|1 | rotate=0|1
+```
+
+For each melt-up-suppressed rotation (v3.4 — alongside, never instead of, the DECAY-FLAG row above):
+```
+### YYYY-MM-DD — DECAY-SUPPRESSED: TICKER
+- Rule 16 melt-up guard: rotation owed (2nd consecutive flag) but WITHHELD.
+- unrealized %X vs entry (floor -2.0%) | benchmark 10-session %Y (threshold +3.0%)
+- Consecutive suppressed middays: N | since_suppressed: %Z (blank on the first)
+- Chain preserved — resumes when the position deepens past the floor or the
+  benchmark cools. No sell placed; no DTC impact.
 ```
 (A ROTATE-EXIT is logged as a normal sell EXIT row with Thesis "Rule 16 momentum-decay rotation".)
 
