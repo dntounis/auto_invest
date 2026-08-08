@@ -35,9 +35,20 @@ bash scripts/alpaca.sh positions
 # rely on TRADE-LOG.md (read in Step 1).
 bash scripts/alpaca.sh activities    # today only sanity check
 bash scripts/alpaca.sh bars SPY 1Day 10  # benchmark (v3.3)
+# v3.4 — week's numbers come from the metrics file, not from prose.
+python3 scripts/metrics.py rollup    --file memory/METRICS.jsonl --since "$WEEK_START"
+python3 scripts/metrics.py scorecard --file memory/METRICS.jsonl --since "$WEEK_START"
 ```
 
 ## Step 3 — Compute grade card
+
+**Source of record (v3.4).** `Week return`, `Bot vs S&P`, `Alpha vs SPX` and the
+daily attribution come from `metrics.py rollup` — do not recompute by hand. The
+rollup also gives the cash-drag / selection-alpha split
+(`cum_cash_drag_pp` vs `cum_selection_alpha_pp`) — report both; the W14–W15
+reviews had to derive this split by hand. If `memory/METRICS.jsonl` is missing
+sessions for the week, say so and mark the affected figures `incomplete` rather
+than filling gaps by hand.
 
 | Metric | Source |
 |--------|--------|
@@ -79,7 +90,19 @@ shape that let the original Rule 14 fail-open survive fourteen weeks.
 ```
 
 ## Step 5 — Append entry to `memory/WEEKLY-REVIEW.md` (locally)
-Use the template at the top of WEEKLY-REVIEW.md. Include `daytrade_count: <N>` in the stats table for next week's delta computation. **(v3)** If the satellite sleeve has underperformed the ETF core per-capital for 3+ consecutive weeks (compare the Core/satellite attribution across the last three entries), propose shrinking the satellite allocation. If proposed strategy changes exist, append `## Proposed strategy changes (NOT auto-applied — human review required)` block.
+Use the template at the top of WEEKLY-REVIEW.md. Include `daytrade_count: <N>` in the stats table for next week's delta computation. **(v3)** If the satellite sleeve has underperformed the ETF core per-capital for 3+ consecutive weeks (compare the Core/satellite attribution across the last three entries), propose shrinking the satellite allocation.
+
+### Go-live scorecard (v3.4)
+Paste `metrics.py scorecard`'s output verbatim, then a PASS/FAIL/detail table for
+each criterion (`cadence`, `rule14_tokens`, `rule14_accuracy`, `unprotected`,
+`breaches`, `rule16_meltup`, `deployment`), plus the headline `verdict`. **These
+criteria were fixed before the data existed and are process-only — alpha is
+recorded (`alpha_informational`) but is NOT a gate**: two weeks can't measure
+alpha (weekly noise is ~±1pp), so gating on it would gate on a coin flip. **Do
+not edit the criteria to fit the result** — if one looks wrong in hindsight, say
+so and leave the verdict as computed.
+
+If proposed strategy changes exist, append `## Proposed strategy changes (NOT auto-applied — human review required)` block.
 
 ## Step 6 — Telegram (1 message)
 ```

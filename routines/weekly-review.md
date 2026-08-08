@@ -71,8 +71,10 @@ of positions for "thesis broken" or "rule violation" reasons. In that case:
     the count locally over the last 5 business days, `DTC_SOURCE=local`:
     `bash scripts/alpaca.sh activities` per business day is the primary evidence
     (symbols with a buy fill AND a sell fill on the same activity date), the
-    TRADE-LOG same-day buy/sell scan is corroboration, take the `max`. Rules 13/15
-    make this structurally 0 — a non-zero result is itself an URGENT-worthy alarm.
+    TRADE-LOG same-day buy/sell scan is corroboration, take the `max` as `N`. Track
+    the raw sell-only count alongside it as `DTC_CONSERVATIVE` — logged but never
+    gating. Rules 13/15 make `N` structurally 0 — a non-zero result is itself an
+    URGENT-worthy alarm.
   - `source=error` (the `dtc` call itself failed — nothing is known) or
     `DTC_SOURCE=none` (nothing resolvable at all) → **block all closes** and send a
     Telegram URGENT. Never fall back to the local derivation on `error`.
@@ -80,7 +82,10 @@ of positions for "thesis broken" or "rule violation" reasons. In that case:
   document the proposed closes in WEEKLY-REVIEW.md and Telegram them. Blocking
   closes never blocks the rest of this routine — the grade card, the week summary
   and the commit still happen. Log the literal token
-  `Rule 14 DTC: <N> (source=api|local|none|error)` in the week-summary row.
+  `Rule 14 DTC: <N> (source=api|local|none|error) [conservative: <M>]` in the
+  week-summary row — `[conservative: <M>]` *(v3.4)* carries `DTC_CONSERVATIVE`
+  whenever a local derivation ran this session, and is omitted for `source=api`
+  or when no local derivation occurred, matching midday/market-open's token.
 - Rule 15: never close a position opened today (this is Friday — by definition,
   same-day positions exist if market-open fired this morning).
 
@@ -120,9 +125,25 @@ bash scripts/alpaca.sh activities  # today only; primary source for week is TRAD
 # Benchmark (v3.3): SPY daily bars are the single source of truth for the weekly
 # S&P comparison. 10 bars covers a 5-session week plus margin for holidays.
 bash scripts/alpaca.sh bars SPY 1Day 10
+# v3.4 — the week's numbers come from the metrics file, not from prose.
+python3 scripts/metrics.py rollup    --file memory/METRICS.jsonl --since "$WEEK_START"
+python3 scripts/metrics.py scorecard --file memory/METRICS.jsonl --since "$WEEK_START"
 ```
 
 ## STEP 3 — Compute the weekly grade card
+
+**Source of record (v3.4).** `Week return`, `Bot vs S&P`, `Alpha vs SPX`, and the
+daily attribution all come from `metrics.py rollup` — do NOT recompute them by
+hand. The rollup also supplies the **cash-drag / selection-alpha decomposition**
+(`cum_cash_drag_pp` vs `cum_selection_alpha_pp`), which separates the cost of
+being uninvested from the cost of what was owned. Report both; a miss driven by
+cash drag and a miss driven by selection call for different fixes, and the
+W14–W15 reviews had to derive this split by hand.
+
+If `memory/METRICS.jsonl` is missing sessions for the week, say so explicitly in
+the entry and mark the affected figures `incomplete` rather than filling gaps by
+hand — a partially hand-assembled series is how the pre-v3.3 alpha record became
+unusable.
 
 Compute from the read-in data:
 
@@ -195,6 +216,32 @@ underperformed the ETF core on a per-capital basis for **3+ consecutive weeks**
 (compare the Core/satellite attribution row across the last three WEEKLY-REVIEW
 entries), append a proposed change to shrink the satellite allocation / raise the
 ETF-core floor. Never auto-apply (DECIDED G).
+
+### Go-live scorecard (v3.4)
+
+Paste `metrics.py scorecard`'s output verbatim, then one line per criterion in a
+table: name, PASS/FAIL, detail. State the headline `verdict` explicitly.
+
+**These criteria were fixed before the data was collected and are process-only —
+alpha is recorded but is NOT a gate.** Two weeks cannot measure alpha (weekly
+noise is ~±1pp), so gating on it would gate on a coin flip. What the window can
+establish is that the Week 14–15 defects are fixed, deployment stays in band,
+and no new defect has appeared:
+
+| Criterion | Passes when |
+|---|---|
+| `cadence` | every expected routine slot logged, zero missing |
+| `rule14_tokens` | every expected `Rule 14 DTC:` audit token present |
+| `rule14_accuracy` | every recorded DTC equals the true round-trip count |
+| `unprotected` | zero held positions without a GTC trailing stop at any EOD |
+| `breaches` | zero money-moving rule breaches |
+| `rule16_meltup` | zero rotations of a position shallower than -2.0% while the benchmark's 10-session return exceeded +3.0% |
+| `deployment` | never more than 2 consecutive sessions below the 75% floor without the Rule 5 trigger arming |
+
+**Do not edit these criteria to fit the result.** If a criterion looks wrong in
+hindsight, say so in the review and leave the verdict as computed — changing the
+bar after seeing the data is how a decision gets rationalised in either direction.
+Also report `alpha_informational` alongside, clearly labelled as not a gate.
 
 If proposed strategy changes exist, append a `## Proposed strategy changes` block:
 

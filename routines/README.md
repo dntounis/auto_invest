@@ -24,6 +24,12 @@ In Claude Code cloud → Routines → New Routine:
    - `TELEGRAM_BOT_TOKEN` (from @BotFather, looks like `123456789:ABC...`)
    - `TELEGRAM_CHAT_ID` (your numeric chat ID — visit `https://api.telegram.org/bot<TOKEN>/getUpdates` after sending `/start` to your bot)
    - `TRADING_ENABLED` = `false`
+   - `TRADING_MODE` = `paper` (defaults to `paper` if unset, but set it explicitly).
+     Going live is a **two-variable** change: `TRADING_MODE=live` **and**
+     `ALPACA_ENDPOINT` pointed at the live API, together, in the same routine.
+     Every routine prompt's mode guard halts on a mismatch — a mode flipped
+     without the endpoint, or an endpoint changed without the mode — rather than
+     inferring one from the other.
 5. **"Allow unrestricted branch pushes":** ON
 6. **Cron schedule + timezone** — both routines run in `America/Chicago`:
    - Pre-market: `0 6 * * 1-5` (6:00 AM weekdays)
