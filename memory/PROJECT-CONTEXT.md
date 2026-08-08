@@ -4,7 +4,11 @@
 Beat the S&P 500 over the challenge window. Stocks only — no options, ever.
 
 ## Mode (v3 — core-satellite momentum)
-- **Paper trading only.** `TRADING_ENABLED=true` (since v2).
+- **Mode-aware (v3.4).** The account follows `TRADING_MODE` (`paper` | `live`,
+  defaults to `paper` when unset) — currently `paper`. Going live requires changing
+  `TRADING_MODE` **and** `ALPACA_ENDPOINT` together; every routine's mode guard
+  halts on a mismatch and never infers one from the other. `TRADING_ENABLED=true`
+  (since v2).
 - **v3 strategy:** ETF *core* (≥45% of deployed) + single-stock *satellites* (≤3 names) for alpha. Risk-parity sizing, profit ladders (scale-out + tighter trail), momentum-decay rotation (Rule 16), weekly cap raised to 5. See `TRADING-STRATEGY.md`.
 - Safety-critical math is deterministic in `scripts/sizing.py` (modes: `size`, `ladder`, `decay`), unit-tested in `tests/test_sizing.sh`. New read-only `alpaca.sh bars` (DMA/RS) and gated `alpaca.sh scale-out` subcommands.
 - Visa-aware Rules 13/14/15 unchanged — zero day-trades by construction. The wrapper kill-switch is still the last line of defense; do not work around it.

@@ -14,7 +14,9 @@ WEEK_START=$(TZ=America/Chicago date -d 'last Monday' +%Y-%m-%d 2>/dev/null || p
 `paper-api.alpaca.markets`, `live` ↔ `api.alpaca.markets` without `paper-api`.
 Never infer one from the other. If they disagree or `TRADING_MODE` is neither
 `paper` nor `live`, stop and tell the user rather than guessing. If
-`TRADING_MODE=live`, prefix any Telegram message you send with `🔴 LIVE `.
+`TRADING_MODE=live`, prefix any Telegram message you send with `🔴 LIVE `. Also use
+`MODE_LABEL` — `(paper)` when `TRADING_MODE` is `paper`, `(live)` when `live` — for
+the account-label suffix in any message body; never hardcode `(paper)`.
 
 ## Strategy mutation policy
 `memory/TRADING-STRATEGY.md` is read-only here. Proposed changes go to
@@ -81,7 +83,7 @@ Use the template at the top of WEEKLY-REVIEW.md. Include `daytrade_count: <N>` i
 
 ## Step 6 — Telegram (1 message)
 ```
-bash scripts/telegram.sh "*WEEK $WEEK_START → $DATE* (paper)
+bash scripts/telegram.sh "*WEEK $WEEK_START → $DATE* ${MODE_LABEL}
 Week return: \$<X> (<±X%>)
 Trades: <N> (W:<X> / L:<Y> / open:<Z>)
 Best: <TICKER +X%> | Worst: <TICKER -X%>

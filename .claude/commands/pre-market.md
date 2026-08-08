@@ -14,7 +14,9 @@ unprotected, so alert and log the Rule 17 marker rather than shrugging it off.
 agree — `paper` ↔ `paper-api.alpaca.markets`, `live` ↔ `api.alpaca.markets` without
 `paper-api`. Never infer one from the other. If they disagree or `TRADING_MODE` is
 neither `paper` nor `live`, stop and tell the user rather than guessing. If
-`TRADING_MODE=live`, prefix any Telegram message you send with `🔴 LIVE `.
+`TRADING_MODE=live`, prefix any Telegram message you send with `🔴 LIVE `. Also use
+`MODE_LABEL` — `(paper)` when `TRADING_MODE` is `paper`, `(live)` when `live` — for
+the account-label suffix in any message body; never hardcode `(paper)`.
 
 ## STEP 0 — Rules 17 + 18: pending-stop retry + cadence check (FIRST action)
 
@@ -39,7 +41,7 @@ the prior trading day (headers use `MMM DD`, e.g. `Jul 02` — NOT ISO). Equival
 robust check: confirm the most-recent `— EOD Snapshot` header in TRADE-LOG is dated
 the prior trading session; if the newest EOD snapshot predates it, the prior
 daily-summary is missing. If it is missing, send
-`bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — MISSING ROUTINE: daily-summary did not log for <prior_date>. Investigate cron. (Rule 18)"` and append a
+`bash scripts/telegram.sh "🚨 URGENT $DATE ${MODE_LABEL} — MISSING ROUTINE: daily-summary did not log for <prior_date>. Investigate cron. (Rule 18)"` and append a
 `### <prior_date> — MISSING ROUTINE: daily-summary (Rule 18)` placeholder to TRADE-LOG.md.
 
 **Then — only on the "snapshot missing" branch — RUN THE MISSED RULE 13 STOP

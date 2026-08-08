@@ -14,7 +14,9 @@ working correctly. The cloud routine ALWAYS has TRADING_ENABLED=true in v2.
 agree — `paper` ↔ `paper-api.alpaca.markets`, `live` ↔ `api.alpaca.markets` without
 `paper-api`. Never infer one from the other. If they disagree or `TRADING_MODE` is
 neither `paper` nor `live`, stop and tell the user rather than guessing. If
-`TRADING_MODE=live`, prefix any Telegram message you send with `🔴 LIVE `.
+`TRADING_MODE=live`, prefix any Telegram message you send with `🔴 LIVE `. Also use
+`MODE_LABEL` — `(paper)` when `TRADING_MODE` is `paper`, `(live)` when `live` — for
+the account-label suffix in any message body; never hardcode `(paper)`.
 
 ## Step 0 — Rule 18: clear pending catch-ups (v3.3)
 Scan the last 10 trading days (or last 200 rows) of TRADE-LOG for unresolved

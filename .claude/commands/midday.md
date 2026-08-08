@@ -11,7 +11,9 @@ This is a v2 paper run. Sells may execute if `TRADING_ENABLED=true`.
 agree — `paper` ↔ `paper-api.alpaca.markets`, `live` ↔ `api.alpaca.markets` without
 `paper-api`. Never infer one from the other. If they disagree or `TRADING_MODE` is
 neither `paper` nor `live`, stop and tell the user rather than guessing. If
-`TRADING_MODE=live`, prefix any Telegram message you send with `🔴 LIVE `.
+`TRADING_MODE=live`, prefix any Telegram message you send with `🔴 LIVE `. Also use
+`MODE_LABEL` — `(paper)` when `TRADING_MODE` is `paper`, `(live)` when `live` — for
+the account-label suffix in any message body; never hardcode `(paper)`.
 
 ## Visa-aware gates (READ FIRST)
 - **Rule 14 (pre-flight):** Resolve `DTC`/`DTC_SOURCE` via `bash scripts/alpaca.sh dtc` (v3.3, see Step 2) BEFORE any sell — never treat an absent field as 0. If `DTC >= 2`, or `DTC_SOURCE` is `none` or `error`, abort all sells and print which sells you would have done. **The abort blocks sells only — it does not end the run** (v3.3): still run Step 3/4's evaluation, still tighten stops via `replace-stop` (a GTC order, not a sell), still write `DECAY-FLAG` rows, and still write Step 6's `- midday $DATE:` cadence line and `Rule 14 DTC:` audit line. Re-check DTC between sells in a sector-kill loop.
@@ -247,12 +249,12 @@ DECAY-SUPPRESSED row for this ticker exists on the prior trading day.)
 
 ## Step 7 — Telegram
 Silent if no actions and DTC < 2. Otherwise one summary message with prefix conventions:
-- `*MIDDAY HARD-CLOSE MMM DD* (paper)` — URGENT, hard-close
-- `*MIDDAY SECTOR-KILL MMM DD* (paper)` — URGENT, sector kill
-- `*MIDDAY ROTATE MMM DD* (paper)` — informational, momentum-decay rotation
-- `*MIDDAY SCALE-OUT MMM DD* (paper)` — informational, Rule 8 partial
-- `*MIDDAY STOP UPDATE MMM DD* (paper)` — informational, stop tightening
-- `*MIDDAY ABORT MMM DD* (paper)` — URGENT, DTC abort
+- `*MIDDAY HARD-CLOSE MMM DD* ${MODE_LABEL}` — URGENT, hard-close
+- `*MIDDAY SECTOR-KILL MMM DD* ${MODE_LABEL}` — URGENT, sector kill
+- `*MIDDAY ROTATE MMM DD* ${MODE_LABEL}` — informational, momentum-decay rotation
+- `*MIDDAY SCALE-OUT MMM DD* ${MODE_LABEL}` — informational, Rule 8 partial
+- `*MIDDAY STOP UPDATE MMM DD* ${MODE_LABEL}` — informational, stop tightening
+- `*MIDDAY ABORT MMM DD* ${MODE_LABEL}` — URGENT, DTC abort
 
 ## Step 8 — Skip commit
 Local mode does not auto-commit.

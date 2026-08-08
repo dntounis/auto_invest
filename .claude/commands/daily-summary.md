@@ -11,7 +11,9 @@ This is a v2 paper run. EOD snapshot + stop placement (Rule 13) + heartbeat chec
 agree — `paper` ↔ `paper-api.alpaca.markets`, `live` ↔ `api.alpaca.markets` without
 `paper-api`. Never infer one from the other. If they disagree or `TRADING_MODE` is
 neither `paper` nor `live`, stop and tell the user rather than guessing. If
-`TRADING_MODE=live`, prefix any Telegram message you send with `🔴 LIVE `.
+`TRADING_MODE=live`, prefix any Telegram message you send with `🔴 LIVE `. Also use
+`MODE_LABEL` — `(paper)` when `TRADING_MODE` is `paper`, `(live)` when `live` — for
+the account-label suffix in any message body; never hardcode `(paper)`.
 
 ## STEP 0 — Rule 18: cadence sweep (FIRST action, v3.2)
 
@@ -29,7 +31,7 @@ that routine does NOT count as evidence it ran** — for all three checks below.
   `routines/midday.md` STEP 6, and never written by the placeholder path)*.
 For each missing routine:
 ```
-bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — MISSING ROUTINE: <name> did not log today. Investigate cron. (Rule 18)"
+bash scripts/telegram.sh "🚨 URGENT $DATE ${MODE_LABEL} — MISSING ROUTINE: <name> did not log today. Investigate cron. (Rule 18)"
 ```
 and append a placeholder to that routine's log:
 ```
@@ -102,7 +104,7 @@ Append a STOP PLACED row to TRADE-LOG.md per stop placed:
 
 **Rule 17 failure handling (v3.1).** If a `trailing-stop` / `replace-stop` call returns
 non-2xx after 3 retries (retry with a short backoff; 504/5xx are the observed failure):
-- Send URGENT: `bash scripts/telegram.sh "🚨 URGENT $DATE (paper) — STOP PLACEMENT FAILED for TICKER QTYsh trail N% after 3 retries. Position is UNPROTECTED. Will retry first thing next routine (Rule 17)."`
+- Send URGENT: `bash scripts/telegram.sh "🚨 URGENT $DATE ${MODE_LABEL} — STOP PLACEMENT FAILED for TICKER QTYsh trail N% after 3 retries. Position is UNPROTECTED. Will retry first thing next routine (Rule 17)."`
 - Append a marker row to TRADE-LOG.md:
   ```
   ### YYYY-MM-DD — STOP-PLACEMENT-FAILED: TICKER QTY TRAIL
@@ -167,7 +169,7 @@ Merge in and append **one compact single-line** JSON object to `memory/METRICS.j
 
 ## Step 7 — Send ONE Telegram via `telegram.sh`
 ```
-bash scripts/telegram.sh "${HEARTBEAT_PREFIX}*EOD <MMM DD>* (paper)
+bash scripts/telegram.sh "${HEARTBEAT_PREFIX}*EOD <MMM DD>* ${MODE_LABEL}
 Equity: \$<X> (<±X%> day, <±X%> phase)
 Cash: \$<X>
 Trades today: <N opened, K closed>
