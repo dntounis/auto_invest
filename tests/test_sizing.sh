@@ -277,9 +277,11 @@ start_test "decay: guard boundaries are exclusive"
 out=$(python3 scripts/sizing.py decay --unrealized-pct -2.0 --pos-ret-10d 1.0 \
       --spy-ret-10d 4.48 --prior-flag 1 2>&1)
 assert_contains "$out" '"rotate": 1'
+assert_contains "$out" '"suppressed": 0'
 out=$(python3 scripts/sizing.py decay --unrealized-pct -0.39 --pos-ret-10d 1.0 \
       --spy-ret-10d 3.0 --prior-flag 1 2>&1)
 assert_contains "$out" '"rotate": 1'
+assert_contains "$out" '"suppressed": 0'
 
 # suppression must NOT reset the chain — flag stays 1 so the next session can act
 start_test "decay: suppression preserves the flag chain"
@@ -293,5 +295,25 @@ out=$(python3 scripts/sizing.py decay --unrealized-pct -0.39 --pos-ret-10d 1.89 
       --spy-ret-10d 4.48 --prior-flag 1 --meltup-benchmark 99 2>&1)
 assert_contains "$out" '"rotate": 1'
 assert_contains "$out" '"suppressed": 0'
+
+# --meltup-floor is overridable too, pinned in both directions so a dropped
+# override (e.g. cmd_decay hardcoding MELTUP_DRAWDOWN_FLOOR instead of reading
+# a.meltup_floor) cannot pass either way.
+# BIIB shape (default floor would suppress): overriding the floor to 0 makes
+# -0.39% no longer "shallower than the floor" -> the guard must not fire.
+start_test "decay: --meltup-floor override to 0 forces a rotate"
+out=$(python3 scripts/sizing.py decay --unrealized-pct -0.39 --pos-ret-10d 1.89 \
+      --spy-ret-10d 4.48 --prior-flag 1 --meltup-floor 0 2>&1)
+assert_contains "$out" '"rotate": 1'
+assert_contains "$out" '"suppressed": 0'
+
+# same BIIB shape, floor overridden to -5: still shallower than -5, so the
+# guard still fires. Paired with the case above, this pins the argument in
+# both directions -- a hardcoded default could only satisfy one of the two.
+start_test "decay: --meltup-floor override to -5 still suppresses"
+out=$(python3 scripts/sizing.py decay --unrealized-pct -0.39 --pos-ret-10d 1.89 \
+      --spy-ret-10d 4.48 --prior-flag 1 --meltup-floor -5 2>&1)
+assert_contains "$out" '"suppressed": 1'
+assert_contains "$out" '"reason": "meltup_suppressed"'
 
 print_summary
