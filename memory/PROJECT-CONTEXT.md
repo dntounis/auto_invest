@@ -37,3 +37,16 @@ https://github.com/dntounis/auto_invest
 - `memory/TRADE-LOG.md`
 - `memory/RESEARCH-LOG.md`
 - `memory/WEEKLY-REVIEW.md`
+
+## Paper trial window (v3.4)
+
+trial_start: UNSET
+
+**This must be set before the first weekly-review of the v3.4 paper trial.** Set it
+to the first trading day on which all five routine prompts were running the v3.4
+text — i.e. the first session after the re-paste. `weekly-review` resolves the
+go-live scorecard window from this line; while it reads `UNSET` the scorecard falls
+back to the earliest record in `memory/METRICS.jsonl`, which is the deliberately
+defective 2026-08-06/07 seed pair. Those two sessions predate the Rule 16 guard and
+the Rule 14 round-trip fix and will FAIL `rule16_meltup` and `rule14_accuracy`
+forever, so an unset value guarantees a no-go verdict for the life of the trial.

@@ -170,7 +170,7 @@ Merge in and append **one compact single-line** JSON object to `memory/METRICS.j
   `trigger: sector-quadrant`** *(v3.4)* — midday rotates those regardless of `suppressed`
   because a sector leaving the leading quadrant is an *absolute* signal the melt-up guard
   deliberately does not govern; counting them would FAIL `rule16_meltup` on correct behaviour.
-  Only `trigger: decay-chain` rows can be shallow melt-up rotations
+  A row with NO `trigger:` line is COUNTED, never excluded — a missing tag must produce a possible false FAIL, never silently suppress a real melt-up rotation
 - `rule5.triggered` (re-deployment trigger **armed** today — Task 5; market-open computes it in
   Step 2, before the HOLD short-circuit, so it is true even on a zero-idea HOLD day)
 - `rule5.acted` (v3.4) — `true` only when a core ballast add actually **filled** today under the
