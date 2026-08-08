@@ -7,6 +7,12 @@ today's date with `DATE=$(TZ=America/Chicago date +%Y-%m-%d)`.
 
 This is a v2 paper run. Sells may execute if `TRADING_ENABLED=true`.
 
+**Mode guard (v3.4).** `TRADING_MODE` (default `paper`) and `ALPACA_ENDPOINT` must
+agree — `paper` ↔ `paper-api.alpaca.markets`, `live` ↔ `api.alpaca.markets` without
+`paper-api`. Never infer one from the other. If they disagree or `TRADING_MODE` is
+neither `paper` nor `live`, stop and tell the user rather than guessing. If
+`TRADING_MODE=live`, prefix any Telegram message you send with `🔴 LIVE `.
+
 ## Visa-aware gates (READ FIRST)
 - **Rule 14 (pre-flight):** Resolve `DTC`/`DTC_SOURCE` via `bash scripts/alpaca.sh dtc` (v3.3, see Step 2) BEFORE any sell — never treat an absent field as 0. If `DTC >= 2`, or `DTC_SOURCE` is `none` or `error`, abort all sells and print which sells you would have done. **The abort blocks sells only — it does not end the run** (v3.3): still run Step 3/4's evaluation, still tighten stops via `replace-stop` (a GTC order, not a sell), still write `DECAY-FLAG` rows, and still write Step 6's `- midday $DATE:` cadence line and `Rule 14 DTC:` audit line. Re-check DTC between sells in a sector-kill loop.
 - **Rule 15 (same-day skip):** Positions with `entry_date == today` are read-only. Do not act on them.

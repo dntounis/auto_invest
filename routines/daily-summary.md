@@ -24,7 +24,7 @@ forward, producing duplicate EOD entries when the next-afternoon cron fires.
 
 - Required process env vars:
   `ALPACA_API_KEY`, `ALPACA_SECRET_KEY`, `ALPACA_ENDPOINT`, `ALPACA_DATA_ENDPOINT`,
-  `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TRADING_ENABLED`. (Perplexity is not used by this routine.)
+  `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TRADING_ENABLED`, `TRADING_MODE`. (Perplexity is not used by this routine.)
 - There is NO `.env` file in this repo and you MUST NOT create, write, or source one.
 - If a wrapper prints `"KEY not set in environment"` → STOP, send one Telegram alert
   naming the missing var via `bash scripts/telegram.sh "<msg>"`, then exit. Do NOT
@@ -32,11 +32,24 @@ forward, producing duplicate EOD entries when the next-afternoon cron fires.
 - Verify env vars BEFORE any wrapper call:
 ```
 for v in ALPACA_API_KEY ALPACA_SECRET_KEY ALPACA_ENDPOINT ALPACA_DATA_ENDPOINT \
-         TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID TRADING_ENABLED; do
+         TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID TRADING_ENABLED TRADING_MODE; do
     [[ -n "${!v:-}" ]] && echo "$v: set" || echo "$v: MISSING"
 done
 ```
-- Sanity check: `ALPACA_ENDPOINT` MUST contain `paper-api.alpaca.markets` in v2.
+- **Mode guard (v3.4).** Read `TRADING_MODE` (default `paper` when unset). It MUST be
+  exactly `paper` or `live`; any other value → STOP, Telegram-alert, exit.
+  - `paper` → `ALPACA_ENDPOINT` MUST contain `paper-api.alpaca.markets`.
+  - `live` → `ALPACA_ENDPOINT` MUST contain `api.alpaca.markets` and MUST NOT contain
+    `paper-api`.
+
+  A mismatch in **either** direction → STOP, Telegram-alert naming both the mode and
+  the endpoint, exit. This is the point: the guard catches a half-done switch — a mode
+  flipped without the endpoint, or an endpoint changed without the mode — rather than
+  silently trading the wrong account. Never infer the mode from the endpoint or the
+  endpoint from the mode; both must be set and must agree.
+- Sanity check: `TRADING_ENABLED` MUST equal `true`. If not, STOP, Telegram-alert, exit.
+- **In `live` mode, prefix every Telegram message with `🔴 LIVE`** so no live alert can
+  be mistaken for a paper one.
 
 ## IMPORTANT — PERSISTENCE
 
@@ -324,6 +337,11 @@ rotations and zero stops — still gets exactly one appended line; there is no
 condition under which this step is skipped while STEP 6 runs.
 
 ## STEP 7 — Send ONE Telegram message (always)
+
+**Mode-aware messages (v3.4):** if `TRADING_MODE=live`, prefix this message with
+`🔴 LIVE ` (see the mode guard in the env-var section). Add it in front of, not
+instead of, the `(paper)` suffix below — that suffix is a v2-era account label,
+not a mode indicator.
 
 ≤ 15 lines. Always include the `(paper)` suffix.
 

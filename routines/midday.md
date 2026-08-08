@@ -17,19 +17,32 @@ DATE=$(TZ=America/Chicago date +%Y-%m-%d)
 
 - Required process env vars:
   `ALPACA_API_KEY`, `ALPACA_SECRET_KEY`, `ALPACA_ENDPOINT`, `ALPACA_DATA_ENDPOINT`,
-  `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TRADING_ENABLED`.
+  `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TRADING_ENABLED`, `TRADING_MODE`.
 - There is NO `.env` file in this repo and you MUST NOT create, write, or source one.
 - Verify env vars BEFORE any wrapper call:
 ```
 for v in ALPACA_API_KEY ALPACA_SECRET_KEY ALPACA_ENDPOINT ALPACA_DATA_ENDPOINT \
-         TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID TRADING_ENABLED; do
+         TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID TRADING_ENABLED TRADING_MODE; do
     [[ -n "${!v:-}" ]] && echo "$v: set" || echo "$v: MISSING"
 done
 ```
-- Sanity checks: `ALPACA_ENDPOINT` contains `paper-api.alpaca.markets`; `TRADING_ENABLED == "true"`.
-  If either fails, STOP, Telegram-alert, exit.
-- **On an environment STOP, deliberately write NOTHING to TRADE-LOG.md** *(v3.3 —
-  do not "fix" this by analogy with `market-open`, which does write a halt row)*.
+- **Mode guard (v3.4).** Read `TRADING_MODE` (default `paper` when unset). It MUST be
+  exactly `paper` or `live`; any other value → STOP, Telegram-alert, exit.
+  - `paper` → `ALPACA_ENDPOINT` MUST contain `paper-api.alpaca.markets`.
+  - `live` → `ALPACA_ENDPOINT` MUST contain `api.alpaca.markets` and MUST NOT contain
+    `paper-api`.
+
+  A mismatch in **either** direction → STOP, Telegram-alert naming both the mode and
+  the endpoint, exit. This is the point: the guard catches a half-done switch — a mode
+  flipped without the endpoint, or an endpoint changed without the mode — rather than
+  silently trading the wrong account. Never infer the mode from the endpoint or the
+  endpoint from the mode; both must be set and must agree.
+- Sanity check: `TRADING_ENABLED` MUST equal `true`. If not, STOP, Telegram-alert, exit.
+- **In `live` mode, prefix every Telegram message with `🔴 LIVE`** so no live alert can
+  be mistaken for a paper one.
+- **On an environment STOP — including the mode-guard STOPs above — deliberately
+  write NOTHING to TRADE-LOG.md** *(v3.3; extended v3.4 — do not "fix" this by
+  analogy with `market-open`, which does write a halt row)*.
   The asymmetry is intentional: a missing `- midday $DATE:` row is exactly the
   signal `daily-summary`'s Rule 18 sweep uses to fire the midday catch-up and run
   the Rule 7/8/16 evaluation this run never reached. Writing a cadence token here
@@ -508,6 +521,12 @@ For each momentum-decay rotation exit, append a ROTATE-EXIT row (v3):
 ```
 
 ## STEP 7 — Telegram
+
+**Mode-aware messages (v3.4):** if `TRADING_MODE=live`, prefix every message this
+step (and every abort/URGENT alert earlier in the run) sends with `🔴 LIVE ` (see
+the mode guard in the env-var section). Add it in front of, not instead of, any
+`(paper)` suffix already in a template below — that suffix is a v2-era account
+label, not a mode indicator.
 
 - Silent if no actions taken AND `DTC < 2`.
 - Otherwise: ONE summary message listing actions taken (or aborts).

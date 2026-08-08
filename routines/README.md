@@ -119,7 +119,7 @@ Three layers of validation already run **inside Claude's process** (where env va
 
 1. **Routine prompt env-var loop** — the `IMPORTANT — ENVIRONMENT VARIABLES` block in each `routines/*.md` file runs `for v in ALPACA_API_KEY ...; do [[ -n "${!v:-}" ]] && echo "$v: set" || echo "$v: MISSING"; done` and instructs Claude to STOP + Telegram-alert if any var is missing.
 2. **Wrapper script env guards** — every `scripts/*.sh` wrapper has `: "${ALPACA_API_KEY:?ALPACA_API_KEY not set in environment}"`-style guards that exit 1 with a clear message if a required var is unset.
-3. **Sanity-check on `ALPACA_ENDPOINT`** — both routine prompts include an explicit check that the endpoint contains `paper-api.alpaca.markets` to prevent accidental live-mode runs in v1.
+3. **Mode guard on `TRADING_MODE` + `ALPACA_ENDPOINT` (v3.4)** — every routine prompt reads `TRADING_MODE` (default `paper`) and asserts the endpoint matches it: `paper` requires `paper-api.alpaca.markets`, `live` requires `api.alpaca.markets` without `paper-api`. Either variable changed without the other halts the routine and sends a Telegram alert naming both values — this is what makes a live cutover a single env-var change instead of a prompt re-paste.
 
 ### What NOT to put in the setup script
 

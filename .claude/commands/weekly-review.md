@@ -9,6 +9,13 @@ DATE=$(TZ=America/Chicago date +%Y-%m-%d)
 WEEK_START=$(TZ=America/Chicago date -d 'last Monday' +%Y-%m-%d 2>/dev/null || python3 -c "from datetime import date,timedelta; t=date.today(); print((t - timedelta(days=t.weekday())).isoformat())")
 ```
 
+## Mode guard (v3.4)
+`TRADING_MODE` (default `paper`) and `ALPACA_ENDPOINT` must agree — `paper` ↔
+`paper-api.alpaca.markets`, `live` ↔ `api.alpaca.markets` without `paper-api`.
+Never infer one from the other. If they disagree or `TRADING_MODE` is neither
+`paper` nor `live`, stop and tell the user rather than guessing. If
+`TRADING_MODE=live`, prefix any Telegram message you send with `🔴 LIVE `.
+
 ## Strategy mutation policy
 `memory/TRADING-STRATEGY.md` is read-only here. Proposed changes go to
 `memory/WEEKLY-REVIEW.md` under `## Proposed strategy changes (NOT auto-applied — human review required)`. Human applies them by hand.

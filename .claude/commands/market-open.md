@@ -10,6 +10,12 @@ This is a v2 paper run. **Orders may execute** if `TRADING_ENABLED=true` in your
 local `.env`. Otherwise the wrapper refuses with exit 4 — that's the kill-switch
 working correctly. The cloud routine ALWAYS has TRADING_ENABLED=true in v2.
 
+**Mode guard (v3.4).** `TRADING_MODE` (default `paper`) and `ALPACA_ENDPOINT` must
+agree — `paper` ↔ `paper-api.alpaca.markets`, `live` ↔ `api.alpaca.markets` without
+`paper-api`. Never infer one from the other. If they disagree or `TRADING_MODE` is
+neither `paper` nor `live`, stop and tell the user rather than guessing. If
+`TRADING_MODE=live`, prefix any Telegram message you send with `🔴 LIVE `.
+
 ## Step 0 — Rule 18: clear pending catch-ups (v3.3)
 Scan the last 10 trading days (or last 200 rows) of TRADE-LOG for unresolved
 `CATCH-UP PENDING: TICKER` rows — unresolved means no later `CATCH-UP CLEARED` row

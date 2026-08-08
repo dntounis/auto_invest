@@ -20,7 +20,7 @@ DATE=$(TZ=America/Chicago date +%Y-%m-%d)
 
 - Required process env vars:
   `ALPACA_API_KEY`, `ALPACA_SECRET_KEY`, `ALPACA_ENDPOINT`, `ALPACA_DATA_ENDPOINT`,
-  `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TRADING_ENABLED`,
+  `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TRADING_ENABLED`, `TRADING_MODE`,
   `MAX_ENTRY_SLIPPAGE_PCT` (default 0.10), `RISK_PER_TRADE_PCT` (default 2.0),
   `MAX_POSITION_PCT` (default 20).
 - There is NO `.env` file in this repo and you MUST NOT create, write, or source one.
@@ -30,15 +30,28 @@ DATE=$(TZ=America/Chicago date +%Y-%m-%d)
 - Verify env vars BEFORE any wrapper call:
 ```
 for v in ALPACA_API_KEY ALPACA_SECRET_KEY ALPACA_ENDPOINT ALPACA_DATA_ENDPOINT \
-         TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID TRADING_ENABLED; do
+         TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID TRADING_ENABLED TRADING_MODE; do
     [[ -n "${!v:-}" ]] && echo "$v: set" || echo "$v: MISSING"
 done
 ```
-- Sanity check: `ALPACA_ENDPOINT` MUST contain `paper-api.alpaca.markets` in v2.
-  If it contains `api.alpaca.markets` (without `paper-`), STOP, Telegram-alert, exit.
-- Sanity check: `TRADING_ENABLED` MUST equal `true` in v2. If not, STOP, Telegram-alert, exit.
+- **Mode guard (v3.4).** Read `TRADING_MODE` (default `paper` when unset). It MUST be
+  exactly `paper` or `live`; any other value → STOP, Telegram-alert, exit.
+  - `paper` → `ALPACA_ENDPOINT` MUST contain `paper-api.alpaca.markets`.
+  - `live` → `ALPACA_ENDPOINT` MUST contain `api.alpaca.markets` and MUST NOT contain
+    `paper-api`.
 
-**Before exiting on ANY of the three STOPs above** *(v3.3 — mandatory)*: append the
+  A mismatch in **either** direction → STOP, Telegram-alert naming both the mode and
+  the endpoint, exit. This is the point: the guard catches a half-done switch — a mode
+  flipped without the endpoint, or an endpoint changed without the mode — rather than
+  silently trading the wrong account. Never infer the mode from the endpoint or the
+  endpoint from the mode; both must be set and must agree.
+- Sanity check: `TRADING_ENABLED` MUST equal `true`. If not, STOP, Telegram-alert, exit.
+- **In `live` mode, prefix every Telegram message with `🔴 LIVE`** so no live alert can
+  be mistaken for a paper one.
+
+**Before exiting on ANY of the STOPs above** *(v3.3 — mandatory; v3.4 — now also
+covers the mode-invalid and mode/endpoint-mismatch STOPs, which replace the old
+single endpoint check)*: append the
 Market-Open Run row (STEP 7 format) to `memory/TRADE-LOG.md` recording the
 environment failure, then run STEP 9's commit-and-push so the row actually
 persists. An environment STOP that writes nothing is indistinguishable from a cron
@@ -47,7 +60,9 @@ any `CATCH-UP PENDING` rows owed from a previous day would never be cleared,
 because STEP 0 is the only thing that clears them and it never ran.
 ```
 - market-open $DATE: 0 orders placed, 0 filled. HALTED before STEP 0 — environment
-  check failed: <missing var | endpoint is not paper-api | TRADING_ENABLED=<value>>.
+  check failed: <missing var | TRADING_MODE=<value> is neither paper nor live |
+  TRADING_MODE/ALPACA_ENDPOINT mismatch (mode=<value>, endpoint=<value>) |
+  TRADING_ENABLED=<value>>.
   No STEP 0 catch-up attempted; any CATCH-UP PENDING rows remain unresolved for the
   next market-open. Telegram alert sent.
 - Rule 14 DTC: n/a (halted before gate evaluation)
@@ -568,6 +583,12 @@ confirmed at EOD:
 ```
 
 ## STEP 8 — Telegram
+
+**Mode-aware messages (v3.4):** if `TRADING_MODE=live`, prefix every message this
+routine sends — the ones below and every other `telegram.sh` call earlier in this
+run (STEP 0, STEP 1, STEP 3, STEP 5a, STEP 5c) — with `🔴 LIVE ` (see the mode guard
+in the env-var section). Add it in front of, not instead of, any `(paper)` suffix
+already in a template — that suffix is a v2-era account label, not a mode indicator.
 
 - 1 message per filled order: `*FILLED MMM DD* (paper) — TICKER N shares @ $X (catalyst: <one line>)`
 - 1 message per rejected/expired order: `*REJECT MMM DD* (paper) — TICKER reason: <reason>`

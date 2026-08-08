@@ -10,6 +10,12 @@ state-changing call this command may make is `trailing-stop`, from Step 0 only
 GTC orders on aged positions. It is kill-switch-gated; exit 4 means positions are
 unprotected, so alert and log the Rule 17 marker rather than shrugging it off.
 
+**Mode guard (v3.4).** `TRADING_MODE` (default `paper`) and `ALPACA_ENDPOINT` must
+agree — `paper` ↔ `paper-api.alpaca.markets`, `live` ↔ `api.alpaca.markets` without
+`paper-api`. Never infer one from the other. If they disagree or `TRADING_MODE` is
+neither `paper` nor `live`, stop and tell the user rather than guessing. If
+`TRADING_MODE=live`, prefix any Telegram message you send with `🔴 LIVE `.
+
 ## STEP 0 — Rules 17 + 18: pending-stop retry + cadence check (FIRST action)
 
 Before any research or env checks, tail `memory/TRADE-LOG.md` for a

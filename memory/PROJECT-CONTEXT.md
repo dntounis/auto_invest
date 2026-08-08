@@ -11,7 +11,10 @@ Beat the S&P 500 over the challenge window. Stocks only — no options, ever.
 
 ## Capital & Platform
 - Starting capital: ~$10,000 paper
-- Platform: Alpaca paper API (https://paper-api.alpaca.markets/v2)
+- Platform: Alpaca — account follows `TRADING_MODE` (`paper` | `live`); currently
+  `paper` (https://paper-api.alpaca.markets/v2). Going live requires changing
+  `TRADING_MODE` and `ALPACA_ENDPOINT` together — the routines' mode guard halts on
+  either changing alone (v3.4)
 - Instruments: Stocks ONLY
 - PDT limit: 3 day trades per 5 rolling business days (account < $25k)
 

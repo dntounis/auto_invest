@@ -20,8 +20,8 @@ WEEK_START=$(TZ=America/Chicago date -d 'last Monday' +%Y-%m-%d 2>/dev/null || \
 
 ## IMPORTANT — ENVIRONMENT VARIABLES
 
-Same set as midday/daily-summary (Alpaca + Telegram + TRADING_ENABLED). Verify
-with the env-var loop:
+Same set as midday/daily-summary (Alpaca + Telegram + TRADING_ENABLED +
+TRADING_MODE). Verify with the env-var loop:
 
 - There is NO `.env` file in this repo and you MUST NOT create, write, or source one.
 - If a wrapper prints `"KEY not set in environment"` → STOP, send one Telegram alert
@@ -30,14 +30,25 @@ with the env-var loop:
 
 ```
 for v in ALPACA_API_KEY ALPACA_SECRET_KEY ALPACA_ENDPOINT ALPACA_DATA_ENDPOINT \
-         TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID TRADING_ENABLED; do
+         TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID TRADING_ENABLED TRADING_MODE; do
     [[ -n "${!v:-}" ]] && echo "$v: set" || echo "$v: MISSING"
 done
 ```
 
-- Sanity check: `ALPACA_ENDPOINT` MUST contain `paper-api.alpaca.markets` in v2.
-  If it contains `api.alpaca.markets` (without `paper-`), STOP, Telegram-alert, exit.
-- Sanity check: `TRADING_ENABLED` MUST equal `true` in v2. If not, STOP, Telegram-alert, exit.
+- **Mode guard (v3.4).** Read `TRADING_MODE` (default `paper` when unset). It MUST be
+  exactly `paper` or `live`; any other value → STOP, Telegram-alert, exit.
+  - `paper` → `ALPACA_ENDPOINT` MUST contain `paper-api.alpaca.markets`.
+  - `live` → `ALPACA_ENDPOINT` MUST contain `api.alpaca.markets` and MUST NOT contain
+    `paper-api`.
+
+  A mismatch in **either** direction → STOP, Telegram-alert naming both the mode and
+  the endpoint, exit. This is the point: the guard catches a half-done switch — a mode
+  flipped without the endpoint, or an endpoint changed without the mode — rather than
+  silently trading the wrong account. Never infer the mode from the endpoint or the
+  endpoint from the mode; both must be set and must agree.
+- Sanity check: `TRADING_ENABLED` MUST equal `true`. If not, STOP, Telegram-alert, exit.
+- **In `live` mode, prefix every Telegram message with `🔴 LIVE`** so no live alert can
+  be mistaken for a paper one.
 
 ## IMPORTANT — VISA-AWARE RULES
 
@@ -188,6 +199,11 @@ If proposed strategy changes exist, append a `## Proposed strategy changes` bloc
 ```
 
 ## STEP 6 — Telegram (1 message)
+
+**Mode-aware messages (v3.4):** if `TRADING_MODE=live`, prefix this message with
+`🔴 LIVE ` (see the mode guard in the env-var section). Add it in front of, not
+instead of, the `(paper)` suffix below — that suffix is a v2-era account label,
+not a mode indicator.
 
 ```
 bash scripts/telegram.sh "*WEEK $WEEK_START → $DATE* (paper)
