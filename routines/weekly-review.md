@@ -21,6 +21,32 @@ WEEK_START=$(TZ=America/Chicago date -d 'last Monday' +%Y-%m-%d 2>/dev/null || \
              python3 -c "from datetime import date,timedelta; t=date.today(); print((t - timedelta(days=t.weekday())).isoformat())")
 ```
 
+**Trial window (v3.4) — resolve `TRIAL_START` here too.** The go-live scorecard is
+computed over the **entire paper trial**, never one week at a time. Determine the
+start unambiguously, in exactly this order:
+
+```
+# 1. An explicitly recorded start always wins, even if METRICS.jsonl has earlier
+#    rows (pre-trial sessions must not silently extend the window).
+TRIAL_START=$(grep -m1 '^trial_start: ' memory/PROJECT-CONTEXT.md 2>/dev/null | sed 's/^trial_start: //')
+# 2. Otherwise: the earliest `date` in memory/METRICS.jsonl. Take the minimum over
+#    all lines rather than the first line — the file is append-only, but a
+#    backfilled or re-run session must not be able to move the window.
+if [[ -z "$TRIAL_START" ]]; then
+  TRIAL_START=$(python3 -c "
+import json
+dates = [json.loads(l)['date'] for l in open('memory/METRICS.jsonl') if l.strip()]
+print(min(dates) if dates else '')" 2>/dev/null)
+fi
+```
+
+`--since` is inclusive (`date >= since`), so `TRIAL_START`'s own session is in the
+window. If **both** resolutions come back empty — no `trial_start:` line and no
+readable/non-empty `METRICS.jsonl` — the trial window cannot be computed: say so
+explicitly in the review and record the Go-live scorecard as
+`not computable — no metrics history`. **Do NOT fall back to `WEEK_START`**; that
+silently reinstates the one-week-at-a-time defect this exists to fix.
+
 ## IMPORTANT — ENVIRONMENT VARIABLES
 
 Same set as midday/daily-summary (Alpaca + Telegram + TRADING_ENABLED +
@@ -128,7 +154,19 @@ bash scripts/alpaca.sh bars SPY 1Day 10
 # v3.4 — the week's numbers come from the metrics file, not from prose.
 python3 scripts/metrics.py rollup    --file memory/METRICS.jsonl --since "$WEEK_START"
 python3 scripts/metrics.py scorecard --file memory/METRICS.jsonl --since "$WEEK_START"
+# v3.4 — and the GO-LIVE verdict over the whole trial window. Run both; they
+# answer different questions and only the second one gates anything.
+python3 scripts/metrics.py rollup    --file memory/METRICS.jsonl --since "$TRIAL_START"
+python3 scripts/metrics.py scorecard --file memory/METRICS.jsonl --since "$TRIAL_START"
 ```
+
+**Why both** *(v3.4)*. Two consecutive one-week PASSes are **not** a two-week
+PASS. The `deployment` criterion's consecutive-below-floor run counter starts at
+zero at every window boundary, so a four-session below-floor run straddling a
+Friday scores 2 sessions in each week and passes twice, while the same four
+sessions evaluated as one window FAIL. `cadence` and `rule14_tokens` have the
+same seam. The `$WEEK_START` scorecard is a weekly progress read; the
+`$TRIAL_START` scorecard is the one the go/no-go decision uses.
 
 ## STEP 3 — Compute the weekly grade card
 
@@ -219,8 +257,20 @@ ETF-core floor. Never auto-apply (DECIDED G).
 
 ### Go-live scorecard (v3.4)
 
-Paste `metrics.py scorecard`'s output verbatim, then one line per criterion in a
-table: name, PASS/FAIL, detail. State the headline `verdict` explicitly.
+**Paste the `--since "$TRIAL_START"` scorecard here — the trial-window one, not
+the weekly one.** Then one line per criterion in a table: name, PASS/FAIL,
+detail. State the headline `verdict` explicitly, and open the section with the
+window it covers, in this exact shape so no reader has to guess:
+
+```
+Go-live scorecard — TRIAL WINDOW <TRIAL_START>..<DATE> (<N> sessions). Verdict: <PASS|FAIL>.
+Weekly scorecard (<WEEK_START>..<DATE>, informational only): <PASS|FAIL>.
+```
+
+The weekly verdict may be quoted underneath as a progress read, clearly labelled
+informational — but **the go/no-go verdict is the trial-window one**. If they
+disagree, the trial-window verdict stands and the divergence itself is worth a
+sentence: it usually means a run straddled a Friday boundary.
 
 **These criteria were fixed before the data was collected and are process-only —
 alpha is recorded but is NOT a gate.** Two weeks cannot measure alpha (weekly

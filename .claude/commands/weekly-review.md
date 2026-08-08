@@ -9,6 +9,22 @@ DATE=$(TZ=America/Chicago date +%Y-%m-%d)
 WEEK_START=$(TZ=America/Chicago date -d 'last Monday' +%Y-%m-%d 2>/dev/null || python3 -c "from datetime import date,timedelta; t=date.today(); print((t - timedelta(days=t.weekday())).isoformat())")
 ```
 
+**Trial window (v3.4).** The go-live scorecard covers the whole trial, never one
+week. Resolve `TRIAL_START` in this order: (1) a `trial_start: YYYY-MM-DD` line in
+`memory/PROJECT-CONTEXT.md` if present — an explicit start always wins; (2) else the
+**earliest** `date` across all lines of `memory/METRICS.jsonl` (min over the file, not
+`head -1`, so a backfilled line can't move the window).
+```
+TRIAL_START=$(grep -m1 '^trial_start: ' memory/PROJECT-CONTEXT.md 2>/dev/null | sed 's/^trial_start: //')
+[[ -z "$TRIAL_START" ]] && TRIAL_START=$(python3 -c "
+import json
+d=[json.loads(l)['date'] for l in open('memory/METRICS.jsonl') if l.strip()]
+print(min(d) if d else '')" 2>/dev/null)
+```
+`--since` is inclusive. If both come back empty, report the go-live scorecard as
+`not computable — no metrics history`; **never fall back to `WEEK_START`**, which
+reinstates the one-week-at-a-time defect.
+
 ## Mode guard (v3.4)
 `TRADING_MODE` (default `paper`) and `ALPACA_ENDPOINT` must agree — `paper` ↔
 `paper-api.alpaca.markets`, `live` ↔ `api.alpaca.markets` without `paper-api`.
@@ -38,7 +54,14 @@ bash scripts/alpaca.sh bars SPY 1Day 10  # benchmark (v3.3)
 # v3.4 — week's numbers come from the metrics file, not from prose.
 python3 scripts/metrics.py rollup    --file memory/METRICS.jsonl --since "$WEEK_START"
 python3 scripts/metrics.py scorecard --file memory/METRICS.jsonl --since "$WEEK_START"
+# v3.4 — and the GO-LIVE verdict over the full trial window.
+python3 scripts/metrics.py rollup    --file memory/METRICS.jsonl --since "$TRIAL_START"
+python3 scripts/metrics.py scorecard --file memory/METRICS.jsonl --since "$TRIAL_START"
 ```
+Both, always. Two one-week PASSes are not a two-week PASS: `deployment`'s
+consecutive-below-floor counter restarts at each window boundary, so a four-session
+run straddling a Friday scores 2+2 and passes twice; `cadence` and `rule14_tokens`
+share the seam. The weekly run is a progress read; the trial-window run gates.
 
 ## Step 3 — Compute grade card
 
@@ -93,7 +116,15 @@ shape that let the original Rule 14 fail-open survive fourteen weeks.
 Use the template at the top of WEEKLY-REVIEW.md. Include `daytrade_count: <N>` in the stats table for next week's delta computation. **(v3)** If the satellite sleeve has underperformed the ETF core per-capital for 3+ consecutive weeks (compare the Core/satellite attribution across the last three entries), propose shrinking the satellite allocation.
 
 ### Go-live scorecard (v3.4)
-Paste `metrics.py scorecard`'s output verbatim, then a PASS/FAIL/detail table for
+Paste the **`--since "$TRIAL_START"`** scorecard verbatim (the trial-window one, not
+the weekly one) and open the section with the window it covers:
+```
+Go-live scorecard — TRIAL WINDOW <TRIAL_START>..<DATE> (<N> sessions). Verdict: <PASS|FAIL>.
+Weekly scorecard (<WEEK_START>..<DATE>, informational only): <PASS|FAIL>.
+```
+The go/no-go verdict is the trial-window one; if the two disagree, it stands and the
+divergence gets a sentence (usually a run straddling a Friday). Then a
+PASS/FAIL/detail table for
 each criterion (`cadence`, `rule14_tokens`, `rule14_accuracy`, `unprotected`,
 `breaches`, `rule16_meltup`, `deployment`), plus the headline `verdict`. **These
 criteria were fixed before the data existed and are process-only — alpha is
