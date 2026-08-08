@@ -359,4 +359,38 @@ out=$(python3 scripts/sizing.py redeploy --equity 10000 --lmv 8600 \
 assert_contains "$out" '"below_band": false'
 assert_contains "$out" '"triggered": false'
 
+# --- v3.4 Rule 5 boundary pinning (review follow-up) ---
+# Pins the two comparisons a mutation-tester can silently flip and still ship
+# green: `<` vs `<=` on the below-band check, `>=` vs `>` on the grace check.
+
+# exactly at the 75.0 floor -> NOT below band (strict <), so triggered stays
+# false even with plenty of consecutive sessions recorded. Catches `<` -> `<=`.
+start_test "redeploy: exactly 75.0 deployment is in band (strict <), no trigger"
+out=$(python3 scripts/sizing.py redeploy --equity 10000 --lmv 7500 \
+      --sessions-below-band 6 2>&1)
+assert_contains "$out" '"deployment_pct": 75.0'
+assert_contains "$out" '"below_band": false'
+assert_contains "$out" '"triggered": false'
+
+# a hair under 75.0 -> below band. Brackets the floor from the other side.
+start_test "redeploy: just under 75.0 deployment is below band"
+out=$(python3 scripts/sizing.py redeploy --equity 10000 --lmv 7499 \
+      --sessions-below-band 0 2>&1)
+assert_contains "$out" '"deployment_pct": 74.99'
+assert_contains "$out" '"below_band": true'
+
+# exactly 2 consecutive sessions below band -> triggered (grace has elapsed).
+# Catches `>=` -> `>` on the grace comparison.
+start_test "redeploy: exactly 2 sessions below band triggers (grace boundary)"
+out=$(python3 scripts/sizing.py redeploy --equity 10000 --lmv 6400 \
+      --sessions-below-band 2 2>&1)
+assert_contains "$out" '"triggered": true'
+
+# exactly 1 session below band -> still grace, not triggered. Pins the same
+# boundary from the other side (paired with the case immediately above).
+start_test "redeploy: exactly 1 session below band does not trigger (grace boundary)"
+out=$(python3 scripts/sizing.py redeploy --equity 10000 --lmv 6400 \
+      --sessions-below-band 1 2>&1)
+assert_contains "$out" '"triggered": false'
+
 print_summary

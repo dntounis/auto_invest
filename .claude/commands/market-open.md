@@ -71,8 +71,10 @@ satellite, two $1.6k satellites: 53.6% each, 41.7% after both).
 
 **Rule 5 re-deployment trigger** *(v3.4)*. Count consecutive prior sessions
 closed below the 75% floor by reading `memory/METRICS.jsonl` backwards from the
-most recent line, counting `"in_band": false` entries until the first `true` (0
-if the last line is in band or the file is absent):
+most recent line, counting `"in_band": false` entries until the first `true`.
+`SESSIONS_BELOW_BAND = 0` if the last line is in band, if the file is absent, OR
+if the file exists but has zero lines (truncated/first-run — treat like absent,
+don't infer a count):
 ```
 REDEPLOY_JSON=$(python3 scripts/sizing.py redeploy \
     --equity "$EQUITY" --lmv "$LONG_MARKET_VALUE" \
@@ -114,6 +116,13 @@ ratios easier to satisfy, so this is accumulation, not a sizing change.
 - **(v3.1, all ideas)** Sector concentration cap: `sector_after = SECTOR_MV[sector] + COMMITTED_SECTOR_MV[sector] + position_cost`. If `sector_after / deployed_after > 0.50`, skip + log "sector cap: TICKER sector would be X% of deployed (> 50%)".
 - **(v3.1, restated v3.3)** Deployment ceiling: no longer a pre-sizing refusal. `HEADROOM` is passed to the sizer in Step 5, which shrinks the clip to fit. Skip outright only if `HEADROOM <= 0`.
 - **(v3.2, satellite only)** Macro-binary proximity: read the idea's `macro-window:` tag. If `tier` is `satellite` AND the tag names a Tier-1 binary on T+1/T+2 (anything other than `clear`), skip + log "macro-binary gate: TICKER blocked by <BINARY> at T+N". `tier: core` ideas (tag `n/a (core)`) bypass this check.
+- **(v3.4, `rr-relaxed` ideas only)** Stale-trigger re-check: pre-market's trigger
+  (~07:00) and this run's Step 2 recompute (live equity/LMV) can disagree — an
+  overnight move or fill can put the book back in band. If the idea's line carries
+  `rr-relaxed: yes (Rule 5 redeploy)` AND this run's `REDEPLOY_JSON.triggered` is
+  `false`, skip + log "Rule 5 REDEPLOY: idea TICKER admitted at 1.5:1 but trigger no
+  longer armed at market-open (deployment X%) — skipped". Untagged ideas qualified
+  at 2:1 and are unaffected.
 - Instrument is a stock (not option/crypto/forex/futures)
 
 ## Step 4 — Rank, take top N

@@ -240,7 +240,10 @@ ceiling) — in that case no buy of any size is permitted; skip every idea and l
 **Rule 5 re-deployment trigger** *(v3.4)*. Count how many consecutive prior
 sessions closed below the 75% floor by reading `memory/METRICS.jsonl` backwards
 from the most recent line, counting entries with `"in_band": false` until the
-first `true` (0 if the last line is in band; 0 if the file is absent). Then:
+first `true`. `SESSIONS_BELOW_BAND = 0` in all three of these cases: the last
+line is in band; the file is absent; the file exists but contains zero lines
+(a truncated or first-run file — do not infer a count, treat it exactly like
+"absent"). Then:
 
 ```
 REDEPLOY_JSON=$(python3 scripts/sizing.py redeploy \
@@ -319,6 +322,16 @@ cannot be turned into a breach by sizing. This is accumulation, not a sizing cha
   would be X% of deployed (> 50%)".
 - **(v3.1, all ideas — restated v3.3)** Deployment ceiling: this gate no longer refuses an idea pre-sizing. `HEADROOM` (STEP 2) is passed to the sizer in STEP 5c, which shrinks the clip to fit. Here, only skip the idea outright if `HEADROOM <= 0` — log "deployment ceiling: already at X% — no headroom, 0 buys". After sizing, STEP 5c re-asserts `(LONG_MARKET_VALUE + COMMITTED_COST + cost) / equity <= 0.85` — the running total, not the bare snapshot — as a belt-and-braces check and skips + logs if it somehow fails.
 - **(v3.2, satellite only)** Macro-binary proximity: read the idea's `macro-window:` tag. If `tier` is `satellite` AND the tag names a Tier-1 binary on T+1/T+2 (anything other than `clear`), skip + log "macro-binary gate: TICKER blocked by <BINARY> at T+N". `tier: core` ideas (tag `n/a (core)`) bypass this check.
+- **(v3.4, `rr-relaxed` ideas only)** Stale-trigger re-check: pre-market computes
+  the Rule 5 re-deployment trigger at ~07:00; this routine recomputes it at STEP 2
+  against live equity and LMV, and the two can disagree — an overnight move or a
+  fill can put the book back in band between the two runs. If the idea's line
+  carries `rr-relaxed: yes (Rule 5 redeploy)` AND this run's `REDEPLOY_JSON.triggered`
+  is `false`, skip the idea and log "Rule 5 REDEPLOY: idea TICKER admitted at 1.5:1
+  but trigger no longer armed at market-open (deployment X%) — skipped". Untagged
+  ideas qualified at the full 2:1 and are unaffected by this check either way. This
+  is the entire reason the trigger is recomputed here rather than trusting the
+  morning's verdict.
 - Resolve `DTC` / `DTC_SOURCE` via `bash scripts/alpaca.sh dtc` using the same
   four-source procedure as midday STEP 2 *(v3.3 — `api` | `local` | `none` |
   `error`)*. `DTC` MUST be ≤ 1 to allow new entries (Rule 14 buffer). If

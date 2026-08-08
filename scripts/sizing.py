@@ -145,7 +145,6 @@ def cmd_rscreen(a):
 # no mechanism that acted when the book left it. Measured cost: ~0.9-1.0pp
 # (W14), then -1.78pp of a -1.94pp week (W15) from the same mechanism.
 DEPLOY_FLOOR_PCT = 75.0
-DEPLOY_CEIL_PCT = 85.0
 REDEPLOY_GRACE_SESSIONS = 2   # below band this many sessions before arming
 RR_FLOOR_NORMAL = 2.0
 RR_FLOOR_RELAXED = 1.5        # core ETF ballast only
