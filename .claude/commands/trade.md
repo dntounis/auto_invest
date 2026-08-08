@@ -4,6 +4,17 @@ description: Manual one-off trade entry (subject to all v2 buy-side gates and ri
 
 You are running a **manual trade entry**. Args from the user: `TICKER`, optional `THESIS`, optional `STOP_PCT` (default 10).
 
+**Mode guard (v3.4).** `TRADING_MODE` (default `paper`) and `ALPACA_ENDPOINT` must
+agree — `paper` ↔ `paper-api.alpaca.markets`, `live` ↔ `api.alpaca.markets` without
+`paper-api`. Never infer one from the other. If they disagree or `TRADING_MODE` is
+neither `paper` nor `live`, stop and tell the user rather than guessing — this
+command places a real order at Step 5, so a half-done switch here is the
+highest-stakes place it could happen: there is no cron log to cross-check a
+manual run against. If `TRADING_MODE=live`, prefix any Telegram message you send
+with `🔴 LIVE `. Also compute `MODE_LABEL` — `(paper)` when `TRADING_MODE` is
+`paper`, `(live)` when `live` — and use it for the account-label suffix in any
+message body; never hardcode `(paper)`.
+
 ALL routine gates apply: Buy-Side Gate from `TRADING-STRATEGY.md`, Rule 14 daytrade_count pre-flight, Rule 15 same-day skip (not relevant here since this IS a same-day buy — but no sell will happen until T+1 since stop placement is deferred to daily-summary per Rule 13).
 
 ## Step 1 — Read memory
@@ -92,7 +103,7 @@ the gate genuinely ran *(v3.3)* — write it on every manual entry.
 
 ## Step 7 — Telegram one fill confirmation
 ```
-bash scripts/telegram.sh "*MANUAL FILL MMM DD* (paper) — TICKER N shares @ \$X (manual entry)"
+bash scripts/telegram.sh "*MANUAL FILL MMM DD* ${MODE_LABEL} — TICKER N shares @ \$X (manual entry)"
 ```
 
 ## Step 8 — Stop placement deferred

@@ -6,9 +6,10 @@ You are running the **market-open execution workflow** locally. Resolve today's
 date with `DATE=$(TZ=America/Chicago date +%Y-%m-%d)` — match the cloud routine's
 TZ so local entries align with cron-fired entries.
 
-This is a v2 paper run. **Orders may execute** if `TRADING_ENABLED=true` in your
-local `.env`. Otherwise the wrapper refuses with exit 4 — that's the kill-switch
-working correctly. The cloud routine ALWAYS has TRADING_ENABLED=true in v2.
+This run executes against whichever account `TRADING_MODE` selects (see the mode
+guard below). **Orders may execute** if `TRADING_ENABLED=true` in your local
+`.env`. Otherwise the wrapper refuses with exit 4 — that's the kill-switch
+working correctly. The cloud routine ALWAYS has `TRADING_ENABLED=true`.
 
 **Mode guard (v3.4).** `TRADING_MODE` (default `paper`) and `ALPACA_ENDPOINT` must
 agree — `paper` ↔ `paper-api.alpaca.markets`, `live` ↔ `api.alpaca.markets` without

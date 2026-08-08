@@ -4,7 +4,8 @@ description: Pre-market research run (local mirror of cloud routine; no commit/p
 
 You are running the **pre-market research workflow** locally. Resolve today's date with `DATE=$(TZ=America/Chicago date +%Y-%m-%d)` — match the cloud routine's TZ so local entries align with cron-fired entries.
 
-This is a paper research run. **No buys and no sells, ever.** The only
+This is a research run — **no buys and no sells, ever**, regardless of
+`TRADING_MODE`. The only
 state-changing call this command may make is `trailing-stop`, from Step 0 only
 (Rule 17 retry + the v3.3 Rule 18 recovery of a missed daily-summary) — protective
 GTC orders on aged positions. It is kill-switch-gated; exit 4 means positions are

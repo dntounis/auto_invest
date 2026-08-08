@@ -53,7 +53,7 @@ Local mirrors live in `.claude/commands/`. Cloud production prompts live in `rou
 
 ## API Wrappers
 **Always** use these. Never `curl` Alpaca / Perplexity / Telegram APIs directly.
-- `bash scripts/alpaca.sh <subcommand>` — paper account state and (gated) orders
+- `bash scripts/alpaca.sh <subcommand>` — account state and (gated) orders; mode-agnostic — it acts on whatever `ALPACA_ENDPOINT` points at, and the routines own the `TRADING_MODE` guard
 - `bash scripts/perplexity.sh "<query>"` — research; exits 3 if key unset → fall back to native `WebSearch` and flag in research log
 - `bash scripts/telegram.sh "<message>"` — Telegram bot notification; falls back to `DAILY-SUMMARY.md` if `TELEGRAM_BOT_TOKEN` or `TELEGRAM_CHAT_ID` unset
 

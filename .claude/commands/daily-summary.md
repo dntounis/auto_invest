@@ -5,7 +5,8 @@ description: End-of-day summary (local mirror of cloud routine; no commit/push)
 You are running the **daily-summary workflow** locally for v2. Resolve today's
 date with `DATE=$(TZ=America/Chicago date +%Y-%m-%d)`.
 
-This is a v2 paper run. EOD snapshot + stop placement (Rule 13) + heartbeat check (DECIDED J).
+This run executes against whichever account `TRADING_MODE` selects (see the mode
+guard below). EOD snapshot + stop placement (Rule 13) + heartbeat check (DECIDED J).
 
 **Mode guard (v3.4).** `TRADING_MODE` (default `paper`) and `ALPACA_ENDPOINT` must
 agree — `paper` ↔ `paper-api.alpaca.markets`, `live` ↔ `api.alpaca.markets` without

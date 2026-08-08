@@ -5,7 +5,8 @@ description: Midday position management (local mirror of cloud routine; no commi
 You are running the **midday position-management workflow** locally. Resolve
 today's date with `DATE=$(TZ=America/Chicago date +%Y-%m-%d)`.
 
-This is a v2 paper run. Sells may execute if `TRADING_ENABLED=true`.
+This run executes against whichever account `TRADING_MODE` selects (see the mode
+guard below). Sells may execute if `TRADING_ENABLED=true`.
 
 **Mode guard (v3.4).** `TRADING_MODE` (default `paper`) and `ALPACA_ENDPOINT` must
 agree — `paper` ↔ `paper-api.alpaca.markets`, `live` ↔ `api.alpaca.markets` without
