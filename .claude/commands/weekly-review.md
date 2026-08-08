@@ -102,6 +102,18 @@ alpha (weekly noise is ~±1pp), so gating on it would gate on a coin flip. **Do
 not edit the criteria to fit the result** — if one looks wrong in hindsight, say
 so and leave the verdict as computed.
 
+Two criteria changed shape in v3.4:
+- `deployment` — >2 consecutive sessions **below the 75% floor** FAILs, full stop.
+  `rule5.triggered` no longer resets the run (it means market-open *armed* the
+  relaxed floor in Step 2, before the HOLD short-circuit, not that anything was
+  bought — which made the criterion unfailable). A screened-out melt-up window now
+  FAILs, and that is the intended verdict. Sessions above the 85% ceiling don't
+  count. When it FAILs, quote the rollup's `rule5_triggers` vs `rule5_acted`:
+  `triggers>0, acted==0` = armed daily but nothing passed the screens (the melt-up
+  RS hole, `docs/LIVE-SMOKE-TEST.md` §8); `triggers==0` = Rule 5 never armed.
+- `rule16_meltup` — counts **decay-chain** rotations only; `trigger: sector-quadrant`
+  exits are excluded (absolute signal, deliberately outside the guard).
+
 If proposed strategy changes exist, append `## Proposed strategy changes (NOT auto-applied — human review required)` block.
 
 ## Step 6 — Telegram (1 message)

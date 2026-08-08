@@ -312,8 +312,8 @@ Bind `LADDER_TIER` explicitly here, before any ladder call, and pass that.
         sector leaving the leading quadrant is an absolute signal, not a
         relative-to-SPY one, and only the routine (not `sizing.py decay`) can see
         it. Re-check Rule 14 `DTC`; if `DTC < 2`, `bash scripts/alpaca.sh close
-        TICKER` (a ROTATE-EXIT) and Telegram-note it. If `DTC ≥ 2`, abort + URGENT
-        Telegram.
+        TICKER` (a ROTATE-EXIT — log it with `trigger: sector-quadrant`, STEP 6)
+        and Telegram-note it. If `DTC ≥ 2`, abort + URGENT Telegram.
      2. **Else if `suppressed == 1`** *(v3.4 melt-up guard)*: **do NOT sell.** The
         position is a shallow loser (drawdown shallower than -2.0% vs entry) in a
         fast benchmark (SPY 10-session > +3.0%), where "lagging SPY" means "not
@@ -322,8 +322,9 @@ Bind `LADDER_TIER` explicitly here, before any ladder call, and pass that.
         and how many consecutive middays this name has now been suppressed. No
         `DTC` impact — nothing is sold.
      3. **Else if `rotate == 1`**: re-check Rule 14 `DTC`; if `DTC < 2`,
-        `bash scripts/alpaca.sh close TICKER` (a ROTATE-EXIT) and Telegram-note
-        it. If `DTC ≥ 2`, abort + URGENT Telegram.
+        `bash scripts/alpaca.sh close TICKER` (a ROTATE-EXIT — log it with
+        `trigger: decay-chain`, STEP 6) and Telegram-note it. If `DTC ≥ 2`,
+        abort + URGENT Telegram.
      4. **Else:** no Rule 16 action this run.
    - **Shadow tracking** *(v3.4)*: before writing today's row, scan TRADE-LOG.md for a
      `DECAY-SUPPRESSED` row for this ticker on the previous trading day. If one
@@ -521,12 +522,22 @@ For each momentum-decay rotation exit, append a ROTATE-EXIT row (v3):
 ### YYYY-MM-DD — TRADE: TICKER side=sell qty=N
 - Exit: $X
 - Sector: <copied from original BUY row>
+- trigger: sector-quadrant|decay-chain   *(v3.4 — MANDATORY on every ROTATE-EXIT)*
 - Thesis: <closed via Rule 16 momentum-decay rotation — 2nd consecutive lag, or
   sector exited leading quadrant — one phrase>
 - Realized P&L: $X (X.X%)
 - since_suppressed: %Z  [OPTIONAL — v3.4, only if a DECAY-SUPPRESSED row for this
   ticker exists on the previous trading day; omit entirely otherwise]
 ```
+`trigger:` records **which branch of STEP 4's chain fired** — `sector-quadrant`
+for branch 1, `decay-chain` for branch 3 — and is mandatory on every ROTATE-EXIT
+row *(v3.4)*. `daily-summary`'s `rule16.shallow_rotations` field reads it to
+exclude sector-quadrant exits from the melt-up count: branch 1 rotates
+*regardless of `suppressed`* because a sector leaving the leading quadrant is an
+absolute signal the guard does not govern, so a correct branch-1 exit that
+happens to be shallow in a fast tape would otherwise FAIL the `rule16_meltup`
+go-live criterion on correct behaviour. Classify it here, in the log, rather than
+leaving the weekly review to re-derive it from the Thesis prose.
 
 ## STEP 7 — Telegram
 

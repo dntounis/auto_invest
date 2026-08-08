@@ -128,9 +128,9 @@ Hard-close (1) is exclusive; ladder (2) may scale-out AND tighten; decay (3) onl
 3. **Momentum-decay rotation (Rule 16, v3):** `POS_RET` from `bash scripts/alpaca.sh bars TICKER 1Day 11`, `SPY_RET` from `bash scripts/alpaca.sh bars SPY 1Day 11`, `PRIOR_FLAG` from the latest DECAY-FLAG row for TICKER. `DECAY_JSON=$(python3 scripts/sizing.py decay --unrealized-pct "$UPCT" --pos-ret-10d "$POS_RET" --spy-ret-10d "$SPY_RET" --prior-flag "$PRIOR_FLAG")`.
    - **Always log a DECAY-FLAG row, on every outcome — including a suppression or a sector-quadrant exit** *(v3.4)*. This is the consecutiveness state the next midday reads; skip it and any of those outcomes silently resets the chain. Unconditional, runs before the branches below.
    - **Then resolve as a strict if / else-if / else chain — stop at the first branch that applies** *(v3.4)*:
-     1. **Sector-quadrant check first (absolute signal).** Core ETF whose sector left the leading quadrant → treat as `rotate=1` and close, **regardless of `suppressed`**. `sizing.py decay` can't see sector state, so it may say `suppressed=1` on the same position — that's a relative-to-SPY read and doesn't apply here; the sector exit is absolute and wins. DTC<2 → `close TICKER` (ROTATE-EXIT). DTC≥2 → abort + URGENT.
+     1. **Sector-quadrant check first (absolute signal).** Core ETF whose sector left the leading quadrant → treat as `rotate=1` and close, **regardless of `suppressed`**. `sizing.py decay` can't see sector state, so it may say `suppressed=1` on the same position — that's a relative-to-SPY read and doesn't apply here; the sector exit is absolute and wins. DTC<2 → `close TICKER` (ROTATE-EXIT, logged `trigger: sector-quadrant`). DTC≥2 → abort + URGENT.
      2. **Else if `suppressed == 1`** (melt-up guard): **do NOT sell.** Shallow loser (drawdown shallower than -2.0% vs entry) while SPY's 10-session return > +3.0% — "lagging SPY" here means "not carrying the index", not "decaying". Log a DECAY-SUPPRESSED row (drawdown, benchmark 10-session return, consecutive-suppressed count). No DTC impact.
-     3. **Else if `rotate == 1`** → DTC<2 → `close TICKER` (ROTATE-EXIT). DTC≥2 → abort + URGENT.
+     3. **Else if `rotate == 1`** → DTC<2 → `close TICKER` (ROTATE-EXIT, logged `trigger: decay-chain`). DTC≥2 → abort + URGENT.
      4. **Else:** no Rule 16 action.
    - **Shadow tracking (v3.4):** before writing today's row, check TRADE-LOG.md for a DECAY-SUPPRESSED row for this ticker on the prior trading day; if found, add `since_suppressed: <pct>` to today's row (DECAY-FLAG or ROTATE-EXIT, whichever applies) so weekly review can judge whether withholding the sell was right. If not found, omit the field — never write it blank.
 4. Sector-kill (Rule 10): scan most recent 20 EXIT rows OR last 30 calendar days (whichever is shorter); if this position's sector has 2 consecutive losses (negative `Realized P&L`, same `Sector:` tag, no winner between them) → close all actionable positions in that sector in a batch. Evaluate sector-kill ONCE per unique sector.
@@ -247,6 +247,14 @@ omit `since_suppressed` entirely, don't write it blank.
 momentum-decay rotation" or "sector exited leading quadrant"; it too carries
 `since_suppressed: %Z` [OPTIONAL v3.4, same omit-if-absent rule] when a
 DECAY-SUPPRESSED row for this ticker exists on the prior trading day.)
+
+Every ROTATE-EXIT row MUST also carry `- trigger: sector-quadrant|decay-chain`
+*(v3.4)* naming which Step 4 branch fired. daily-summary's
+`rule16.shallow_rotations` excludes `sector-quadrant` rows: branch 1 rotates
+regardless of `suppressed` because the sector signal is absolute, not
+relative-to-SPY, so counting a correct branch-1 exit would FAIL the
+`rule16_meltup` go-live criterion on correct behaviour. Classify in the log, not
+by re-deriving from the Thesis later.
 
 ## Step 7 — Telegram
 Silent if no actions and DTC < 2. Otherwise one summary message with prefix conventions:

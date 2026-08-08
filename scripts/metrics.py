@@ -94,23 +94,52 @@ def cmd_rollup(a):
         "rule16_shallow_rotations": sum(
             r["rule16"]["shallow_rotations"] for r in rows),
         "rule5_triggers": sum(1 for r in rows if r["rule5"]["triggered"]),
+        # `triggered` is "market-open armed the relaxed floor"; `acted` is "a
+        # core ballast add actually filled under it". Reported side by side so
+        # a deployment FAIL can be read as armed-but-nothing-available versus
+        # armed-and-re-deployed. Absent on pre-v3.4 records -> counts as 0.
+        "rule5_acted": sum(1 for r in rows if r["rule5"].get("acted")),
     }
 
 
+def _below_floor(r):
+    # Only the LOWER breach counts. `in_band` is false above the 85% ceiling
+    # too, but the ceiling gates new buys rather than mark-to-market, so a rally
+    # that marks the book past it costs nothing and nothing acts on it —
+    # counting those sessions would produce a false no-go with a detail line
+    # that literally says "below the floor". A record missing the field counts
+    # as below-floor: absent evidence must never silently clear a go-live gate.
+    return r.get("deployment_pct", 0.0) < BAND_LO
+
+
 def _deployment_ok(rows):
-    # Out of band is acceptable only if Rule 5 arms within REDEPLOY_GRACE_SESSIONS.
+    # More than REDEPLOY_GRACE_SESSIONS consecutive sessions below the floor is
+    # a FAIL, full stop. An in-band session resets the run; nothing else does.
+    #
+    # Until v3.4 the run was ALSO reset by `rule5.triggered`, which made this
+    # criterion structurally impossible to fail. `triggered` records that
+    # market-open ARMED the relaxed R:R floor — computed in its STEP 2, before
+    # the `Decision: HOLD` short-circuit — not that any core ballast was bought.
+    # A melt-up window where `rscreen` rejects every candidate therefore logs
+    # out-of-band + `triggered:true` on every session and used to score PASS:
+    # the exact Week-15 mechanism (-1.78pp of a -1.94pp week) this scorecard
+    # exists to catch.
+    #
+    # A legitimately blocked window — nothing passes the screens — now FAILs.
+    # That is intended, not collateral damage: it is precisely the state that
+    # cost the phase 1.78pp, and a go-live decision should not pass through it.
+    # `rule5.acted` (surfaced as `rule5_acted` in the rollup) is the diagnostic
+    # that makes the failure interpretable: armed but nothing available, versus
+    # armed and actually re-deployed.
     run = 0
     for r in rows:
-        if r["in_band"]:
+        if not _below_floor(r):
             run = 0
             continue
         run += 1
-        if r["rule5"]["triggered"]:
-            run = 0
-            continue
         if run > REDEPLOY_GRACE_SESSIONS:
             return False, (f"{r['date']}: {run} consecutive sessions below the "
-                           f"{BAND_LO}% band with no Rule 5 trigger")
+                           f"{BAND_LO}% floor")
     return True, ""
 
 
@@ -165,8 +194,8 @@ def cmd_scorecard(a):
 
     ok, detail = _deployment_ok(rows)
     check("deployment", ok,
-          detail or f"never more than {REDEPLOY_GRACE_SESSIONS} sessions "
-                    f"out of band without a Rule 5 trigger")
+          detail or f"never more than {REDEPLOY_GRACE_SESSIONS} consecutive "
+                    f"sessions below the {BAND_LO}% floor")
 
     verdict = "PASS" if all(c["pass"] for c in criteria) else "FAIL"
     roll = cmd_rollup(a)

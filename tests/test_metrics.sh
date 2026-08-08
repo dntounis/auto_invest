@@ -149,7 +149,13 @@ EOF
 out=$(python3 scripts/metrics.py scorecard --file tests/.tmp/boundary-reset-inband.jsonl --since 2026-08-01 2>&1)
 assert_contains "$out" '"verdict": "PASS"'
 
-start_test "scorecard boundary: a Rule 5 trigger resets the consecutive-OOB run"
+# --- v3.4: the deployment criterion measures the OUTCOME, not the arming ---
+# `rule5.triggered` records that market-open ARMED the relaxed R:R floor in its
+# STEP 2 — before the `Decision: HOLD` short-circuit — not that any core ballast
+# was bought. Resetting the run on it made this criterion structurally unfailable:
+# a melt-up window where every candidate is screened out logs `in_band:false` +
+# `triggered:true` on every session and used to score PASS. It no longer does.
+start_test "scorecard: a Rule 5 trigger no longer resets the consecutive-below-floor run"
 cat > tests/.tmp/boundary-reset-rule5.jsonl <<'EOF'
 {"date":"2026-08-03","daily_alpha_pp":1.0,"cash_drag_pp":0.0,"selection_alpha_pp":1.0,"in_band":false,"deployment_pct":60.0,"ops":{"routines_expected":4,"routines_logged":4,"missing":[],"unprotected_positions":0},"rule14":{"dtc":0,"source":"api","tokens_expected":2,"tokens_found":2,"accurate":true},"rule16":{"rotations":0,"suppressed":0,"shallow_rotations":0},"rule5":{"triggered":false},"breaches":[]}
 {"date":"2026-08-04","daily_alpha_pp":1.0,"cash_drag_pp":0.0,"selection_alpha_pp":1.0,"in_band":false,"deployment_pct":60.0,"ops":{"routines_expected":4,"routines_logged":4,"missing":[],"unprotected_positions":0},"rule14":{"dtc":0,"source":"api","tokens_expected":2,"tokens_found":2,"accurate":true},"rule16":{"rotations":0,"suppressed":0,"shallow_rotations":0},"rule5":{"triggered":true},"breaches":[]}
@@ -157,7 +163,69 @@ cat > tests/.tmp/boundary-reset-rule5.jsonl <<'EOF'
 {"date":"2026-08-06","daily_alpha_pp":1.0,"cash_drag_pp":0.0,"selection_alpha_pp":1.0,"in_band":false,"deployment_pct":60.0,"ops":{"routines_expected":4,"routines_logged":4,"missing":[],"unprotected_positions":0},"rule14":{"dtc":0,"source":"api","tokens_expected":2,"tokens_found":2,"accurate":true},"rule16":{"rotations":0,"suppressed":0,"shallow_rotations":0},"rule5":{"triggered":false},"breaches":[]}
 EOF
 out=$(python3 scripts/metrics.py scorecard --file tests/.tmp/boundary-reset-rule5.jsonl --since 2026-08-01 2>&1)
+assert_contains "$out" '"verdict": "FAIL"'
+assert_contains "$out" 'deployment'
+
+# The reviewer's exact melt-up scenario: `rscreen` rejects every candidate, so
+# pre-market HOLDs every day while market-open still arms the trigger. Ten
+# sessions at 60% deployment, every row out of band and `triggered:true`. This
+# is the Week-15 mechanism (-1.78pp) verbatim; it MUST be a no-go.
+start_test "scorecard: 10 below-floor sessions with triggered:true on every row FAIL deployment"
+python3 - <<'PY' > tests/.tmp/meltup10.jsonl
+import json
+for d in range(3, 13):
+    print(json.dumps({
+        "date": f"2026-08-{d:02d}", "daily_alpha_pp": -1.0, "cash_drag_pp": -1.0,
+        "selection_alpha_pp": 0.0, "in_band": False, "deployment_pct": 60.0,
+        "ops": {"routines_expected": 4, "routines_logged": 4, "missing": [],
+                "unprotected_positions": 0},
+        "rule14": {"dtc": 0, "source": "api", "tokens_expected": 2,
+                   "tokens_found": 2, "accurate": True},
+        "rule16": {"rotations": 0, "suppressed": 0, "shallow_rotations": 0},
+        "rule5": {"triggered": True, "acted": False}, "breaches": []}))
+PY
+out=$(python3 scripts/metrics.py scorecard --file tests/.tmp/meltup10.jsonl --since 2026-08-01 2>&1)
+assert_contains "$out" '"verdict": "FAIL"'
+assert_contains "$out" 'consecutive sessions below'
+assert_contains "$out" '"name": "deployment"'
+
+# Out of band ABOVE the ceiling is not a cash-drag problem — the ceiling gates
+# new buys, not mark-to-market — so a rally that marks the book past 85% must
+# not be counted as a below-floor run.
+start_test "scorecard: an above-ceiling run is not a below-floor run"
+python3 - <<'PY' > tests/.tmp/aboveceiling.jsonl
+import json
+for d, dep in ((3, 86.0), (4, 87.0), (5, 88.2)):
+    print(json.dumps({
+        "date": f"2026-08-{d:02d}", "daily_alpha_pp": 1.0, "cash_drag_pp": 0.0,
+        "selection_alpha_pp": 1.0, "in_band": False, "deployment_pct": dep,
+        "ops": {"routines_expected": 4, "routines_logged": 4, "missing": [],
+                "unprotected_positions": 0},
+        "rule14": {"dtc": 0, "source": "api", "tokens_expected": 2,
+                   "tokens_found": 2, "accurate": True},
+        "rule16": {"rotations": 0, "suppressed": 0, "shallow_rotations": 0},
+        "rule5": {"triggered": False, "acted": False}, "breaches": []}))
+PY
+out=$(python3 scripts/metrics.py scorecard --file tests/.tmp/aboveceiling.jsonl --since 2026-08-01 2>&1)
 assert_contains "$out" '"verdict": "PASS"'
 
-rm -rf tests/.tmp/m.jsonl tests/.tmp/pass.jsonl tests/.tmp/fail*.jsonl tests/.tmp/boundary*.jsonl
+# `rule5.acted` is the diagnostic that makes a deployment FAIL interpretable:
+# armed-but-nothing-available vs armed-and-re-deployed.
+start_test "rollup: rule5_acted separates an armed trigger from an executed ballast add"
+cat > tests/.tmp/acted.jsonl <<'EOF'
+{"date":"2026-08-03","daily_alpha_pp":0.0,"cash_drag_pp":0.0,"selection_alpha_pp":0.0,"in_band":false,"deployment_pct":60.0,"ops":{"routines_expected":4,"routines_logged":4,"missing":[],"unprotected_positions":0},"rule14":{"dtc":0,"source":"api","tokens_expected":2,"tokens_found":2,"accurate":true},"rule16":{"rotations":0,"suppressed":0,"shallow_rotations":0},"rule5":{"triggered":true,"acted":false},"breaches":[]}
+{"date":"2026-08-04","daily_alpha_pp":0.0,"cash_drag_pp":0.0,"selection_alpha_pp":0.0,"in_band":true,"deployment_pct":78.0,"ops":{"routines_expected":4,"routines_logged":4,"missing":[],"unprotected_positions":0},"rule14":{"dtc":0,"source":"api","tokens_expected":2,"tokens_found":2,"accurate":true},"rule16":{"rotations":0,"suppressed":0,"shallow_rotations":0},"rule5":{"triggered":true,"acted":true},"breaches":[]}
+EOF
+out=$(python3 scripts/metrics.py rollup --file tests/.tmp/acted.jsonl --since 2026-08-01 2>&1)
+assert_contains "$out" '"rule5_triggers": 2'
+assert_contains "$out" '"rule5_acted": 1'
+
+# Records written before `acted` existed must not crash the rollup.
+start_test "rollup: a record with no rule5.acted field counts as not acted"
+out=$(python3 scripts/metrics.py rollup --file tests/.tmp/m.jsonl --since 2026-08-01 2>&1)
+assert_contains "$out" '"rule5_acted": 0'
+
+rm -rf tests/.tmp/m.jsonl tests/.tmp/pass.jsonl tests/.tmp/fail*.jsonl \
+       tests/.tmp/boundary*.jsonl tests/.tmp/meltup10.jsonl \
+       tests/.tmp/aboveceiling.jsonl tests/.tmp/acted.jsonl
 print_summary

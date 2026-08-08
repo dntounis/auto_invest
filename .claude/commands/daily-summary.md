@@ -159,8 +159,18 @@ Merge in and append **one compact single-line** JSON object to `memory/METRICS.j
   numeric was recorded, so nothing was recorded wrongly.
 - `rule16.rotations` (ROTATE-EXIT rows today), `.suppressed` (`DECAY-SUPPRESSED` rows — Task 4),
   `.shallow_rotations` (rotations today shallower than -2.0% vs entry AND SPY 10-session > +3.0%
-  — the Task 3 guard condition; should be 0 once shipped)
-- `rule5.triggered` (re-deployment trigger armed today — Task 5)
+  — the Task 3 guard condition; should be 0 once shipped). **Exclude ROTATE-EXIT rows tagged
+  `trigger: sector-quadrant`** *(v3.4)* — midday rotates those regardless of `suppressed`
+  because a sector leaving the leading quadrant is an *absolute* signal the melt-up guard
+  deliberately does not govern; counting them would FAIL `rule16_meltup` on correct behaviour.
+  Only `trigger: decay-chain` rows can be shallow melt-up rotations
+- `rule5.triggered` (re-deployment trigger **armed** today — Task 5; market-open computes it in
+  Step 2, before the HOLD short-circuit, so it is true even on a zero-idea HOLD day)
+- `rule5.acted` (v3.4) — `true` only when a core ballast add actually **filled** today under the
+  relaxed 1.5:1 floor (armed *and* a filled `Tier: core` BUY tagged `rr-relaxed`); `false`
+  otherwise, including armed-but-nothing-passed days. Diagnostic, not a gate: `metrics.py` no
+  longer resets the deployment run on `triggered`, so a blocked window now FAILs `deployment`,
+  and `rule5_acted` is what says whether the arming ever deployed capital
 - `rule8.scaleouts`/`.tightenings` (SCALE-OUT / STOP UPDATE rows today)
 - `ops.routines_expected` (4 normal), `.routines_logged` (per Step 0's sweep), `.missing`
   (`[]` when clean), `.unprotected_positions` (held, no open GTC trail after Step 4), `.stops_placed`

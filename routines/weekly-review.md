@@ -235,13 +235,21 @@ and no new defect has appeared:
 | `rule14_accuracy` | every recorded DTC equals the true round-trip count |
 | `unprotected` | zero held positions without a GTC trailing stop at any EOD |
 | `breaches` | zero money-moving rule breaches |
-| `rule16_meltup` | zero rotations of a position shallower than -2.0% while the benchmark's 10-session return exceeded +3.0% |
-| `deployment` | never more than 2 consecutive sessions below the 75% floor without the Rule 5 trigger arming |
+| `rule16_meltup` | zero **decay-chain** rotations of a position shallower than -2.0% while the benchmark's 10-session return exceeded +3.0%. Rotations tagged `trigger: sector-quadrant` are excluded by construction *(v3.4)* — that branch fires on an absolute sector signal the melt-up guard deliberately does not govern, so counting it would fail the criterion on correct behaviour |
+| `deployment` | never more than 2 consecutive sessions with deployment **below the 75% floor**, full stop *(v3.4 — the Rule 5 reset is gone)*. `rule5.triggered` no longer excuses a below-floor run: it records that market-open *armed* the relaxed R:R floor in STEP 2, before the HOLD short-circuit, not that anything was bought, which made this criterion structurally unfailable. A window where every candidate is screened out now FAILs — **that is the intended verdict**, since it is exactly the −1.78pp Week-15 state. Sessions *above* the 85% ceiling do not count: the ceiling gates new buys, not mark-to-market, and there is no cash drag to fix |
 
 **Do not edit these criteria to fit the result.** If a criterion looks wrong in
 hindsight, say so in the review and leave the verdict as computed — changing the
 bar after seeing the data is how a decision gets rationalised in either direction.
 Also report `alpha_informational` alongside, clearly labelled as not a gate.
+
+**When `deployment` FAILs, quote the rollup's `rule5_triggers` and `rule5_acted`
+side by side** *(v3.4)*. They are diagnostics, not gates, and they tell the two
+failures apart: `triggers > 0, acted == 0` means the relaxation armed every day
+and the screens still admitted nothing (the melt-up RS hole — see
+`docs/LIVE-SMOKE-TEST.md` §8), whereas `acted == 0, triggers == 0` means the
+trigger never armed at all and Rule 5 itself is broken. Neither reading changes
+the verdict; both change what to fix.
 
 If proposed strategy changes exist, append a `## Proposed strategy changes` block:
 
