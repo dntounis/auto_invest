@@ -269,20 +269,34 @@ Bind `LADDER_TIER` explicitly here, before any ladder call, and pass that.
    ```
    - Always append a `DECAY-FLAG TICKER flag=<flag>` row (STEP 6) — this is the state
      the next midday reads for consecutiveness. **Write it on every outcome,
-     including a suppression** *(v3.4 — suppression preserves the chain; dropping
-     the row would silently reset it)*.
-   - If `suppressed == 1` *(v3.4 melt-up guard)*: **do NOT sell.** The position is a
-     shallow loser (drawdown shallower than -2.0% vs entry) in a fast benchmark
-     (SPY 10-session > +3.0%), where "lagging SPY" means "not carrying the index"
-     rather than "decaying". Append a `DECAY-SUPPRESSED` row (STEP 6) recording the
-     drawdown, the benchmark's 10-session return, and how many consecutive middays
-     this name has now been suppressed. No `DTC` impact — nothing is sold.
-   - If `rotate == 1`: re-check Rule 14 `DTC`; if `DTC < 2`, `bash scripts/alpaca.sh close TICKER`
-     (a ROTATE-EXIT) and Telegram-note it. If `DTC ≥ 2`, abort + URGENT Telegram.
-   - A core ETF additionally rotates (treat as `rotate=1`) if its sector has exited the
-     leading momentum quadrant per the rotation read. **The melt-up guard does not
-     apply to that path** — a sector leaving the leading quadrant is an absolute
-     signal, not a relative one.
+     including a suppression or a sector-quadrant exit** *(v3.4 — suppression
+     preserves the chain; dropping the row would silently reset it)*. This step is
+     unconditional and always runs before the branches below.
+   - **Then evaluate the following as a strict if / else-if / else chain — resolve
+     on the first branch that applies and do not evaluate the rest** *(v3.4)*:
+     1. **Sector-quadrant check — absolute signal, checked first.** If this is a
+        core ETF whose sector has exited the leading momentum quadrant per the
+        rotation read, treat it as `rotate=1` and go straight to the close —
+        **regardless of what `suppressed` says.** `sizing.py decay` has no notion
+        of sector state; it only sees the numeric P&L/benchmark inputs, so it may
+        return `suppressed=1` for this same position even though the sector signal
+        says exit now. **The melt-up guard does not apply to this path** — a
+        sector leaving the leading quadrant is an absolute signal, not a
+        relative-to-SPY one, and only the routine (not `sizing.py decay`) can see
+        it. Re-check Rule 14 `DTC`; if `DTC < 2`, `bash scripts/alpaca.sh close
+        TICKER` (a ROTATE-EXIT) and Telegram-note it. If `DTC ≥ 2`, abort + URGENT
+        Telegram.
+     2. **Else if `suppressed == 1`** *(v3.4 melt-up guard)*: **do NOT sell.** The
+        position is a shallow loser (drawdown shallower than -2.0% vs entry) in a
+        fast benchmark (SPY 10-session > +3.0%), where "lagging SPY" means "not
+        carrying the index" rather than "decaying". Append a `DECAY-SUPPRESSED`
+        row (STEP 6) recording the drawdown, the benchmark's 10-session return,
+        and how many consecutive middays this name has now been suppressed. No
+        `DTC` impact — nothing is sold.
+     3. **Else if `rotate == 1`**: re-check Rule 14 `DTC`; if `DTC < 2`,
+        `bash scripts/alpaca.sh close TICKER` (a ROTATE-EXIT) and Telegram-note
+        it. If `DTC ≥ 2`, abort + URGENT Telegram.
+     4. **Else:** no Rule 16 action this run.
    - **Shadow tracking** *(v3.4)*: before writing today's row, scan TRADE-LOG.md for a
      `DECAY-SUPPRESSED` row for this ticker on the previous trading day. If one
      exists, include in today's row what the position has done since that
@@ -440,25 +454,39 @@ For each momentum-decay evaluation, append a DECAY-FLAG row (v3 — state for th
 ```
 ### YYYY-MM-DD — DECAY-FLAG: TICKER flag=0|1
 - unrealized %X | 10-session pos %A vs SPY %B | prior_flag=0|1 | rotate=0|1
+- since_suppressed: %Z  [OPTIONAL — v3.4, see rule below]
 ```
+`since_suppressed` is written **only** when a `DECAY-SUPPRESSED` row for this
+ticker exists on the previous trading day — this is the resolution day for a
+prior suppression (rotation finally fired, or the position recovered), and
+it is exactly the day the weekly review needs to judge whether withholding
+the sell was correct. On a normal day with no prior `DECAY-SUPPRESSED` row,
+**omit the line entirely** — do not write it blank.
 
 For each melt-up-suppressed rotation, append a DECAY-SUPPRESSED row (v3.4):
 ```
 ### YYYY-MM-DD — DECAY-SUPPRESSED: TICKER
 - Rule 16 melt-up guard: rotation owed (2nd consecutive flag) but WITHHELD.
 - unrealized %X vs entry (floor -2.0%) | benchmark 10-session %Y (threshold +3.0%)
-- Consecutive suppressed middays: N | since_suppressed: %Z (blank on the first)
+- Consecutive suppressed middays: N | since_suppressed: %Z
 - Chain preserved — rotation resumes when the position deepens past the floor or
   the benchmark cools. No sell placed; no DTC impact.
 ```
+On the **first** suppression in a chain there is no prior `DECAY-SUPPRESSED` row
+to measure since, so **omit** `since_suppressed` entirely from that line (write
+`Consecutive suppressed middays: 1` with no trailing `| since_suppressed: ...`)
+— never write it blank.
 
 For each momentum-decay rotation exit, append a ROTATE-EXIT row (v3):
 ```
 ### YYYY-MM-DD — TRADE: TICKER side=sell qty=N
 - Exit: $X
 - Sector: <copied from original BUY row>
-- Thesis: <closed via Rule 16 momentum-decay rotation — 2nd consecutive lag>
+- Thesis: <closed via Rule 16 momentum-decay rotation — 2nd consecutive lag, or
+  sector exited leading quadrant — one phrase>
 - Realized P&L: $X (X.X%)
+- since_suppressed: %Z  [OPTIONAL — v3.4, only if a DECAY-SUPPRESSED row for this
+  ticker exists on the previous trading day; omit entirely otherwise]
 ```
 
 ## STEP 7 — Telegram
