@@ -12,6 +12,7 @@ arithmetic. All modes print one JSON object to stdout.
                    --prior-flag 0|1 [--meltup-floor -2.0]
                    [--meltup-benchmark 3.0]
   sizing.py rscreen --rs10 X --rs50 Y --close C --dma50 D --dma50-prior P
+  sizing.py redeploy --equity E --lmv L --sessions-below-band N
 """
 import argparse, json, math
 
@@ -140,6 +141,32 @@ def cmd_rscreen(a):
     return {"pass": 0, "reason": "rs10_negative_extended"}
 
 
+# Rule 5 re-deployment trigger (v3.4). Rule 5 stated a 75-85% target band with
+# no mechanism that acted when the book left it. Measured cost: ~0.9-1.0pp
+# (W14), then -1.78pp of a -1.94pp week (W15) from the same mechanism.
+DEPLOY_FLOOR_PCT = 75.0
+DEPLOY_CEIL_PCT = 85.0
+REDEPLOY_GRACE_SESSIONS = 2   # below band this many sessions before arming
+RR_FLOOR_NORMAL = 2.0
+RR_FLOOR_RELAXED = 1.5        # core ETF ballast only
+
+
+def cmd_redeploy(a):
+    deployment = 0.0 if a.equity == 0 else a.lmv / a.equity * 100.0
+    below = deployment < DEPLOY_FLOOR_PCT
+    triggered = below and a.sessions_below_band >= REDEPLOY_GRACE_SESSIONS
+    restore = max(0.0, a.equity * DEPLOY_FLOOR_PCT / 100.0 - a.lmv)
+    return {
+        "deployment_pct": round(deployment, 2),
+        "below_band": below,
+        "triggered": triggered,
+        # The relaxed floor applies to tier=core ballast adds ONLY. Satellites
+        # keep the full 2:1 requirement in every regime.
+        "rr_floor": RR_FLOOR_RELAXED if triggered else RR_FLOOR_NORMAL,
+        "restore_dollars": round(restore, 2),
+    }
+
+
 def main():
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="mode", required=True)
@@ -194,6 +221,14 @@ def main():
     rs.add_argument("--dma50-prior", type=float, required=True, dest="dma50_prior",
                     help="the 50-DMA 10 sessions ago; used to test that it is rising")
     rs.set_defaults(func=cmd_rscreen)
+
+    rd = sub.add_parser("redeploy")
+    rd.add_argument("--equity", type=float, required=True)
+    rd.add_argument("--lmv", type=float, required=True)
+    rd.add_argument("--sessions-below-band", type=int, required=True,
+                    dest="sessions_below_band",
+                    help="consecutive prior sessions with deployment < 75%%")
+    rd.set_defaults(func=cmd_redeploy)
 
     args = p.parse_args()
     print(json.dumps(args.func(args)))

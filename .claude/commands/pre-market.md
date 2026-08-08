@@ -115,6 +115,13 @@ If `perplexity.sh` exits 3, fall back to native `WebSearch` and **flag the fallb
 
 ## Step 4 — Write a dated entry to `memory/RESEARCH-LOG.md`
 
+**Rule 5 relaxed R:R** *(v3.4)*. Before screening, compute the re-deployment
+trigger exactly as market-open Step 2 does (`sizing.py redeploy`, consecutive-
+below-band count from `memory/METRICS.jsonl`). If `triggered` is true, a
+**`tier: core` idea qualifies at R:R ≥ 1.5:1** instead of ≥ 2:1; satellites stay
+at ≥ 2:1. Tag any idea admitted under the relaxed floor `rr-relaxed: yes (Rule 5
+redeploy)` on its idea line. Not armed → floor is 2:1 for everything, no tag.
+
 Use the schema documented at the top of `RESEARCH-LOG.md`. Include:
 
 - **Account snapshot:** equity, cash, buying power, daytrade count

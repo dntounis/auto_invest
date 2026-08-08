@@ -69,6 +69,23 @@ deployment ceiling accumulated, so two satellite ideas could each pass the core
 floor individually and breach it jointly (equity $10k, LMV $4k = $3k core + $1k
 satellite, two $1.6k satellites: 53.6% each, 41.7% after both).
 
+**Rule 5 re-deployment trigger** *(v3.4)*. Count consecutive prior sessions
+closed below the 75% floor by reading `memory/METRICS.jsonl` backwards from the
+most recent line, counting `"in_band": false` entries until the first `true` (0
+if the last line is in band or the file is absent):
+```
+REDEPLOY_JSON=$(python3 scripts/sizing.py redeploy \
+    --equity "$EQUITY" --lmv "$LONG_MARKET_VALUE" \
+    --sessions-below-band "$SESSIONS_BELOW_BAND")
+```
+When `triggered` is true: the R:R floor for **`tier: core` ideas only** drops to
+`rr_floor` (1.5) — satellites stay at 2:1 in every regime — and core ballast adds
+size to restore the band (target `restore_dollars`, never overshoot it to fill
+headroom). Log `Rule 5 REDEPLOY: armed (deployment X%, N sessions below band,
+restore $Y, R:R floor 1.5)` in the Step 7 run row; log `Rule 5 REDEPLOY: not
+armed` otherwise. This line must appear on every run — Task 2's metrics record
+reads it for `rule5.triggered`.
+
 Idempotency: skip any ticker with an existing today BUY (DECIDED H).
 
 ## Step 3 — Apply buy-side gate

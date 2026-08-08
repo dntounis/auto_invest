@@ -237,6 +237,28 @@ run *(v3.3 — see STEP 5c)*. `HEADROOM` may be negative (book already over the
 ceiling) — in that case no buy of any size is permitted; skip every idea and log
 `deployment ceiling: already at X% — no headroom, 0 buys`.
 
+**Rule 5 re-deployment trigger** *(v3.4)*. Count how many consecutive prior
+sessions closed below the 75% floor by reading `memory/METRICS.jsonl` backwards
+from the most recent line, counting entries with `"in_band": false` until the
+first `true` (0 if the last line is in band; 0 if the file is absent). Then:
+
+```
+REDEPLOY_JSON=$(python3 scripts/sizing.py redeploy \
+    --equity "$EQUITY" --lmv "$LONG_MARKET_VALUE" \
+    --sessions-below-band "$SESSIONS_BELOW_BAND")
+```
+
+Parse `triggered`, `rr_floor` and `restore_dollars`. When `triggered` is true:
+- The R:R floor for **`tier: core` ideas only** drops to `rr_floor` (1.5). Satellites
+  keep 2:1 in every regime.
+- Size core ballast adds to restore the band — target `restore_dollars`, and never
+  exceed it purely to fill headroom.
+- Record the trigger in the mandatory Market-Open Run row (STEP 7) as
+  `Rule 5 REDEPLOY: armed (deployment X%, N sessions below band, restore $Y, R:R floor 1.5)`.
+
+When `triggered` is false, note `Rule 5 REDEPLOY: not armed` in the same row. Task 2's
+metrics record reads this line for `rule5.triggered`, so it must appear on every run.
+
 **Why the other accumulators exist** *(v3.3)*. Before this version the deployment
 ceiling was the only gate that re-asserted against a running total; the ETF-core
 floor, the 50% sector cap and "total positions ≤ 6" each evaluated against the

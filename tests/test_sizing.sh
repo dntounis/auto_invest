@@ -316,4 +316,47 @@ out=$(python3 scripts/sizing.py decay --unrealized-pct -0.39 --pos-ret-10d 1.89 
 assert_contains "$out" '"suppressed": 1'
 assert_contains "$out" '"reason": "meltup_suppressed"'
 
+# --- v3.4 Rule 5 re-deployment trigger ---
+
+# in band -> not triggered, full 2:1
+start_test "redeploy: in band -> no trigger, R:R stays 2.0"
+out=$(python3 scripts/sizing.py redeploy --equity 10000 --lmv 8000 \
+      --sessions-below-band 0 2>&1)
+assert_contains "$out" '"below_band": false'
+assert_contains "$out" '"triggered": false'
+assert_contains "$out" '"rr_floor": 2.0'
+
+# first session below band -> below_band true but NOT yet triggered (grace)
+start_test "redeploy: first session below band is grace, not a trigger"
+out=$(python3 scripts/sizing.py redeploy --equity 10000 --lmv 6400 \
+      --sessions-below-band 1 2>&1)
+assert_contains "$out" '"below_band": true'
+assert_contains "$out" '"triggered": false'
+assert_contains "$out" '"rr_floor": 2.0'
+
+# the Aug 3 case: 64.11% deployed for a 6th consecutive session -> triggered
+start_test "redeploy: Aug 3 case — 2+ sessions below band arms the trigger"
+out=$(python3 scripts/sizing.py redeploy --equity 10120.56 --lmv 6492.89 \
+      --sessions-below-band 6 2>&1)
+assert_contains "$out" '"triggered": true'
+assert_contains "$out" '"rr_floor": 1.5'
+
+# restore_dollars is the gap to the 75% floor, never negative
+start_test "redeploy: restore_dollars is the gap to the 75% floor"
+out=$(python3 scripts/sizing.py redeploy --equity 10000 --lmv 6400 \
+      --sessions-below-band 2 2>&1)
+assert_contains "$out" '"restore_dollars": 1100.0'
+
+start_test "redeploy: restore_dollars is 0 when in band"
+out=$(python3 scripts/sizing.py redeploy --equity 10000 --lmv 8000 \
+      --sessions-below-band 0 2>&1)
+assert_contains "$out" '"restore_dollars": 0.0'
+
+# above the ceiling is not "below band" and never triggers
+start_test "redeploy: above the ceiling never triggers"
+out=$(python3 scripts/sizing.py redeploy --equity 10000 --lmv 8600 \
+      --sessions-below-band 0 2>&1)
+assert_contains "$out" '"below_band": false'
+assert_contains "$out" '"triggered": false'
+
 print_summary

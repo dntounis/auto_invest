@@ -22,7 +22,7 @@ Beat the S&P 500 over the challenge window. Stocks only — no options, ever.
 2. Maximum 5–6 open positions at a time
 3. Maximum 20% of equity per position (~$2,000 on a $10K account) — a hard ceiling. Routine sizing targets **16%** (`sizing.py --max-pos-pct 0.16`) so five positions fit under the 85% deployment ceiling *(v3.3)*.
 4. Maximum 5 new trades per week *(v3 — raised from 3; swing entries only, no day-trade impact)*
-5. Target 75–85% of capital deployed
+5. Target 75–85% of capital deployed. **Re-deployment trigger (v3.4):** when deployment sits below the 75% floor for **2+ consecutive sessions**, a `tier: core` ETF ballast add qualifies at a relaxed **R:R ≥ 1.5:1** (instead of ≥ 2:1), sized only to restore the lower band (`sizing.py redeploy` returns `restore_dollars`). Satellites keep the full ≥ 2:1 requirement in every regime. The relaxation expires the moment deployment re-enters the band. Rationale: Rule 5 previously stated a target with no mechanism that acted when the book left it — a stop-out dropped deployment to 60% on 2026-07-29 and it stayed there for three sessions, then opened the following Monday at 64.1% with $3.6K idle into a +1.42% SPY session. Measured cost ~0.9–1.0pp (Week 14) and **−1.78pp of a −1.94pp week** (Week 15) from the identical mechanism.
 6. Every position gets a 10% trailing stop placed as a real GTC Alpaca order. Never mental. *(v2)*
 7. Cut any losing position at -7% from entry. Manual sell. No hoping, no averaging down. *(v2)*
 8. **Profit ladder (v3 — scale-out + tighter trail).** Tiers below are evaluated at midday; targets come from `scripts/sizing.py ladder`. All scale-outs are partial sells on positions opened ≥1 trading day ago (Rules 14/15 apply).
@@ -72,7 +72,7 @@ Before documenting any trade idea in `RESEARCH-LOG.md`:
 - What is the specific catalyst today?
 - Is the sector in momentum?
 - What is the stop level (7–10% below entry)?
-- What is the target (minimum 2:1 risk/reward)?
+- What is the target (minimum 2:1 risk/reward — or 1.5:1 for a `tier: core` ballast add while the Rule 5 re-deployment trigger is armed)?
 
 ### Single-stock satellite checklist (v3)
 - Price above both 50-DMA and 200-DMA (`alpaca.sh bars`)?
