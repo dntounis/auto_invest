@@ -4203,3 +4203,114 @@ So: hold, let the four trails bound the downside into Wednesday's CPI, and treat
 - Key citations: crudeoilprices.today (WTI $78.36 / Brent $83.80, stamped Aug 10 07:19) + oilprice.com/oil-price-charts + tradingeconomics brent (78.77 / 84.35) + oilpricelive.com + bloomberg.com/energy (**five-feed corroboration, tight dispersion — a marked improvement on Friday**); euronews.com/business/2026/08/10 "Oil prices rise as traders assess US-Iran talks on Strait of Hormuz deal" + aljazeera.com 2026/8/10 + businesstimes.com.sg + reuters.com/business/energy 2026-08-07 (**Iran conditioning reopening on sanctions relief + reparations; Brent $83.55 on Aug 7 — the figure that corrects Friday's entry**); cnn.com/markets/premarkets (ES −2.50 / −0.03%) + marketwatch.com/investing/future/es00 (7,771.75, −8.00) + cnbc.com/markets/pre-markets (7,777.25, delayed) + bloomberg/markets-insider (7,779.75); cboe.com/tradable-products/vix + finance.yahoo.com/quote/^VIX/history + cnbc.com/quotes/.VIX (**VIX 14.90 as of Aug 7 close, −1.65% — first usable print in four sessions**); cnbc.com/2026/08/07 "stock market next week outlook Aug 10-14" + strongbuyanalytics market-outlook + truthsandnews 10-top-stocks-to-watch-Aug-10 + ig.com week-ahead-august-10th-2026 (**SPG after close, RKLB after close, light Monday, CPI/PPI positioning**); investing.com/earnings-calendar + earningstoday.com/2026-08-10 + pro.thestreet.com/earnings/2026-08-10 + digrin + stockmarketagent.ai (**BMO list B / FERG / CAMT / AXSM / MNDY / LEGN / PERI / CAH / SE / ONON**; usual BMO-vs-PMO labelling inconsistency, names cross-verified on ≥2 feeds); marketwatch.com/economy-politics/calendar + tradingeconomics.com/calendar + scotiabank economic-release-calendar Aug 2026 + bls.gov/schedule/2026 (**CPI Wed Aug 12 08:30 ET, PPI Thu Aug 13, Retail Sales + UMich Fri Aug 14, FOMC minutes Aug 19, Core PCE Aug 26; no NFP, no FOMC decision, no Powell presser in the window**); zacks via finance.yahoo "5 momentum stocks August" + "best momentum stocks to buy August" + wallstreetzen + benzinga momentum screener (momentum universe — **MU, VRT, STX, STRL, CRDO, FIX, GS**; note STRL and VRT are badly stale on this list, measuring −33pp and −18pp RS50); ssga.com XLB fund page + benzinga leading-and-lagging-sectors-august-5-2026 + finance.yahoo.com/quote/XLB (**XLB +17.1% YTD / +21.4% 12m; "S&P 500 Posts Weekly Gains as Tech, Materials Lead Sector Rally" Aug 7**; no dated XLI/XLRE/XLV-specific items returned — noted rather than papered over)
 - Deterministic (not sourced from search): all DMA/RS/extension figures from `alpaca.sh bars <sym> 1Day 200` closes through **2026-08-07**, benchmarked to a single SPY pull (`bars SPY 1Day 60`, last $773.26, ret10 **+4.65%**, ret50 **+3.30%**); every pass/fail verdict from `sizing.py rscreen` on **11 sector ETFs + 12 single-stock candidates** (23 screens, 2 passes, both macro-blocked); the Rule 5 verdict from `sizing.py redeploy --equity 10266.42 --lmv 6649.59 --sessions-below-band 1` → `triggered: false, rr_floor: 2.0, restore_dollars: 1050.23`, with the consecutive-below-**floor** count taken from `METRICS.jsonl` on `deployment_pct < 75.0` (Aug 7 only; Aug 6 at 84.38 is in band); the day-trade derivation from `alpaca.sh activities` on Aug 3/4/5/6/7; deployment, core-floor, sector and weight percentages computed from the live `positions` payload
 - WebSearch fallback used: no
+
+---
+
+## 2026-08-11 — Pre-market Research
+
+*Day 78 v3.4 paper · Week 16 Day 2 (Tue) · MODE_LABEL `(paper)` — `TRADING_MODE` **unset → defaults to `paper`**; `ALPACA_ENDPOINT`=`https://paper-api.alpaca.markets/v2` contains `paper-api.alpaca.markets` ✓, mode and endpoint agree, `TRADING_ENABLED=true` ✓, no `🔴 LIVE` prefix. (Standing note, restated for Friday: setting `TRADING_MODE=paper` explicitly in the routine UI costs nothing and removes reliance on the default — a prerequisite to clear **before** any live switch.)*
+
+*STEP 0 — Rule 17: **0** unresolved `STOP-PLACEMENT-FAILED` headers (header-anchored `grep -c "^### .*STOP-PLACEMENT-FAILED"` = 0; the many string matches elsewhere in TRADE-LOG are narrative "no unresolved markers" notes). Rule 18: `## Aug 10 — EOD Snapshot (Day 77, Monday)` present and is the newest EOD header → prior daily-summary logged, **v3.3 recovery branch not entered**, no stop placed by this routine. All 4 held positions carry armed GTC trailing stops (verified against `orders`).*
+
+### Account
+- Equity: $10,269.16
+- Cash: $3,616.83 (35.22%)
+- Buying power: $33,093.85 (RegT $13,885.99 | non-marginable $6,942.99)
+- Daytrade count: **0** — broker `alpaca.sh dtc` returns `{"daytrade_count": null, "source": "unavailable"}`, so **source=local**; corroborated by `activities` returning **0 FILL records** in the window and by TRADE-LOG (zero fills since Aug 6). **78 trading days / 16 consecutive weeks at zero day trades.**
+- Positions **4/6 — two slots free**; long market value $6,652.33; **deployment 64.78%**, a **third consecutive session below the Rule 5 75% floor**
+
+| Ticker | Qty | Entry | Last | Unreal. | % Equity | Stop (GTC) |
+| XLB | 40 | $50.08 | $53.18 | +$124.00 (+6.19%) | 20.71% | $49.5783 (7% trail, 9b627571, hwm $53.31) |
+| XLI | 8 | $180.99 | $184.60 | +$28.88 (+1.99%) | 14.38% | $169.3665 (10% trail, 69d2c5bc, hwm $188.185) |
+| XLRE | 46 | $44.79 | $44.3159 | -$21.81 (-1.06%) | 19.85% | $41.8095 (10% trail, 16d5a6b2, hwm $46.455) |
+| XLV | 6 | $161.92 | $168.30 | +$38.28 (+3.94%) | 9.83% | $151.65 (10% trail, 95b2fc1d, hwm $168.50) |
+
+- ETF core **100.00% of deployed** ≥45% floor ✓ · satellite sleeve **0/3** (fourth consecutive week) · sector spread Materials 31.98% / Real Estate 30.64% / Industrials 22.20% / Health Care 15.18%, all ≤50% ✓ · week-16 buy budget **0/5**
+
+**Rule 5 re-deployment trigger — ARMED (first firing).** `METRICS.jsonl` carries Aug 7 (64.80) and Aug 10 (64.79) as consecutive sessions with `deployment_pct` **strictly under 75.0** → `sessions-below-band 2`. `python3 scripts/sizing.py redeploy --equity 10269.16 --lmv 6652.33 --sessions-below-band 2` → `{"deployment_pct": 64.78, "below_band": true, "triggered": true, "rr_floor": 1.5, "restore_dollars": 1049.54}`. **A `tier: core` idea therefore qualifies at R:R ≥ 1.5:1 today; satellites remain at ≥ 2:1.** *(Counted on `deployment_pct < 75.0`, not on `in_band == false` — the latter also matches sessions above the 85% ceiling, e.g. none here, and would arm the trigger before the grace elapsed.)*
+
+### Market Context
+- **WTI / Brent oil:** WTI **~$82.2–83.7/bbl**, Brent **~$87.6–89.5/bbl** (sources disagree by ~$1.5 on refresh lag; Bloomberg's stamped Sep/Oct contracts read $80.28 / $85.91, tradingeconomics $82.14 / $87.65, businessinsider $83.69 / $89.51). **Direction is unambiguous and it is the day's real story: oil is up >5%** on fading US–Iran deal hopes and renewed Strait of Hormuz risk. WTI was $78.36 in yesterday's entry — a **~+5–7% two-session move**.
+- **S&P 500 futures:** mixed-to-flat, **ESU26 ~7,776–7,785** (CNN -4.00/-0.05%; barchart +8.00/+0.10% at 05:59 CT; Nasdaq futures ~+0.4%). SPY cash last **$773.03**. No directional edge premarket.
+- **VIX:** **15.46 (+0.56 / +3.76%)** — still a calm regime; the rise is consistent with CPI positioning, not stress.
+- **Today's catalysts:** (1) **soft July payrolls (-23k)** easing rate-hike odds and bidding rate-sensitives; (2) **oil/Iran geopolitics** cutting the other way — inflationary, and it directly contradicts the dovish payrolls read into tomorrow's CPI; (3) **CoreWeave Q2 after the close**; Datadog's strong Q2 and raised targets keeping AI-infrastructure sentiment alive. Rotation is being driven by rates and commodities — financials and energy bid, some tech pressured.
+- **Earnings before open:** SE, CAH, ARMK, VG, FUBO, Q, LCII, HRB, ECG, LITE, CELH, RXT (plus a long micro-cap tail). **None held, none a sector read-through for XLB/XLI/XLRE/XLV.**
+- **Overnight read-through that was held:** **SPG (Simon Property Group)** — the largest US mall REIT and the most direct XLRE input this week — reported Q2 with revenue $1.79B vs ~$1.60B expected, **real-estate FFO $3.29/sh (+7.9% y/y)**, **domestic NOI +8.5% y/y**, and a **raised FY26 FFO guide to $13.20–13.30**, but **GAAP EPS $1.49 missed $1.61** and the stock **fell ~1.06% in regular trade and another ~0.22% after hours**. Constructive fundamentals, unconstructive tape — it does **not** break XLRE's decay chain.
+- **Economic calendar (next 5 sessions):** **CPI Wed Aug 12 (T+1)** · **PPI Thu Aug 13 (T+2)** · FOMC minutes Wed Aug 19 · Core PCE Wed Aug 26 · NFP Fri Sep 4. No FOMC decision or Powell presser in the window.
+- **Sector momentum (YTD):** Energy the top sector across every 2026 snapshot (~+26–27%); Info Tech and Materials next; **Financials the weakest (-6 to -7%)**, Consumer Discretionary and Health Care also negative on the LinkedIn/csimarket cuts. Sources disagree on ranking because their cutoffs differ — treat as directional, and note it **conflicts** with the measured RS50 table below (which is benchmarked, same-day, and governs).
+
+### Screens (deterministic — `alpaca.sh bars` + `sizing.py rscreen`, never by eye)
+
+Benchmark: **SPY $773.03, ret10 +4.59%, ret50 +2.71%** (single pull, `bars SPY 1Day 200`). All ticker closes through **2026-08-10**.
+
+**Core sleeve — all 11 SPDR sectors screened, 1 pass.**
+
+| ETF | Last | 50-DMA | 200-DMA | ext | RS10 | RS50 | screen |
+| **XLI** | **184.60** | 179.81 ↑ | 167.58 | **+2.66%** | **-3.83** | **+3.77** | **pass=1 `constructive_pullback`** |
+| XLB | 53.18 | 51.22 ↑ | 48.88 | +3.83% | -1.11 | +1.22 | pass=0 `rs10_negative_extended` |
+| XLV | 168.44 | 158.00 ↑ | 152.07 | +6.61% | -1.51 | +9.42 | pass=0 `rs10_negative_extended` |
+| XLF | 57.81 | 54.87 ↑ | 52.66 | +5.36% | -2.96 | **+10.45** | pass=0 `rs10_negative_extended` |
+| XLE | 60.18 | 56.55 ↓ | 52.52 | +6.41% | -1.47 | +3.73 | pass=0 `rs10_negative_extended` |
+| XLRE | 44.40 | 44.63 ↑ | 42.22 | -0.51% | -7.56 | -1.84 | pass=0 `rs50_negative` |
+| XLK | 186.32 | 183.26 ↑ | 156.39 | +1.67% | +2.30 | -2.87 | pass=0 `rs50_negative` |
+| XLY | 119.67 | 115.90 ↓ | 116.76 | +3.26% | +3.37 | -4.47 | pass=0 `rs50_negative` |
+| XLP | 84.95 | 84.14 ↑ | 81.70 | +0.96% | -5.07 | -1.39 | pass=0 `rs50_negative` |
+| XLU | 43.13 | 44.75 ↓ | 44.34 | -3.62% | -10.17 | -5.46 | pass=0 `rs50_negative` |
+| XLC | 111.83 | 110.18 ↓ | 113.72 | +1.50% | -0.72 | -6.61 | pass=0 `rs50_negative` |
+
+**XLI is the first core pass in nine sessions**, and it passes on the exact v3.3 exception the screen was widened for: RS10 **-3.83pp** (short-term lagging) but price only **+2.66%** above a **rising** 50-DMA — a constructive base, not a chase. Note **XLB fell out of the same exception by 0.83pp of extension** (3.83% vs the 3.00% band edge) and is in any case **not addable** at 20.71% of equity, above the Rule 3 cap on appreciation. **XLF carries the complex's strongest medium-term leadership (RS50 +10.45pp) and still fails** — the RS10 arm, applied consistently, as it has been for eight sessions of XLF rejections.
+
+**Satellite sleeve — 14 candidates, 7 `rscreen` passes, 0 proposable.**
+
+| Ticker | RS10 | RS50 | screen | disposition |
+| CRDO | +10.68 | +5.20 | pass=1 `rs10_positive` | **macro-vetoed** |
+| FERG | +8.09 | +13.76 | pass=1 `rs10_positive` | **macro-vetoed** |
+| PLTR | +28.63 | +19.54 | pass=1 `rs10_positive` | **macro-vetoed** (also +31.5% above 50-DMA — extreme extension) |
+| CRWD | +20.42 | +31.52 | pass=1 `rs10_positive` | **macro-vetoed** |
+| AXON | +8.89 | +33.03 | pass=1 `rs10_positive` | **macro-vetoed** |
+| DELL | +2.66 | **+41.95** | pass=1 `rs10_positive` | **macro-vetoed** — RS50 remains the strongest single-stock reading of the phase, and it has **recovered** its RS10 arm (+2.66 vs -4.50 yesterday) |
+| UAL | -1.95 | +4.85 | pass=1 `constructive_pullback` | **macro-vetoed** |
+| HWM | -6.01 | +6.51 | pass=0 `rs10_negative_extended` | screened out |
+| NTRS | -1.67 | +9.40 | pass=0 `rs10_negative_extended` | screened out |
+| GEV | -5.17 | -3.17 | pass=0 `rs50_negative` | screened out |
+| VRT | -10.68 | -16.72 | pass=0 `rs50_negative` | screened out |
+| AVGO | +5.63 | -3.53 | pass=0 `rs50_negative` | screened out |
+| COIN | -15.82 | -21.13 | pass=0 `rs50_negative` | screened out |
+| VST | -13.64 | -13.45 | pass=0 `rs50_negative` | screened out |
+
+**Every one of the seven passes is vetoed on Rule v3.2 macro-window, not on merit: CPI is T+1 (Wed Aug 12) and PPI is T+2 (Thu Aug 13).** This is the sleeve's **fourth consecutive week at 0/3**, and for the second straight session the block is purely the calendar. **The window opens Thu Aug 13:** a Thu entry has T+1 = Fri Aug 14 and T+2 = Mon Aug 17, with the next Tier-1 binary (FOMC minutes) at **T+4, Wed Aug 19**. A Wed Aug 12 entry is still blocked (PPI at T+1). **CRDO, DELL, FERG and AXON carry into Thursday as the ranked watchlist** — re-screen then rather than assuming today's readings hold.
+
+### Trade Ideas
+
+1. **ID:** `pm-2026-08-11-XLI` — **tier:** core, XLI (Industrials Select Sector SPDR), **add to an existing 8-share position**, entry $184.60, stop $166.14 (stop width 10% → risk-parity sizing **3sh / $553.80 / 5.39% equity, `clamped=headroom`**), target $212.29, **R:R 1.5:1**, planned trail percent: 10, macro-window: n/a (core). `rs: RS10 -3.83pp / RS50 +3.77pp / screen=constructive_pullback`. **`rr-relaxed: yes (Rule 5 redeploy)`**
+   - **Catalyst:** the only sector in the complex that passes the momentum screen today, on a genuine base rather than extension — RS50 **+3.77pp** of measured leadership held while price consolidated to **+2.66%** above a rising 50-DMA. The position is already the book's best-behaved core name by trend structure (last $184.60 > 50-DMA $179.81 > 200-DMA $167.58, hwm $188.185). Soft July payrolls (-23k) easing rate-hike odds is a cyclical-friendly backdrop, and industrials sit on the constructive side of the day's rates-and-commodities rotation.
+   - **Sizing is bounded by the Rule 3 position cap, not by the deployment ceiling.** Unconstrained risk-parity returns 8sh / $1,476.80 / 14.38% `clamped=cap`; XLI's room to the 20% cap is only **$577.03** ($2,053.83 cap − $1,476.80 held), so the clip shrinks to **3sh / $553.80**, which still clears the 5% minimum-position floor ($513.46) ✓. **Post-add XLI = 11sh / $2,030.60 / 19.77% of equity — under the cap ✓.**
+   - **Honest accounting of the R:R.** At the standard 2:1 the target would be **$221.52 (+20.0%)** on a sector ETF; the relaxed 1.5:1 floor puts it at **$212.29 (+15.0%)**, which is the defensible number over the remaining challenge window. **This idea exists only because the Rule 5 trigger is armed** — it would not have qualified yesterday. The target is a mechanical 1.5× the 10% stop width, not an independently forecast level; treat it as a ladder reference (the +4/+7/+10/+15 ETF rungs of Rule 8 do the real work) rather than a price prediction.
+   - **Buy-side gate:** positions 4/6 ✓ (an add consumes no slot) · week-16 trades 0/5 ✓ · post-add 19.77% ≤20% ✓ · ETF core 100% of deployed ≥45% ✓ · satellites 0/3, ≤2/sector n/a ✓ · momentum aligned (`rscreen pass=1`) ✓ · macro-window n/a (core) ✓ · **R:R 1.5:1 ≥ 1.5 relaxed core floor ✓**.
+
+*No second idea. Ten of eleven core ETFs fail `rscreen`; XLB additionally fails Rule 3 on weight; XLRE is simultaneously add-eligible on weight (19.85%) and Rule-16 flagged, and **the momentum test governs**. All seven passing satellites are macro-vetoed. Ideas that fail the gate are skipped, not softened.*
+
+### Risk Factors
+- **Macro — CPI at T+1, and the core exemption is doing real work today.** The v3.2 macro-window gate exempts core ETFs by design, so XLI is proposable into a binary that vetoes seven satellites. That asymmetry is intentional (a diversified sector ETF is not a single-name event bet) but **today is the first session where the Rule 5 relaxed floor and the core exemption combine to admit a trade the book would otherwise not take**, and it deserves to be read that way on Friday rather than absorbed silently. A hot CPI hits cyclicals and rate-sensitives together — XLI, XLRE and XLB are all on the wrong side of that print.
+- **Macro — the two dominant narratives contradict each other.** Soft payrolls (-23k) argue for cuts; **oil +5% on Iran/Hormuz** argues for stickier headline inflation. They cannot both be right into tomorrow's number, and the position that resolves them is CPI itself. VIX at 15.46 is not pricing much of either.
+- **XLRE — Rule 16 reaches its decision point today, and the melt-up guard should fire for the first time.** Preview on live inputs: `sizing.py decay --unrealized-pct -1.06 --pos-ret-10d -2.97 --spy-ret-10d 4.59 --prior-flag 1` → **`{"flag": 1, "rotate": 0, "suppressed": 1, "reason": "meltup_suppressed"}`**. So the expected midday outcome is a **second consecutive flag with the sell withheld and a `DECAY-SUPPRESSED` row written** — the v3.4 guard's **first live firing**. SPG's guidance raise supports the fundamental case for holding; the -1.06% reaction does not. **Read midday's actual output rather than assuming this preview correct** — it is computed on yesterday's closes and a `prior_flag=1` inferred from the Aug 10 log.
+- **Structural — "exited the leading momentum quadrant" is still undefined, and today it becomes load-bearing.** That undefined STEP 4 branch-1 condition is the **only** override of the melt-up guard. Real Estate has measured RS50 ≈ -1.8pp for seven sessions. If the guard suppresses today as predicted, the book will be holding a Rule-16-flagged laggard on the strength of a rule that has no operational definition. **This is the single most important item for Friday's review.**
+- **Concentration — post-add the book is ~40% of equity in two names.** XLB 20.71% (over cap on appreciation, frozen) + XLI 19.77% = 40.48%, in two cyclical sectors that correlate through the same rates/growth channel. Materials + Industrials would be **57.7% of deployed** ($4,157.80 / $7,206.13), above the 50% sector-spread comfort line **when the two are treated as one cyclical bloc** — they are separate GICS sectors so no rule is breached, but the correlation is real and this is the first session it is worth stating.
+- **Structural — the max legal add still does not restore the band.** Post-add deployment is **70.17%**, short of the 75% floor with **$495.74** of restore still owed. **The binding constraint today is the Rule 3 20% position cap, not the R:R floor the trigger relaxes** — the third consecutive session on which three routines have independently reached the conclusion that the redeploy trigger cannot fix what is blocking deployment. `rule5.acted` will read `true` today for the first time, but it will have bought ~53% of the restore. **Deployment cannot return to the band without either a new position (satellites open Thu Aug 13) or an XLB/XLRE exit.**
+- **Idiosyncratic — XLI's own entry is only +1.99% above cost** and its hwm $188.185 sits 1.94% above the last close, so the add would be made into a position that has drifted down from its own high. The 10% trail on the combined 11 shares stays at $169.3665 (Rule 9 — no downward move; the existing GTC order covers 8sh, and `daily-summary` places the Rule 13 stop on the 3 new shares at 15:00 CT today).
+
+### Decision
+**TRADE** — one idea: `pm-2026-08-11-XLI`, 3 shares, ~$554.
+
+The book has held for **nine consecutive sessions**. Today is the first of those in which something actually passed: XLI clears `rscreen`, clears every buy-side gate, and clears the Rule 5 relaxed R:R floor that armed this morning for the first time. It is a small, bounded, cap-limited add to a sector already owned and already trending — not a new thesis, and not the deployment fix the book needs. It is worth taking anyway, because patience is a bias toward *not acting when nothing passes*, and something passed.
+
+### Sources
+- Perplexity (`sonar`) — oil: crudeoilprices.today, bloomberg.com/energy + /markets/commodities, tradingeconomics.com/commodity/brent-crude-oil, markets.ft.com, oilprice.com, markets.businessinsider.com
+- Perplexity — futures/VIX: cnn.com/markets/premarkets, barchart.com (ESU26 05:59 CT), marketwatch.com/investing/future/es00 (VIX 15.46), finance.yahoo.com, barrons.com, thestreet.com
+- Perplexity — catalysts: finance.yahoo.com (payrolls -23k), hdfcsky.com (oil +5% / Iran), home.saxo, marketwatch.com/economy-politics/calendar
+- Perplexity — earnings: askthedate.com, pro.thestreet.com, stockmarketagent.ai, finance.yahoo.com/calendar/earnings
+- Perplexity — economic calendar: newyorkfed.org/research/calendars/nationalecon_cal (CPI Aug 12, PPI Aug 13, minutes Aug 19), tradingeconomics.com, us.econoday.com, investing.com/economic-calendar
+- Perplexity — sector momentum: ftportfolios.com, investing.com/analysis (RRG), csimarket.com, linkedin.com snapshots
+- Perplexity — SPG Q2: revenue $1.79B, FFO $3.29 (+7.9%), NOI +8.5%, FY guide raised to $13.20–13.30, GAAP EPS $1.49 miss, stock -1.06%
+- **Deterministic (not sourced from search):** every DMA / RS / extension / screen figure above from `alpaca.sh bars <sym> 1Day 200` closes through **2026-08-10**, benchmarked to one SPY pull (last $773.03, ret10 +4.59%, ret50 +2.71%); all pass/fail verdicts from `sizing.py rscreen`; sizing from `sizing.py size`; the redeploy trigger from `sizing.py redeploy`; the XLRE decay preview from `sizing.py decay`. **No screen verdict in this entry was reached by eye.**
+- WebSearch fallback used: **no** — `perplexity.sh` returned 0 on all eight queries
