@@ -4805,3 +4805,113 @@ Same SPY benchmark.
 - Perplexity (`sonar`) — **held-ticker news:** robinhood.com/us/en/stocks/FERG · cnbc.com/quotes/FERG · marketbeat.com/stocks/NYSE/FERG · marketwatch.com/investing/stock/ferg · corporate.ferguson.com/investor/stock-information · morningstar.com/stocks/xnys/ferg/quote
 - **WebSearch fallback used: no.** `perplexity.sh` returned cleanly on all 8 queries. One transient failure — the futures query hit `curl (22) HTTP 429` when four queries were issued concurrently; it was **retried serially and succeeded**, so no fallback was needed. Queries have been paced serially since.
 - Price/RS/DMA/ATR/volume data: `alpaca.sh bars` (200 daily bars per candidate, 60 for SPY), closes through **2026-08-14**. All screen verdicts from `sizing.py rscreen`; all sizing verdicts from `sizing.py size`; the R:R floor from `sizing.py redeploy`. **No figure in this entry was judged by eye.**
+
+---
+
+## 2026-08-18 — Pre-market Research
+
+*Day 83 v3.4 paper · Week 17 Day 2 (Tue) · weekly buy budget 0/5 used · research-only routine.*
+
+**Mode guard (v3.4):** `TRADING_MODE` **unset → defaults to `paper`** per the guard's own default clause; `ALPACA_ENDPOINT`=`https://paper-api.alpaca.markets/v2` contains `paper-api.alpaca.markets` ✓ — mode and endpoint agree. `TRADING_ENABLED=true` ✓. MODE_LABEL `(paper)`, no `🔴 LIVE` prefix. No `.env` created or sourced. *(The unset default now holds into a fourth consecutive week; setting `TRADING_MODE=paper` explicitly in the routine UI remains the one free prerequisite before any live switch, unactioned across three weekly reviews.)*
+
+**STEP 0 — Rules 17 + 18: clean, no orders placed.** Zero `STOP-PLACEMENT-FAILED` marker rows anywhere in `TRADE-LOG.md` → no Rule 17 retry owed. Rule 18 cadence: prior trading session is **Monday Aug 17**, and the most-recent `— EOD Snapshot` header is `## Aug 17 — EOD Snapshot (Day 82, Monday)` ✓ — daily-summary logged, no `MISSING ROUTINE` placeholder written, and **the v3.3 Rule 13 recovery branch was NOT entered** (it is conditional on a missing prior-day snapshot; the condition is false). Corroborated against live state: all 5 held positions carry an open `trailing_stop` — **6 GTC trails across 5 names, XLI in two legs 8sh + 3sh = 11/11, zero unprotected positions.** **This routine made no `trailing-stop` call and placed no orders of any kind.**
+
+### Account
+- Equity: **$10,256.49** (`last_equity` $10,259.33 → **-$2.84 / -0.028%** so far)
+- Cash: **$1,585.85** (15.46%)
+- Buying power: $30,621.19 (`regt_buying_power` $11,842.34; non-marginable $5,921.17)
+- Daytrade count: **0** — broker `dtc` returns `{"daytrade_count": null, "source": "unavailable"}` on the standing paper-endpoint quirk (a successful call with the field absent, **not** `source=error`); local reconstruction from per-date `activities` over Aug 12–18 finds **zero SELL fills anywhere in the window** against one BUY (FERG Aug 13), and TRADE-LOG shows no exit of any kind since Aug 7. `max(0,0)=0`, sources agree, no discrepancy URGENT owed. **83 trading days / 17 weeks at zero day trades.**
+- Positions: **5/6** (one slot free) | Open orders: **6 GTC trailing stops across 5 names**
+- `long_market_value` **$8,670.64** → **deployment 84.54%**, inside the 75–85% band for a **fifth consecutive session**, **0.46pp under the ceiling**
+
+| Ticker | Sector | Tier | Qty | Entry | Last | Unreal. | % equity | Trail |
+| XLB | Materials | core | 40 | $50.08 | $52.24 | +$86.40 (+4.31%) | **20.37%** | 5% ($50.806, hwm $53.48) |
+| XLRE | Real Estate | core | 46 | $44.79 | $44.83 | +$1.84 (+0.09%) | **20.11%** | 10% ($41.8095, hwm $46.455) |
+| XLI | Industrials | core | 11 | $182.4618 | $185.56 | +$34.08 (+1.70%) | 19.90% | 10% × 2 legs ($169.3665 / $168.651) |
+| FERG | Industrials | satellite | 6 | $245.30 | $244.98 | -$1.92 (-0.13%) | 14.33% | 10% ($225.1935, hwm $250.215) |
+| XLV | Health Care | core | 6 | $161.92 | $167.97 | +$36.30 (+3.74%) | 9.83% | 7% ($157.7144, hwm $169.5854) |
+
+- **Quote freshness:** only **XLI (-0.41%) and XLV (+0.55%)** carry a non-zero `change_today`; XLB, XLRE and FERG return `current_price == lastday_price` with `change_today: 0` — **stale pre-open marks, not flat tape.** The equity line is therefore ~60% carried at Monday's close.
+- **ETF core $7,200.76 = 83.05% of deployed** ≥45% ✓ · **satellite sleeve 1/3** ✓
+- Sector spread of deployed: **Industrials 40.49%** (XLI + FERG) / Materials 24.10% / Real Estate 23.78% / Health Care 11.62% — all ≤50% ✓
+- **Rule 3 drift, seventh session:** XLB **20.37%** and XLRE **20.11%** sit *through* the 20% per-position cap on appreciation (not on entry — no breach, but no add permitted); XLI 19.90% is effectively at it. **Three of five names cannot absorb a single share.**
+- **Rule 5 REDEPLOY: not armed** for a third session. `sizing.py redeploy --equity 10256.49 --lmv 8670.64 --sessions-below-band 0` → `{"deployment_pct": 84.54, "below_band": false, "triggered": false, "rr_floor": 2.0, "restore_dollars": 0.0}`. Consecutive prior sessions with `deployment_pct` **strictly under 75.0** = **0** (Aug 13 84.59 / Aug 14 84.59 / Aug 17 84.54). **R:R floor is 2:1 for core and satellite alike; no `rr-relaxed` tag is written anywhere below.**
+
+### Market Context
+- **WTI / Brent oil: higher again — fourth day of the Hormuz re-inflation.** WTI **~$84.2–85.1** (Oilprice $85.06 +0.56; Investing $84.23; Yahoo front-month $84.96), Brent **~$88.9–91.4** (Oilprice $91.40; Investing $88.86; Yahoo $91.06). Both benchmarks are **up again from Monday's ~$82–83 / ~$88.6–89.6**, extending the third cycle of the same stalled-Strait story. The cross-source spread on Brent is **$2.54**, wider than the day's move — level is signal, delta is not.
+- **S&P 500 futures: modestly lower.** E-mini clustered **7,792–7,795, -0.13% to -0.16%** (Investing 7,792.25 -12.75; Yahoo Sep 7,795.00 -10.00; Markets Insider 7,793.25 -11.75). Sources agree on direction *and* magnitude today — unusually tight, and a mild give-back after Monday's -0.47% SPY close.
+- **VIX: ~15.0**, quotes **14.98–15.95** (Yahoo 15.03; MarketWatch 14.98; Cboe 15.95; Investing 15.07) against Monday's ~14.9. Fifth session pinned at the floor of a 13.38–35.30 52-week range. Nothing in the book is buying protection at this level.
+- **Today's catalysts:** **Building Permits / Housing Starts, Import & Export Prices, Industrial Production & Capacity Utilization** (07:30–08:15 CT) — all second-tier, **none Tier-1 for the macro-window gate**. Index event: **Reddit replaces AvalonBay (AVB) in the S&P 500 before today's open**, one estimate near **$2.9bn of forced index demand** — AVB is a **residential REIT**, i.e. an **XLRE constituent deletion**, and XLRE is the book's weakest core name (+0.09%, RS50 now negative). Flagged, not traded on.
+- **Earnings before open:** **HD** and **BIDU** are the consensus names; also TOL, CRWV, KEYS, JKHY, MRCY, CMC, AYI, LZB, SNX, WGO. **No held name reports.** HD and TOL are housing-levered and print into the same morning as Housing Starts — a second-order XLB/XLI read, not a position.
+- **Economic calendar, T+1 to T+5 — resolved:** yesterday's source conflict is settled. **FOMC minutes (July 28–29 meeting) release Wednesday Aug 19, 14:00 ET**, confirmed against `federalreserve.gov/monetarypolicy/fomccalendars.htm`. Next FOMC **decision** is Sep 15–16. **No NFP, CPI, PPI or Core PCE in Aug 18–24.** One source additionally places the **Jackson Hole symposium opening Thursday Aug 20**.
+- **→ Macro-window: NOT CLEAR for satellites, second consecutive session.** `macro-window: FOMC-MINUTES T+1` on every single-stock candidate; **all satellites are screened out on this gate alone**, independent of the capital constraint below. Core ETF ideas remain exempt (`n/a (core)`).
+- **Sector momentum:** the Perplexity read is again unusable — the same source set disagrees on Info Tech by **21pp** (+17.5% First Trust through Jun 12 vs -3.8% on a later snapshot) because of differing cutoffs. Only the leadership call is stable: **Energy first (+22.3% to +27.0% YTD)**, then Materials / Consumer Staples / Industrials in the low-to-mid teens, **Financials -5.7%** and **Consumer Discretionary -4.6%** worst. **All sector verdicts below are computed from `alpaca.sh bars`, not from this query.**
+
+### Core screen — closes through 2026-08-17, SPY $772.67 (ret10 +1.98%, ret50 +2.32%)
+| Ticker | Last | 50-DMA | 200-DMA | RS10 | RS50 | Ext | ATR14 | $Mvol/d | `rscreen` |
+| **XLV** | 167.05 | 159.99 ↑ | 152.66 | **+0.98** | **+8.01** | +4.42% | 1.50% | 1,476 | **pass=1 `rs10_positive`** |
+| **XLE** | 62.58 | 56.96 ↑ | 52.98 | **+4.47** | **+4.97** | **+9.86%** | 1.98% | 1,633 | **pass=1 `rs10_positive`** |
+| **XLI** | 186.32 | 181.06 ↑ | 168.40 | -0.25 | +3.71 | +2.90% | 1.39% | 1,117 | **pass=1 `constructive_pullback`** |
+| **XLP** | 84.68 | 84.51 ↑ | 81.90 | -2.19 | +1.62 | +0.20% | 1.29% | 885 | **pass=1 `constructive_pullback`** |
+| XLF | 57.58 | 55.53 ↑ | 52.81 | -1.63 | **+8.39** | +3.69% | 1.01% | 1,699 | pass=0 `rs10_negative_extended` |
+| XLRE | 44.83 | 44.77 ↑ | 42.30 | -2.75 | **-0.46** | +0.14% | 1.29% | 246 | pass=0 `rs50_negative` |
+| XLB | 52.24 | 51.36 ↑ | 49.10 | +0.43 | -0.75 | +1.72% | 1.40% | 589 | pass=0 `rs50_negative` |
+| XLK | 190.32 | 182.72 ↓ | 157.46 | **+4.92** | -3.68 | +4.16% | 2.03% | 1,450 | pass=0 `rs50_negative` |
+| XLY | 116.75 | 115.92 ↓ | 116.74 | -3.21 | -2.56 | +0.72% | 1.20% | 810 | pass=0 `rs50_negative` |
+| XLC | 110.82 | 109.97 ↓ | 113.63 | -2.45 | -4.09 | +0.78% | 1.46% | 614 | pass=0 `rs50_negative` (<200-DMA) |
+| XLU | 44.18 | 44.79 ↓ | 44.33 | -2.39 | -1.13 | -1.37% | 1.51% | 893 | pass=0 `rs50_negative` (<200-DMA) |
+
+**Four core passes — the widest pass set of the phase — and every one is unbuyable, none of it on judgement.**
+- **XLV** `pass=1 rs10_positive`, the first *unambiguous* pass (positive on both windows) in weeks and the book's best-quality core read: RS50 **+8.01pp**, +4.42% off a rising 50-DMA. **Held at 9.83% of equity — the one name with genuine Rule 3 room (10.2pp of headroom under the cap).** It fails on capital alone: `sizing.py size --equity 10256.49 --price 167.97 --stop-frac 0.10 --headroom 47.38` → **`{"shares": 0, "cost": 0.0, "clamped": "floor_skip"}`**.
+- **XLE** `pass=1 rs10_positive` for a second session and now **+9.86% above its 50-DMA — wider than the +8.84% at which it was rejected yesterday, and wider still than the +7.56% at which the Aug 4 clamp refused it.** The extension has grown on every one of the three passes this catalyst has produced. A `pass` tests trend and leadership; it says nothing about entry price, and the log has twice recorded that the clamp — not the screen — was what kept the book out of a chase. Sizing agrees again: `--price 62.58 --stop-frac 0.10 --headroom 47.38` → **`floor_skip`**. **Not proposed, and it would not be proposed at a legal clip either.**
+- **XLI** `pass=1 constructive_pullback` — RS10 -0.25pp but sitting +2.90% off a rising 50-DMA, exactly the base the v3.3 relaxation was written for. **Held at 19.90% of equity — at the Rule 3 cap. No add permitted.**
+- **XLP** `pass=1` for a **fifth** consecutive session and remains **Rule 10 sector-barred** (Consumer Staples, two consecutive losing exits Jun 3 / Jul 10). Not discretionary. The longest-running rejection in the log.
+
+**XLRE flipped to `rs50_negative` — a genuine change, and the first core degradation of the week.** RS50 went **+1.77pp → -0.46pp** in one session and RS10 deepened to **-2.75pp**; the name closed -0.97% Monday, the worst print in the book, and holds **+0.09% above entry — effectively flat after 36 sessions.** It is still above a (barely) rising 50-DMA and above its 200-DMA, so this is a *buy-side* verdict and not an exit signal, but it is the name to watch: **XLRE is now the only core holding that is both below the screen and losing relative ground on both windows**, and today's S&P deletion of AVB removes an index bid from its sector. **Rule 16 owns the exit decision at midday**, where `decay` requires the position to be *below entry* — it is not, by $1.84. Flagged for midday and for Friday's review; **no action is proposed here, and none is available anyway.**
+
+**XLB's RS50 held.** -0.75pp, marginally *better* than yesterday's -1.06pp, with RS10 still positive (+0.43pp) and the name +4.31% and 5%-trailed. Unchanged verdict: `pass=0` is a refusal of new money, not a sell.
+
+### Satellite screen — 11 candidates, 1 `rscreen` pass, **macro-window NOT clear (all gated)**
+| Ticker | Last | 50-DMA | RS10 | RS50 | Ext | ATR14 | $Mvol/d | `rscreen` |
+| **CRDO** | 282.82 | 240.69 ↑ | **+27.55** | **+27.71** | **+17.50%** | **8.27%** | 1,145 | **pass=1 `rs10_positive`** |
+| PFX | 46.13 | 43.82 ↑ | +5.27 | -0.94 | +5.28% | 1.48% | **1** | pass=0 `rs50_negative` |
+| MU | 1011.75 | 960.97 ↓ | +19.99 | -0.72 | +5.28% | 7.16% | 37,109 | pass=0 `rs50_negative` |
+| VRT | 292.43 | 296.11 ↓ | +9.19 | -12.02 | -1.24% | 5.69% | 1,612 | pass=0 `rs50_negative` |
+| MCHP | 80.26 | 85.41 ↓ | +4.72 | -18.98 | -6.03% | 4.59% | 876 | pass=0 `rs50_negative` |
+| TLN | 356.92 | 370.30 ↓ | +1.63 | -7.92 | -3.61% | 4.54% | 255 | pass=0 `rs50_negative` (<200-DMA) |
+| WDC | 536.01 | 551.62 ↓ | -0.31 | -9.16 | -2.83% | 7.54% | 4,179 | pass=0 `rs50_negative` |
+| STRL | 603.89 | 703.01 ↓ | -3.22 | -41.55 | -14.10% | 6.42% | 479 | pass=0 `rs50_negative` |
+| NYT | 65.27 | 71.90 ↓ | -15.46 | -15.32 | -9.22% | 3.42% | 162 | pass=0 `rs50_negative` (<200-DMA) |
+| CHEF | 110.57 | 98.60 ↑ | -2.64 | **+40.28** | +12.14% | 4.36% | 80 | pass=0 `rs10_negative_extended` |
+| *FERG (held)* | 244.98 | 235.80 ↑ | -4.02 | +3.92 | +3.89% | 3.03% | 1,104 | pass=0 `rs10_negative_extended` |
+
+- **The single pass, CRDO, is screened out on the macro-window gate — `macro-window: FOMC-MINUTES T+1`** — and would not have been proposed regardless: **+17.50% above its 50-DMA with a 8.27% ATR14** is the textbook chase the sleeve has been refusing all phase, and a 12–15% satellite stop on an 8%-ATR name is barely more than one day's range.
+- The Zacks-sourced momentum list is **eight-tenths semiconductor/AI-infrastructure** and the screen rejects nearly all of it on **RS50**: MU, VRT, MCHP, WDC and STRL are all *up hard over 10 sessions but below their 50-DMAs and badly lagging SPY over 50* — a late-cycle bounce inside a broken trend, which is exactly what `rs50_negative` exists to catch. **PFX ($1M/day) and CHEF ($80M/day) additionally fail liquidity** for a $500 clip in any case.
+- **FERG, the one held satellite, weakened**: RS10 **-4.02pp** (was positive on the Aug 13 entry screen) against RS50 +3.92pp, still +3.89% off a rising 50-DMA but now trading **-0.13% below entry**. Rule 16 requires *below entry* **and** lagging SPY over 10 sessions for **two consecutive middays** — **the first condition is now satisfied and the second is too, so today is a candidate for `flag=1`, the book's first non-zero decay flag of the phase.** One flag is not a rotation; it needs a second tomorrow. **Handed to midday, which owns it.**
+
+### Trade Ideas
+**None. Zero ideas advance to `market-open` — the sixth consecutive session at zero, and the third consecutive HOLD.**
+
+The gate is arithmetic, not conviction, and it is the same wall for the sixth session running:
+- **Deployment headroom to the 85% ceiling: $10,256.49 × 0.85 − $8,670.64 = $47.38.**
+- **Minimum legal clip (Rule: 5% of equity): $512.82.**
+- **Every candidate is $465.44 short of its own smallest legal size.** Verified, not asserted — `sizing.py size` returned `clamped: "floor_skip"` on **both** live core passes (XLV at $167.97, XLE at $62.58) at the true `--headroom 47.38`.
+
+Independently, and sufficient on its own for the single-stock sleeve: **`macro-window: FOMC-MINUTES T+1`** (Wed Aug 19, 14:00 ET) vetoes **every** satellite candidate including the sole `rscreen` pass. And independently again, of the four core passes: **XLI** is at the Rule 3 20% cap, **XLP** is Rule 10 sector-barred, and **XLE** is a three-times-litigated chase at its widest extension yet. **XLV is the only name in the entire screen that fails on capital alone** — it is the standing first call the moment headroom appears, and it is the one to note for Friday's review as the cost of the bind.
+
+Position slots (5/6, one free) and the weekly budget (0/5 used, four sessions left) are **both unbinding**. The book is short of cash, not of permission.
+
+### Risk Factors
+- **Macro:** **FOMC minutes T+1 (Wed 14:00 ET)** is the week's only Tier-1 binary and lands into a **VIX ~15** tape with no protection anywhere in the book — a hawkish read on the July hold would hit **XLRE hardest** (most rate-sensitive holding, already the weakest core name and now `rs50_negative`) and **XLI/XLB** second. **Jackson Hole opens T+2 (Thu Aug 20)** per one source, extending the event window through Friday rather than closing it Wednesday.
+- **Oil, fourth day up:** WTI ~$85 / Brent ~$91 on a stalled-Hormuz premium that has now fully deflated once (Aug 5→7) inside this same phase. A repeat deflation is a **direct XLE risk** — which is the position the sizing clamp has kept the book out of three times — and an indirect XLB/XLI input cost tailwind on the way down.
+- **Sector, XLRE:** **AVB's S&P 500 deletion at today's open** removes index demand from the book's flattest name on the day its RS50 turned negative. Two adverse inputs converging on one 20.11% position, protected only by a 10% trail that sits **6.7% below** the current mark.
+- **Idiosyncratic, FERG:** RS10 **-4.02pp** and back below entry; likely `flag=1` at midday, the phase's first. The Aug 10 Q2 raise (mid-single-digit FY26 revenue growth, 9.5–9.8% adj. op margin, Jefferies $289 / RBC $290) is **eight sessions old and no longer moving the tape** — the thesis is intact but the momentum that justified the satellite slot is not.
+- **Structural, sixth session:** 84.54% deployed with **$47.38** of legal headroom means the book **cannot respond to any signal it generates**, good or bad, on the buy side. Three of five names are at or through the Rule 3 cap. The only mechanisms that can free capital are a stop firing, a Rule 8 scale-out or a Rule 16 rotation — i.e. **the book can currently only act by selling.** This is the third consecutive session logging it and it is now the top structural item for Friday's review, alongside the still-undefined Branch 1 quadrant test (DECIDED-G, twelve middays).
+
+### Decision
+**HOLD.** Zero trade ideas. Three constraints, each independently sufficient: **(1) capital** — $47.38 headroom vs a $512.82 minimum clip, `floor_skip` on both live core passes; **(2) macro-window** — FOMC minutes T+1 vetoes the entire satellite sleeve including its one screen pass; **(3) per-name** — of four core passes, XLI is capped, XLP is sector-barred, XLE is a chase at +9.86% extension, and XLV fails only on (1). No stops move, no exits are proposed; **XLRE's RS50 flip and FERG's likely first decay flag are handed to midday, which owns both.** Patience > activity.
+
+### Sources
+- Perplexity citations: oilprice.com/oil-price-charts; investing.com/commodities/crude-oil; investing.com/commodities/brent-oil; finance.yahoo.com/quote/BZ=F; investing.com/equities/pre-market; markets.businessinsider.com/premarket; finance.yahoo.com/quote/%5EVIX; marketwatch.com/investing/index/vix; cboe.com/tradable-products/vix; tradingeconomics.com/calendar; schwab/econoday via us.econoday.com; **federalreserve.gov/monetarypolicy/fomccalendars.htm** (FOMC minutes Aug 19 14:00 ET — resolves yesterday's conflict); federalreserve.gov/newsevents/2026-august.htm; earningstoday.com/earnings-calendar/daily/2026-08-18; beta.earningswhispers.com/calendar/20260818; ftportfolios.com sector commentary; ssga.com spdr-sector-scorecard; investing.com/analysis/top-ranked-momentum-stocks-to-buy-for-august-18th; finance.yahoo.com/markets/stocks/articles/5-momentum-stocks-buy-august; cnbc.com/quotes/FERG; businesswire.com Ferguson dividend release
+- WebSearch fallback used: **no** — `perplexity.sh` returned 0 on all queries
+- Price/trend data: `alpaca.sh bars` (1Day, 200 bars per ticker; SPY 60) — **all DMA, RS, extension, ATR and dollar-volume figures above are computed from bars, not from Perplexity**; `rscreen` / `size` / `redeploy` verdicts from `scripts/sizing.py`
