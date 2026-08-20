@@ -2629,3 +2629,39 @@ Pre-market Decision: HOLD / TRADE-READY (conditional TRADE per rationale); three
 - Catalyst: pm-2026-08-20-XLV (RESEARCH-LOG 2026-08-20)
 - Target: $210.82 (R:R 2.0:1, unrelaxed floor — Rule 5 relaxation not armed and not relied on)
 - Realized P&L: n/a (open position)
+
+## 2026-08-20 — Midday Run (Day 85, Thursday, Week 17 Day 4)
+
+- midday 2026-08-20: 1 sells, 0 scale-outs, 0 stop-tightenings, 3 decay-flags.
+- Rule 14 DTC: 0 (source=local) [conservative: 1] (sell attempted: yes)
+
+### 2026-08-20 — DECAY-FLAG: XLI flag=1
+- unrealized -1.11% | 10-session pos -2.33% vs SPY -0.32% | prior_flag=1 | rotate=1
+
+### 2026-08-20 — DECAY-FLAG: XLB flag=0
+- unrealized +5.17% | 10-session pos +0.98% vs SPY -0.32% | prior_flag=0 | rotate=0
+
+### 2026-08-20 — DECAY-FLAG: XLRE flag=0
+- unrealized +0.83% | 10-session pos +0.77% vs SPY -0.32% | prior_flag=0 | rotate=0
+
+### 2026-08-20 — TRADE: XLI side=sell qty=11
+- Exit: $180.43 (4 partials, 1+5+4+1, all @ $180.43; order 6a688e15-89b2-421e-83bd-4ba30fd9dc2e, filled 17:06:29Z)
+- Stop level: <was: two GTC 10% trails — $169.3665 / 8sh (69d2c5bc, hwm $188.185) + $168.651 / 3sh (8658afd4, hwm $187.39) — fired: no; both cancelled at 12:06 CT to free qty_available (all 11 sh reserved, `qty_available: 0`), then position closed; no orphan order>
+- Sector: Industrials
+- trigger: decay-chain
+- Thesis: closed via Rule 16 momentum-decay rotation — 2nd consecutive midday flag (Aug 19 flag=1 -> Aug 20 flag=1), below entry (-1.11%) AND lagging SPY 10-session by 2.01pp (-2.33% vs -0.32%); melt-up guard inapplicable (SPY ret10 -0.32%, far below the +3.0% threshold — a flat-to-down tape, not a melt-up)
+- Catalyst: links back to pm-2026-08-03-XLI (8 sh @ $180.99) + pm-2026-08-11-XLI (3 sh @ $186.3867, Rule 5 ballast)
+- Target: <was $217.19, R:R 2:1 on the 8-sh leg / $212.29, R:R 1.5:1 on the 3-sh ballast leg>
+- Realized P&L: -$22.35 (-1.114%)
+
+### 2026-08-20 — MIDDAY: FIRST RULE 16 ROTATION OF A CORE ETF
+- **One money-moving action.** XLI is the **first core ETF ever rotated out by Rule 16** — every prior rotation (BIIB, XLF Aug 7; FERG Aug 19) was a satellite or a tactical sleeve name. The chain armed at yesterday's midday (`flag=1`, `rotate=0`) and completed today exactly as designed: 17 sessions after the Aug 3 re-entry, the rule cut a position that was **1.11% below entry and 2.01pp behind SPY over ten sessions**, rather than waiting for the 10% trail at $169.37 to fire 6.1% lower.
+- **Branch order (v3.4) was evaluated strictly.** Branch 1 (sector-quadrant) first on all three actionable core ETFs — **did not fire; still operationally undefined (DECIDED-G)** and now the top standing item for Friday's review for a sixteenth consecutive midday. Branch 2 (melt-up guard): `suppressed=0` on all three — XLI's -1.11% drawdown *is* shallower than the -2.0% floor, but the guard needs **both** legs and SPY's 10-session return was **-0.32%**, nowhere near the +3.0% benchmark threshold. So the guard was inspected and correctly declined to engage; **`shallow_rotations` stays 0** and no `DECAY-SUPPRESSED` row exists anywhere in the file. Branch 3: `rotate=1` → close. `trigger: decay-chain`.
+- **Rule 15 removed XLV from consideration entirely, and this is the day the rule earned its keep.** XLV's latest BUY row is dated **today** (7 sh @ $174.22 at the open), so the whole blended 11-share lot is READ-ONLY on the sell side — no hard-close test, no ladder, no decay flag. The position sits at **+2.64%** with a live ladder `target_trail_pct` it cannot be given; had the routine acted on it, the sell would have been a **genuine same-day round trip** and the phase's first day trade. Deferred to tomorrow, when the lot ages.
+- **Rule 8:** XLB **+5.17%** (hwm-gain +6.79%, hwm $53.48) → `{"target_trail_pct": 7, "scaleouts_due": 0}` against a live **5%** trail — 7 is **not strictly less than** 5, so tightening would *loosen* protection → **no-tighten** ✓ (sixth consecutive session on this same refusal). XLRE **+0.83%** (hwm-gain +3.72%) → `target_trail_pct: null`, below the first etf rung. `scaleouts_due: 0` on both; `SO_DONE` unchanged. **Zero scale-outs, zero `sub_unit` deferrals.**
+- **Rule 7:** no candidate — worst actionable name was XLI at **-1.11%**, clearing the -7% line by 5.89pp. **Rule 10:** no sector-kill. Industrials' exit window reads XLI **+$31.09 win (Jul 29)** → FERG **-$6.12 (Aug 19)** → **one** consecutive loss at evaluation time, and sector-kill needs two. **Today's XLI exit makes it two: Industrials now carries FERG -$6.12 then XLI -$22.35, back-to-back losses with no winner between, so the sector is armed for a Rule 10 kill and must be treated as CLOSED to new entries from tomorrow's pre-market onward.** Nothing is left to kill — the book holds no Industrials name after this exit — but the buy-side consequence is real and is the single most important thing carried into Friday.
+- **Post-run book: 3 positions, all core, all ETF, satellite sleeve 0/3.** XLB (Materials, +5.13%, 40sh, 5% trail, GTC b6cec1cf) · XLRE (Real Estate, +0.80%, 46sh, 10% trail, GTC 16d5a6b2) · XLV (Health Care, +2.64%, 11sh, **4sh covered by the 5% trail bd3edce1, 7sh still unprotected until daily-summary's Rule 13 placement**). **Both XLI trails were cancelled before the close and the position is flat — zero orphan orders.**
+- **Equity $10,265.53, cash $4,166.10 (40.58%), LMV $6,099.43 ⇒ deployment 59.42%** — **below the Rule 5 75% floor**, and this is **session 1 below the band** on the post-run mark: the Aug 20 open restored the band to 78.76% and the rotation has taken it straight back out, exactly the interaction market-open flagged this morning as "the two actions run in opposite directions on the same day". `sizing.py redeploy --sessions-below-band` arms at 2, so tomorrow's pre-market inherits a live re-deployment question with **$4,166.10 of cash and three free position slots** to answer it — the most capital and the most room the book has had in the phase, but with **Industrials now closed by Rule 10** and Health Care already at 31.4% of deployed.
+- **ETF core $6,099.43 = 100.00% of deployed** ≥45% ✓. Sector spread of deployed: Materials **34.53%** / Real Estate **34.05%** / Health Care **31.42%** — a 3.1pp spread across three sleeves, all ≤50% ✓. **Positions 3/6.** Week 17 buy budget **1 of 5 used**.
+- **Rule 13:** no stops placed here, by construction — this routine only tightens, and nothing was tightened today. **XLV's 7 new shares remain the one Rule 13 item owed at 15:00 CT** and a lapse would leave 7 of 11 shares naked overnight; it is the second consecutive session on which daily-summary has real Rule 13 work.
+- **Rule 14 audit:** broker `dtc` returned `{"daytrade_count": null, "source": "unavailable"}` on the standing paper-endpoint quirk — a **successful** call with the field simply absent, **not** `source=error`, so local derivation is permitted. **Primary evidence, per-date `activities` across Aug 14/17/18/19/20:** Aug 14 → FEE only, 0 FILL; Aug 17 → `[]`; Aug 18 → `[]`; Aug 19 → 3 FILL rows, all **sells** (XLV 2sh, FERG 5+1sh), no buy fill that date; Aug 20 → XLV **buy** 7sh at the open and XLI **sell** 11sh at midday — **two different symbols, so no symbol has both a buy and a sell fill on the same date**. `activities_count = 0`. **Corroboration, TRADE-LOG over the same window:** XLI was bought Aug 3 and Aug 11, both aged; no ticker has a same-day buy and sell row. `max(0, 0) = 0`, sources agree, **no discrepancy URGENT owed**. `DTC_CONSERVATIVE = 1` (the raw sell count this STEP 5 loop, which does not gate). **86 trading days / 17 consecutive weeks at zero day trades.**
