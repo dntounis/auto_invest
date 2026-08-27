@@ -5596,3 +5596,103 @@ Three core ETFs and one satellite pass momentum measurement; **none survives the
 - Measured data: `alpaca.sh bars` (1Day, 200 bars) for SPY + 11 sector ETFs + 6 satellite candidates, last bar **2026-08-25**; all momentum verdicts from `sizing.py rscreen`; Rule 5 verdict from `sizing.py redeploy`. **`alpaca.sh bars` available — satellite screen NOT degraded.**
 - **Unverified and explicitly not adopted:** a Kansas City Fed page surfaced by Perplexity names the 2026 Jackson Hole Chair as Kevin Warsh rather than Powell. Immaterial to the gate (the binary is *a* sitting Chair's address); recorded pending independent confirmation.
 - **Carried forward unverified from the 2026-08-25 entry:** PPI Thu Sep 10, FOMC minutes Tue Oct 7 — today's calendar pull could not confirm either.
+
+---
+
+## 2026-08-27 — Pre-market Research
+
+**Env / mode guard (v3.4):** all 8 non-mode vars set; `TRADING_MODE` **unset → defaults to `paper`** per the guard's own default clause; `ALPACA_ENDPOINT`=`https://paper-api.alpaca.markets/v2` contains `paper-api.alpaca.markets` ✓ — mode and endpoint agree; `TRADING_ENABLED=true` ✓. MODE_LABEL `(paper)`, no `🔴 LIVE` prefix. No `.env` created or sourced. *(Twenty-sixth consecutive session on the unset default — still the one free prerequisite before any live switch, logged as a behavior anomaly, not a halt.)*
+
+**STEP 0 — Rule 17:** header-form scan of TRADE-LOG returns **zero `### … STOP-PLACEMENT-FAILED` rows** anywhere in the file. No retry owed. **Rule 18:** prior trading day = **Wed Aug 26**; `## Aug 26 — EOD Snapshot (Day 89, Wednesday)` is present and is the newest EOD header → `daily-summary` logged. **The v3.3 missed-Rule-13 recovery branch is therefore NOT entered** (it is conditional on the missing branch, and the branch did not fire). Confirmed independently against the broker anyway: **5 standing GTC trailing stops cover 95/95 held shares** — XLB 27sh 4.1% (b4d2de76, hwm $53.79), XLRE 46sh 10% (16d5a6b2, hwm $46.455), XLV 7sh 10% (60dcfc62, hwm $175.82) + 4sh 5% (bd3edce1, hwm $176.025), GILD 11sh 10% (e9c7b266, hwm $149.6199). **Zero unprotected positions, twelfth consecutive session.**
+
+### Account
+- Equity: **$10,286.73** (broker `last_equity` $10,338.05, `balance_asof` 2026-08-26 — pre-market mark, positions quoted 06:11 CT)
+- Cash: **$3,276.89** (31.86%)
+- Buying power: **$32,735.11** (RegT $13,563.62 · non-marginable **$6,781.80** — the only figure that matters for unlevered clips)
+- Daytrade count: **0** (`source=local`). Broker `dtc` → `{"daytrade_count": null, "source": "unavailable"}` — the standing paper-endpoint quirk (a **successful** call with the field absent, **not** `source=error`), so local derivation is permitted. Aug 26's only fill was the **XLB scale-out sell** and XLB has no buy fill that day (entry 2026-05-18) → zero same-day round trips; TRADE-LOG corroborates. **90 trading days / 18 consecutive weeks at zero day trades.** Research-only routine — no sell was contemplated, so Rule 14 is recorded, not exercised.
+- Long market value: **$7,009.84** → **deployment 68.14%**
+
+**Book (4/6 positions, 2 slots free):** XLB 27 @ $50.08 (+6.83%) · XLRE 46 @ $44.79 (+0.22%) · XLV 11 @ $169.7473 (+1.68%) · GILD 11 @ $144.3136 (+0.91%). **ETF core $5,407.93 = 77.15% of deployed** ≥45% ✓ · **satellites 1/3** ✓ · sector spread of deployed **Health Care 49.94% / Real Estate 29.46% / Materials 20.61%** — Health Care has slipped back *under* the 50% aggregate cap by 6bp on GILD's pre-market dip, but the margin is $4 of market value and **any Health Care add still pushes straight through it**, so the sleeve remains gated in practice.
+**Rule 3 room:** 20% cap = $2,057.35, 5% minimum clip = $514.34. XLB room $612.85 → **OK**; XLRE room **−$7.59 (20.07%, through the cap on appreciation — no breach, it was not bought through)**; XLV room $158.86 → **floor_skip**; GILD room $455.44 → **floor_skip**.
+
+**Rule 5 (v3.4 relaxed R:R) — NOT armed.** `METRICS.jsonl` consecutive sessions with `deployment_pct < 75.0` counted from the tail = **1** (Aug 26 at 68.30%; Aug 25/24/21 were 75.12/75.07/75.02, all in band). `sizing.py redeploy --equity 10286.73 --lmv 7009.84 --sessions-below-band 1` → `{"deployment_pct": 68.14, "below_band": true, "triggered": false, "rr_floor": 2.0, "restore_dollars": 705.21}`. **`REDEPLOY_GRACE_SESSIONS` is 2, so the floor stays 2:1 for core and satellite alike and no `rr-relaxed` tag is written today.** *(Counting strictly-under-75 rather than `in_band: false` is the v3.4 correction — the latter also matches sessions above the 85% ceiling and would arm the trigger early.)* **If today closes under 75% again, tomorrow's pre-market reads `sessions_below_band = 2` and the 1.5:1 core floor arms with ~$705 to redeploy.** Note below what that would and would not unlock.
+
+### Market Context
+- **WTI / Brent oil:** WTI **~$80.70** spot / **$81.81–81.94** futures; Brent **~$86.46** spot / **$87.44** futures. The late-August geopolitical bid (Iran sanctions, Hormuz blockade threats, tanker attacks — Brent $93.78 / WTI $87.83 on Aug 20) has **continued to unwind**: Aug 26–27 eased on a reported temporary-shipping-corridor proposal, extending yesterday's −2.4% de-escalation break. Crude is now ~11% off the Aug 20 spike high.
+- **S&P 500 futures:** Sep E-mini **~7,690–7,703**, roughly flat to marginally higher (MarketWatch 7,703.50 +11.50; WSJ 7,689.00 −3.00; Business Insider 7,687.25 −4.75). Feed prints disagree by ~15pts on timestamp, not direction — call it **flat**.
+- **VIX: ~14.94** (WSJ 05:45 CT), Cboe 15.21, MarketWatch 15.64. **Low-teens complacency into a Chair keynote** — the cheap-vol setup that punishes a hawkish surprise.
+- **Today's catalysts:** **Jackson Hole Symposium opens (Aug 27–29)**; the agenda posts tonight 20:00 ET. Initial jobless claims, trade balance, retail inventories, Kansas City Fed manufacturing. AI/semiconductor volatility still setting the Nasdaq's tone. **GILD BIC/LEN HIV PDUFA action date is today (T+0).**
+- **Earnings before open:** BBY, DG, DLTR, HRL, BURL, BILI, HQY, RY, TD, CM, plus ~32 total pre-open names. After the close: **MRVL, WDAY, ADSK, AFRM**. **None is a holding and none is a proposed name.**
+- **Economic calendar (next 5 sessions):** **Fri Aug 28 — Fed Chair keynote at Jackson Hole, 10:00 ET (T+1)** — the one Tier-1 binary in the window. **NFP, CPI, PPI, Core PCE, FOMC decision and FOMC minutes all fall outside T+1…T+5** (next FOMC Sep 15–16; July PCE already printed Wed Aug 26). So the macro window is dirty for **exactly one reason**, and it clears from Monday.
+- **Sector momentum YTD 2026:** XLE **+43.1%** · XLK +25.4% · **XLB +19.1%** · XLI +16.0% · **XLRE +14.1%** · XLP +14.0% · **XLV +13.8%** · XLF +7.2% · XLU +2.6% · XLY −0.5% · XLC −0.14%. The book owns three of the top seven; the two sleeves it cannot buy (XLE #1 by a wide margin, XLK #2) are the two leaders.
+
+### Trade Ideas
+
+**None. Zero ideas pass the buy-side gate — the fourth consecutive session at zero.**
+
+**Core screen — 4 of 11 sector ETFs pass `rscreen` + both DMAs, and all 4 are then blocked.** (SPY basis: ret10 −0.83%, ret50 +1.75%, last $766.08. All bars 1Day×200, last bar 2026-08-26.)
+
+| ETF | Last | 50-DMA | 200-DMA | DMA | RS10 | RS50 | `rscreen` | Verdict |
+|---|---|---|---|---|---|---|---|---|
+| **XLB** | 53.67 | 51.67 | 49.47 | ✓ | +2.90pp | +0.87pp | **pass** / `rs10_positive` | **fails 2:1** |
+| **XLE** | 62.43 | 57.83 | 53.69 | ✓ | +3.12pp | **+11.45pp** | **pass** / `rs10_positive` | **fails 2:1** |
+| **XLF** | 58.26 | 56.28 | 53.02 | ✓ | +1.42pp | +7.41pp | **pass** / `rs10_positive` | **fails 2:1** |
+| **XLV** | 173.54 | 162.92 | 153.73 | ✓ | +3.86pp | **+12.25pp** | **pass** / `rs10_positive` | **sector cap + floor_skip + fails 2:1** |
+| XLRE | 45.09 | 44.85 | 42.49 | ✓ | +2.18pp | −0.65pp | fail / `rs50_negative` | — |
+| XLK | 182.84 | 182.72 | 158.67 | ✓ | −2.36pp | −6.30pp | fail / `rs50_negative` | — |
+| XLP | 86.27 | 84.81 | 82.31 | ✓ | +2.23pp | −0.13pp | fail / `rs50_negative` | — |
+| XLY | 117.16 | 116.19 | 116.70 | ✓ | +0.21pp | −2.74pp | fail / `rs50_negative` | — |
+| XLU | 43.51 | 44.74 | 44.33 | ✗ | +0.08pp | −3.89pp | fail / `rs50_negative` | — |
+| XLC | 112.61 | 110.02 | 113.59 | ✗ | +2.95pp | −1.12pp | fail / `rs50_negative` | — |
+| XLI | — | — | — | — | — | — | not screened | **Rule 10 — Industrials closed** |
+
+**Why the four survivors still fail — the arithmetic, not a judgement call.** Rule 6 mandates a 10% trailing stop, so a core idea's stop width is 10% by construction and **R:R ≥ 2:1 requires a target ≥ +20% above entry**. Against each name's own 200-day intraday high:
+
+- **XLE** — entry $62.43, stop $56.19, 2:1 target **$74.92**. 200-day high **$64.70**; the required target sits **+15.8% above it**. Target-at-the-high gives **R:R 0.36:1**. Best relative strength in the book's reachable universe (**RS50 +11.45pp, YTD +43.1%**) and it is the closest of the four to a defensible target — and it is still not close. Additionally: the sector's YTD lead was built on a geopolitical risk premium that has now unwound two sessions running, so buying the high-RS energy sleeve today is buying it *after* the catalyst reversed.
+- **XLF** — entry $58.26, stop $52.43, 2:1 target **$69.91**. 200-day high **$58.41** (the ETF is 0.2% off it); required target **+19.7% above the high**. **R:R 0.02:1** at the high.
+- **XLB** — entry $53.50, stop $48.15, 2:1 target **$64.20**. 200-day high **$54.19**; required target **+18.5% above it**. **R:R 0.13:1**. This is the only name with genuine Rule 3 room ($612.85), and adding to the winner the ladder just trimmed would also partially undo yesterday's realized +$47.32.
+- **XLV** — **triple-blocked**: (a) Rule 12 — Health Care is 49.94% of deployed, so any add crosses the 50% cap; (b) Rule 3 — room $158.86 against a $514.34 minimum clip → `floor_skip`; (c) R:R — entry $172.59, 2:1 target **$207.11** against a 200-day high of $176.60, **+17.3% above it**. Its momentum (RS50 +12.25pp) is real and entirely unbuyable.
+
+**What Rule 5's relaxed floor would *not* fix.** Worth stating now, because the trigger is one session away: at **1.5:1** a core needs a target ≥ **+15%**, which for XLE is **$71.79 — still +10.9% above its 200-day high**, for XLF $67.00 (+14.7% above), for XLB $61.53 (+13.5% above), for XLV $198.48 (+12.4% above). **The relaxation arms tomorrow and admits nothing.** The binding constraint is not the R:R floor; it is that a mandated 10%-wide stop demands a 15–20% target from sector ETFs that are already sitting on or near 200-day highs. That is a structural finding for Friday's weekly review, not a reason to lower a gate mid-flight.
+
+**Satellite screen — 1 of 10 candidates passes `rscreen` + DMA, and it is blocked on macro-window.** Candidates from the momentum/catalyst pull: CRWD, DELL, SNDK, FIX, GS, VRT, STX, TRV, MU, CLS.
+
+| Name | Last | DMA | RS10 | RS50 | `rscreen` | Verdict |
+|---|---|---|---|---|---|---|
+| **TRV** | 371.15 | ✓ (50D 355.32 / 200D 308.05) | +1.10pp | **+19.35pp** | **pass** / `rs10_positive` | liquidity ✓ ($635M/day) — **blocked: `macro-window: Jackson Hole Chair keynote T+1`** |
+| CRWD | 189.18 | ✗ (below 50D) | −13.87pp | +7.46pp | fail / `rs10_negative_extended` | — |
+| DELL | 463.82 | ✓ | −3.44pp | +11.82pp | fail / `rs10_negative_extended` | — |
+| SNDK | 1499.37 | ✗ | +12.37pp | −30.62pp | fail / `rs50_negative` | — |
+| MU | 938.40 | ✗ | +3.80pp | −15.49pp | fail / `rs50_negative` | — |
+| GS | 1040.46 | ✗ | +1.14pp | −5.07pp | fail / `rs50_negative` | — |
+| STX | 846.37 | ✗ | −2.80pp | −18.62pp | fail / `rs50_negative` | — |
+| VRT | 263.81 | ✗ | −7.68pp | −17.18pp | fail / `rs50_negative` | — |
+| FIX | 1615.69 | ✗ | −6.20pp | −18.94pp | fail / `rs50_negative` | — |
+| CLS | 307.32 | ✗ | −8.64pp | −25.58pp | fail / `rs50_negative` | — |
+
+**`macro-window` is dirty for every satellite today, unconditionally:** the **Fed Chair's Jackson Hole keynote is Friday Aug 28, 10:00 ET = T+1**, confirmed against the Kansas City Fed's own announcement. Per the v3.2 rule a satellite whose window is not clear is screened out like a failed DMA check, so **TRV is refused on the window regardless of its +19.35pp RS50 — the strongest single-name relative strength surfaced in four sessions.** This is the fourth consecutive session the satellite sleeve has been shut, and the third of those on this same keynote. **The window clears Monday Aug 31** (nothing Tier-1 lands T+1…T+5 from there), so TRV is the name to re-screen at Monday's open if it holds its 50-DMA. Core ETFs are exempt and tagged `macro-window: n/a (core)`.
+
+Eight of the ten satellite candidates trade **below their own 50-DMA** — a momentum-screen output list that is, in aggregate, no longer in an uptrend. Note also that Perplexity's "momentum" basket was largely a **Zacks-rank quality screen**, not a price-momentum screen; the measured RS confirms the two are diverging sharply right now.
+
+### Risk Factors
+- **Macro — the whole day is a coiled spring, and the coil is cheap.** VIX ~14.9 with the S&P flat into a **Chair keynote at T+1**. Low realized vol plus a scheduled binary is precisely the configuration where a hawkish tone repriced across the curve produces a 1.5–2% index day. The book is 68% deployed and 32% cash, which is accidentally the right posture for it — the cash is a Rule 5 deficiency and a keynote hedge at the same time.
+- **Idiosyncratic, and today's largest — GILD BIC/LEN PDUFA at T+0.** A binary FDA decision on a **15.57%-of-equity satellite**, quoting **−1.66% pre-market ($145.63 vs $148.09)** before the news is out. Approval is the base case (priority review, virologically-suppressed label, bictegravir + lenacapavir single tablet), but a CRL or a restrictive label is a gap-risk event that **no stop can price** — the standing 10% trail (stop $134.66, hwm $149.62) is the correct and only mechanism, and it will fill below its trigger on a gap. **No action is available or appropriate: Rule 15 is not engaged (nothing opened today), and this routine never sells.** Sizing is the protection, and at 15.57% it is within the cap but is the single largest binary exposure in the book.
+- **Sector — Health Care 49.94% of deployed, hovering on the 50% cap.** It crossed *through* the cap yesterday and slipped back under today only because GILD fell. The cap is forward-looking (Rule 12 does not force a sell), so this is a **gate, not a violation** — but the practical effect is that the sleeve with the second-best measured RS50 (+12.25pp) is unbuyable, and **the PDUFA outcome moves both legs of a half-the-book sector at once.**
+- **Sector — Energy's YTD leadership is a decaying premium.** XLE's +43.1% and +11.45pp RS50 were built substantially on the Iran/Hormuz risk bid, which has unwound ~11% from the Aug 20 spike over two sessions. The RS screen reads the trailing move; it cannot read that the catalyst behind it reversed. Flagged so a future XLE idea is judged on the post-unwind tape, not the pre-unwind statistic.
+- **Structural — deployment 68.14%, below the Rule 5 floor for a second session.** Cash drag was 0.7bp of yesterday's miss (near zero on a flat tape) but it compounds on any up day. The mechanical cause is honest — the XLB scale-out moved $698 to cash from a book already clinging to the floor by 13bp — but the screen has now admitted nothing for four sessions, so **there is no mechanism currently converting that cash back into exposure.** Restoring the floor needs ~$705; the only name with both Rule 3 room and a passing screen is XLB, and it fails R:R by a factor of seven.
+- **Rule 10 — Industrials remains armed and closed** (FERG −$6.12 Aug 19 → XLI −$22.35 Aug 20). XLI's +16.0% YTD is not reachable.
+
+### Decision
+**HOLD — 0 ideas.** Patience > activity.
+
+Every branch closed for a reason that is measured and logged: **satellites shut on a T+1 Chair keynote** (TRV the one screen-passer, refused on the window), **cores shut on a 2:1 floor that a mandated 10% stop makes unreachable from 200-day highs** (XLE/XLF/XLB/XLV all pass momentum, all fail arithmetic), **Health Care shut on the sector cap**, **Industrials shut on Rule 10**, **XLRE and XLV shut on Rule 3 room**. Week 18 stays at **0 of 5 buy slots used** — the weekly cap has still never bound in this phase, which is itself the finding.
+
+`market-open` should short-circuit to STEP 7 with **0 orders**. The live questions are for the **weekly review tomorrow**, and they are now specific: (1) a 10% mandated stop plus a 2:1 floor is structurally incompatible with sector-ETF entries near 200-day highs — four consecutive shutout sessions is evidence, not noise, and Rule 5's 1.5:1 relaxation **provably does not fix it**; (2) the satellite sleeve has been macro-gated for four straight sessions on a single event, and the window clears Monday with TRV (+19.35pp RS50) queued.
+
+### Sources
+- Perplexity citations: crudeoilprices.today, oilprice.com/oil-price-charts, bloomberg.com/energy, tradingeconomics.com/commodity/brent-crude-oil, investing.com/indices/us-spx-500-futures, wsj.com/market-data/quotes/futures/SP%20500%20FUTURES, marketwatch.com, markets.businessinsider.com/futures, cnbc.com/markets/pre-markets, wsj.com/market-data/quotes/index/VIX, cboe.com/tradable-products/vix, **kansascityfed.org/research/jackson-hole-economic-symposium/** + **kansascityfed.org/newsroom/2026-news-releases/…-jackson-hole-economic-policy-symposium-2026** (authoritative: symposium Aug 27–29, **Chair keynote Fri Aug 28 10:00 ET**), benzinga.com/markets/equities/26/08/60862239, schwab.com/learn/story/weekly-traders-outlook, beta.earningswhispers.com/calendar/20260827, pro.thestreet.com/earnings/2026-08-27, tradingeconomics.com/united-states/calendar, us.econoday.com, investing.com/economic-calendar, chartrow.com/sp500/sector-performance, ssga.com/library-content/pdfs/etf/us/spdr-sector-scorecard.pdf, finviz.com/news/151220, zacks.com/commentary/2973109, cnbc.com/2026/08/23/top-analysts-believe-in-the-growth-potential-of-these-3-stocks.html, **investors.gilead.com/news/news-details/2026/U-S--FDA-Grants-Priority-Review-…-Bictegravir-Plus-Lenacapavir** (authoritative: **PDUFA Aug 27, 2026**), marketbeat.com/stocks/NASDAQ/GILD/fda-events, gurufocus.com/news/9051446, cnbc.com/2026/08/21/this-sleepy-sector-could-offer-big-returns-says-mike-khouw.html
+- **WebSearch fallback used: no** — `perplexity.sh` returned exit 0 on all 10 queries (issued serially with ~4s spacing; **zero 429s**).
+- Measured data: `alpaca.sh bars` (1Day, 200 bars) for SPY + 10 sector ETFs + 10 satellite candidates, **last bar 2026-08-26**; every momentum verdict from `sizing.py rscreen`, never by eye; Rule 5 verdict from `sizing.py redeploy`; position/room math from `alpaca.sh account` + `positions`. **`alpaca.sh bars` available — satellite screen NOT degraded.**
+- **Resolved from yesterday's open item:** the 2026 Jackson Hole Chair is **Kevin Warsh**, confirmed on the Kansas City Fed's own release, not Powell. Immaterial to the gate (the binary is *a* sitting Chair's address) but the carried-forward "unverified" flag is now cleared.
+- **Corrected from yesterday's entry:** the keynote was logged as **T+2** on Aug 26; from today it is **T+1**, and the KC Fed release pins it to **Fri Aug 28**, not Aug 28 as a symposium-wide date. The symposium itself **opens today**.
+- **Still carried forward unverified:** PPI Thu Sep 10, FOMC minutes Tue Oct 7 — today's calendar pull again could not confirm either. Both sit outside the T+1…T+5 window, so neither affects any tag written today.
