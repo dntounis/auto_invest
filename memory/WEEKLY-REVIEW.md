@@ -1496,3 +1496,144 @@ What holds it below an A is that **the two oldest structural findings both got w
 - **Rule 14 round-trip convention (W15 proposal) — SHIPPED, retired; still clean.** `rule14_accuracy` true on every session from Aug 10 onward, and the independent local derivation this review ran over Aug 17–21 (per-date `activities`) agrees with every logged token at **0**. The only inaccurate row in the metrics file remains 2026-08-07. No action.
 
 - **Pre-market RS screen → rank-based (W15 proposal) — CLOSED, withdrawn.** Downgraded to LOW last week; the evidence has now fully reversed. Capital was abundant this week and the screens admitted names on their **primary** arms without the exception door: XLV on RS50 +11.29pp (a 1.7× margin over the next-best sector) and GILD on RS10 +10.39pp / RS50 +11.31pp `pass=1 rs10_positive`. Two entries in three sessions, both at the unrelaxed 2:1 floor. **The screen is not the binding constraint and has not been for two weeks.** Reopen only if a fast tape recurs.
+
+## Week ending 2026-08-28
+
+### Stats
+| Metric | Value |
+|--------|-------|
+| Starting portfolio | $10,323.32 (Aug 21 EOD) |
+| Ending portfolio | $10,241.37 (Aug 28 EOD; live `account.equity` $10,239.74 — $1.63 post-close mark drift, snapshot basis authoritative per STEP 1) |
+| Week return | **-$81.95 (-0.794%)** |
+| S&P 500 week | **+0.47%** (SPY $765.72 Aug 21 → $769.35 Aug 28, Alpaca bars) |
+| Bot vs S&P | **-1.27pp** (endpoint arithmetic: -0.794% − 0.474% = -1.268pp) |
+| Alpha vs SPX (v3) | **-1.27pp (headline)** — `metrics.py rollup --since 2026-08-24` returns `cum_alpha_pp -1.2705`, the source of record; the 0.003pp gap to the endpoint figure is daily-sum vs endpoint compounding, not a data disagreement. **Decomposition: cash drag -0.18pp / selection -1.09pp** — 86% of the miss is what was owned, not what was idle. Series: W13 +0.85 / W14 -3.21 / W15 -2.00 / W16 -0.27 / W17 +1.68 → **W18 -1.27**. Rolling W6→W18 cum alpha +0.55pp → **-0.72pp**, negative again after one week above water |
+| Core/Satellite P&L (v3) | core **-$73.26** / satellite **-$8.64** — week-contribution basis (mark-to-market change Aug 21 close → Aug 28 close). Core: XLV **-$38.28**, XLRE **-$27.60**, XLB **-$7.38** (13 sh sold @ $53.72 vs the $53.54 week-open mark = +$2.34; 27 sh held $53.54 → $53.18 = -$9.72). Satellite: GILD **-$9.90**, CRWD **+$1.26** (1 session held). Sum -$81.90 vs the -$81.95 snapshot equity change — **$0.05 residual** |
+| Trades | 1 buy (CRWD) + 1 partial sell (XLB scale-out) — (W:1 / L:0 / open:5) |
+| Win rate | **100%** (1/1) — the only realized event of the week was the XLB scale-out slice. No full closes; the figure rests on a single partial and should not be read as a trend |
+| Best trade | XLB scale-out slice **+7.27%** (+$47.32, 13 sh @ $53.72 vs entry $50.08) |
+| Worst trade | **n/a** — no realized losses this week |
+| Profit factor | **n/a** (gains $47.32 / losses $0.00; net realized **+$47.32**). Undefined rather than infinite; the phase-to-date realized ledger improves from 0.90 to **1.44** |
+| daytrade_count | **0 (source=local, derived — field absent from the paper `/account` payload) [conservative: 1]**; delta vs prior week **0 -> 0**, no change. 92 trading days / **18 consecutive weeks at zero day trades** |
+
+**Metrics completeness:** `memory/METRICS.jsonl` carries all 5 sessions of the week (Aug 24–28) with no gaps. Nothing in this entry is hand-assembled; no figure is marked `incomplete`.
+
+**Benchmark provenance:** `prior_close` $765.72 (Aug 21) is read from last week's entry as recorded, not re-queried — Alpaca's `adjustment=all` mutates historical closes retroactively, and the cached read is what keeps the alpha series comparable. It agrees to the cent with this week's bars pull. `last_close` $769.35 (Aug 28) from this week's `bars SPY 1Day 10`. **No prior week's benchmark figure has been revised.**
+
+**Rule 14 audit-token sweep (v3.3):** `grep -c 'Rule 14 DTC:'` over the Aug 24–28 rows returns **10**, against an expected `2 × 5 trading sessions = 10`. Session by session, both tokens present: Aug 24 (market-open ✓ / midday ✓) · Aug 25 ✓/✓ · Aug 26 ✓/✓ · Aug 27 ✓/✓ · Aug 28 ✓/✓. **Zero Rule 14 audit gaps.** Independent verification: per-date `alpaca.sh activities` across the five business days returns fills on two days only — Aug 26 XLB **sell** 2/2/3/6 (entry 2026-05-18) and Aug 28 CRWD **buy** 6 — **zero symbols with a same-day buy+sell pair**, so the true round-trip count is 0 and every logged token of 0 is accurate. `DTC_CONSERVATIVE` (raw sell-only count over the window) = **1**.
+
+### Closed Trades
+| Ticker | Entry | Exit | P&L | Notes |
+| ------ | ----- | ---- | --- | ----- |
+| XLB (partial) | $50.08 (2026-05-18) | $53.72 (2026-08-26, 13 of 40 sh) | **+$47.32 (+7.268%)** | **Rule 8 profit ladder, scale-out #1 of 2** — crossed the +7 etf rung at +7.33% unrealized (hwm-gain +8.21%). Handled with the established cancel → sell → re-place sequence; position `qty_available` was 0 under the standing 40-sh trail, so the trail was cancelled first and the book was **unprotected for ~6 seconds** inside a single tool call. The follow-on trail tighten 5% → **4.1%** was **Rule 9, not Rule 8**: re-placement resets Alpaca's hwm $54.19 → $53.71, so holding 5% would have set the stop $0.46 *below* the cancelled order's $51.4805. Max trail preserving the old level = 4.1778% → floored to 4.1% → stop $51.50789, **$0.027 better than before**, Rule 9 cushion 4.10% > 3% ✓ |
+
+### Open Positions at Week End
+| Ticker | Entry | Close | Unrealized | Stop | Tier |
+| ------ | ----- | ----- | ---------- | ---- | ---- |
+| XLB | $50.08 (2026-05-18) | $53.18 | +$83.70 (+6.19%) | $51.5942 (**4.1% trail**, GTC b4d2de76, hwm $53.80) | core |
+| XLRE | $44.79 (2026-07-13) | $44.48 | -$14.26 (-0.69%) | $41.8095 (10% trail, GTC 16d5a6b2, hwm $46.455) | core |
+| XLV | $169.7473 blended (2026-07-31 / 08-20 add) | $171.16 | +$15.54 (+0.83%) | $158.238 (10%, GTC 60dcfc62, 7 sh, hwm $175.82) + $167.22375 (**5%**, GTC bd3edce1, 4 sh, hwm $176.025) | core |
+| GILD | $144.3136 (2026-08-21) | $145.32 | +$11.07 (+0.70%) | $134.65791 (10% trail, GTC e9c7b266, hwm $149.6199) | **satellite** |
+| CRWD | $218.09 (2026-08-28) | $218.30 | +$1.26 (+0.10%) | $196.47 (10% trail, GTC d1f5a1ab, hwm $218.30 — **placed today, Rule 13**) | **satellite** |
+
+daytrade_count: **0 (source=local — derived, field absent from the paper `/account` payload) [conservative: 1]**. Positions **5/6**, one slot free. **ETF core $5,364.70 = 64.85% of deployed** ≥45% floor ✓ (down from 79.20% — CRWD is the dilution, and the sleeve is still 20pp clear of the floor). **Satellite sleeve 2/3** (GILD, CRWD), **≤2 per sector ✓** (Health Care 1, Information Technology 1). **Deployment 80.78%** — back inside the 75–85% band after two sessions below the floor. Sector spread of deployed: **Health Care 42.08%** (XLV 22.76% + GILD 19.32%) — **back under the Rule 12 50% cap after four sessions through it, by dilution rather than by a forced sell**; Real Estate 24.73% / Materials 17.36% / Information Technology 15.83%; all ≤50% ✓. Position weights vs equity: XLRE **19.98%** (largest, inside the Rule 3 cap by 2bp on drift), XLV 18.38%, GILD 15.61%, XLB 14.02%, CRWD 12.79%. **All 5 names carry armed GTC trailing stops across 6 orders covering 101 / 101 held shares** — zero unprotected names, **thirteenth consecutive EOD at zero**, zero orphan orders.
+
+### Go-live scorecard (v3.4)
+
+```
+Go-live scorecard — TRIAL WINDOW 2026-08-06..2026-08-28 (17 sessions). Verdict: FAIL.
+Weekly scorecard (2026-08-24..2026-08-28, informational only): PASS.
+```
+
+`--since "$TRIAL_START"`, where `TRIAL_START` resolved to **2026-08-06** — `PROJECT-CONTEXT.md` line 43 still reads the literal `trial_start: UNSET`, which is a sentinel and not a date, so resolution fell through to `min(date)` over `METRICS.jsonl`. **Fifth consecutive review on the fallback.**
+
+| Criterion | Result | Detail |
+|---|---|---|
+| `cadence` | **PASS** | 68/68 routine slots |
+| `rule14_tokens` | **PASS** | 34/34 Rule 14 audit tokens |
+| `rule14_accuracy` | **FAIL** | inaccurate on `['2026-08-07']` — a pre-fix seed session, unchanged for five weeks |
+| `unprotected` | **PASS** | zero unprotected positions |
+| `breaches` | **PASS** | zero money-moving rule breaches |
+| `rule16_meltup` | **FAIL** | 2 shallow melt-up rotations, both dated 2026-08-07, both predating the guard |
+| `deployment` | **FAIL** | 2026-08-11: 3 consecutive sessions below the 75.0% floor |
+
+**`deployment` diagnostics (v3.4):** trial window `rule5_triggers: 5, rule5_acted: 1`. This is the *first* reading — the relaxation arms and the screens mostly admit nothing. It armed again this week (Aug 28) and admitted nothing again: the band was restored by CRWD, a full-freight `tier: satellite` entry judged at the **unchanged 2:1 floor** with no `rr-relaxed` tag, so `RESTORE_REMAINING` was never decremented. **The band was restored by the wrong mechanism for a third consecutive week.**
+
+**The weekly PASS and the trial FAIL do not disagree about anything that happened this week.** All three trial failures are dated Aug 7 or Aug 11 — the two pre-v3.4 seed sessions and one nine-session-old deployment run. Every criterion passes on every session from Aug 10 onward, for a fifth consecutive review. This is exactly the boundary seam the v3.4 note warns about, but running in the benign direction: it is not that a straddling run scored twice, it is that a fixed window keeps re-counting defects the fixes already closed. **The remedy is a one-line human edit, not a criterion change — and per the standing instruction the criteria are not being edited to fit the result.**
+
+`alpha_informational` (trial window, **not a gate**): `cum_alpha_pp -0.4066`, `cum_cash_drag_pp -0.0773`, `cum_selection_alpha_pp -0.3293`. Cumulative trial alpha has swung +0.86pp → **-0.41pp** on this week alone, which is precisely why alpha is not a gate: one week of ±1pp noise moves a 17-session cumulative by 1.3pp.
+
+**Satellite-sleeve check (v3):** **no proposal owed.** Per-capital, the satellite sleeve **outperformed** core this week — core -$73.26 on ~$6,136 of week-open capital = **-1.19%**, satellite -$8.64 on ~$1,608 (GILD full week) + $1,309 (CRWD, 1 session) = **-0.55%**. Three-week attribution: W16 core +$15.43 / sat -$2.16 (satellite *under*, on 1.5 sessions of FERG), W17 core +$17.36 / sat +$17.01 (satellite **over** — half the P&L on 12% of the capital), W18 core -$73.26 / sat -$8.64 (satellite **over**). **The 3-consecutive-week underperformance condition is not met and has never been met.** The satellite sleeve is not the problem; the core sleeve is.
+
+### What Worked
+- **The anti-chase limit on CRWD.** Pre-market cleared the gate on a $227.96 planned entry; market-open bought the pullback at **$218.09**. The tape marked CRWD **-4.24%** on the day and the position still closed **+0.10% from the fill**. Had the open print been chased, the row would read roughly -4.3% and the week would be ~$60 worse. This is the single clearest instance of execution discipline paying in the phase.
+- **Rule 8 fired on XLB and banked $47.32 at +7.27%** — the second scale-out in two weeks after a six-week drought, on the correct rung, with the awkward cancel/sell/re-place sequencing handled and the net protection *verified* rather than assumed.
+- **Rule 9 caught the hwm-reset trap in real time.** The ladder's own tighten was a no-op (target 5% against a live 5%), and holding 5% through the re-placement would have surrendered $0.46 of stop level to the hwm reset. The routine computed the max trail preserving the old level (4.1778% → 4.1%) and came out $0.027 *ahead*. This is the exact forward-looking failure the standing `replace-stop` proposal describes, met and defeated.
+- **Rule 12 resolved by dilution, not by a forced sell.** Health Care sat ~6bp through the 50% cap for four sessions; buying an Information Technology name brought it to 42.08% without selling anything at a bad price. The cap did its job by blocking new Health Care buys and then got out of the way.
+- **Process was immaculate for a fifth straight week:** 20/20 cadence, 10/10 audit tokens, 0 unprotected positions across two sessions of real Rule 13/Rule 8 work, 0 breaches, attribution reconciled to **$0.05** — the tightest of the phase.
+
+### What Didn't Work
+- **Selection, and it was concentrated.** -1.09pp of the -1.27pp miss is what was owned. XLV alone gave back **-$38.28** and XLRE **-$27.60**; the two core ETFs are 80% of the week's loss. Cash drag at -0.18pp is a rounding error by comparison, which inverts every complaint from W14–W16.
+- **A four-session shutout, Aug 24–27, on a rising tape.** Pre-market returned HOLD four days running while SPY climbed **+0.70% cumulatively** over Aug 24–27 ($765.72 → $771.10). The stated cause each day was the R:R floor plus a dirty macro window (Jackson Hole, T-4 through T-1), never the weekly cap — **Week 18 used 1 of 5 buy slots.** The cap has still never bound in this phase.
+- **GILD gave the PDUFA week back in one session** (-2.38% on Aug 28, +3.04% → +0.70% unrealized), which is the whole of Friday's selection miss. The binary resolved favourably and then the position round-tripped it inside five sessions.
+- **Rule 5 armed and admitted nothing, for the third consecutive week.** `triggered: true, acted: false`. The mechanism now reads 5 arms / 1 restore across the trial. It cannot be said to work; it can only be said not to have been the thing that acted.
+- **XLRE armed its first Rule 16 decay flag** (Aug 28, `flag: 1`) with the melt-up guard genuinely disengaged (SPY 10d -0.94%), so this is a real relative-weakness read rather than a suppressed one. It is the largest position at 19.98% of equity and it is the only name below entry.
+- **Four consecutive down days into the close** — the phase's lowest equity since Aug 14.
+
+### Key Lessons
+- **The core sleeve, not the satellite sleeve, is where the alpha is leaking.** Three weeks of attribution say so on a per-capital basis, and this week says so emphatically (-1.19% core vs -0.55% satellite). The v3 design's stated worry — that single-stock satellites would be the risk — has been falsified by the data three times running. The sector-ETF core is what has been dragging.
+- **A gate that refuses on four consecutive rising days is either correctly patient or structurally shut, and the log cannot currently tell them apart.** The macro window explains the satellite refusals; it does not explain the *core* refusals, which failed the 2:1 R:R floor because a 10% default stop against a sector-ETF's realistic target rarely clears 2:1. That is an arithmetic incompatibility, not a judgement — and it is new to this review.
+- **The hwm reset is a live defect, not a theoretical one.** It has now had a measurable effect twice (XLB Aug 11, XLV Aug 19) and was only neutralised this week because the routine reasoned it out explicitly in prose. Prose is not a safety mechanism.
+- **One week moves a 17-session cumulative by 1.3pp.** The trial's cumulative alpha went from +0.86pp to -0.41pp on a single -1.27pp week. Anyone tempted to read the alpha row as a go/no-go signal should read that sentence twice — which is why the criteria are process-only.
+
+### Adjustments for Next Week
+- **Monday's midday is a decision point:** XLRE carries one armed decay flag; a second consecutive flag rotates it out under Rule 16. It is the largest position and the only one below entry. Do not pre-empt it — let the second flag decide.
+- **CRWD is aged from Monday** and fully in scope for Rules 7/8/15/16 for the first time.
+- **Health Care is buyable again** (42.08% of deployed); Industrials and Consumer Staples remain Rule-10 closed. **TRV (+19.35pp RS50) is queued** as a satellite candidate into a clean macro window (Dallas Fed only, not Tier-1).
+- **One slot free, 5 buy slots available.** Deployment 80.78% leaves ~$430 of headroom to the 85% ceiling — a *small* clip or an add, not a full new position, unless something is rotated first.
+- **No auto-applied strategy mutations** (DECIDED G). See proposed changes below.
+
+### Overall Grade: C+
+
+**Flawless process, poor results, and for the first time the two are pointing at the same cause.** The week lost **-$81.95 (-0.794%)** against a SPY that rose **+0.47%**, for **-1.27pp of alpha** — the worst since W15 and enough to flip the trial's cumulative alpha from +0.86pp to -0.41pp in five sessions. What holds the grade at C+ rather than lower is that **the execution was genuinely excellent where it acted**: the anti-chase limit on CRWD saved ~$60 on a name the tape marked -4.24%, Rule 8 banked $47.32 on the right rung, and Rule 9 detected and defeated the hwm-reset trap that the standing proposal has been warning about for three weeks. Process was immaculate for a fifth straight week — 20/20 cadence, 10/10 tokens, zero unprotected positions, zero breaches, attribution reconciled to **five cents** — and the weekly scorecard is a second consecutive **7/7 PASS**.
+
+What holds it *down* to C+ is that the routine **barely acted at all**: four consecutive HOLD sessions on a rising tape, 1 of 5 buy slots used, and the alpha miss **86% selection-driven** and concentrated in the ETF *core* — the sleeve the design treats as the safe half. Three weeks of per-capital attribution now say the core is the leak and the satellites are not, which quietly inverts the v3 thesis and is the most important new finding in this review. Rule 5 armed and completed its zeroth restore for a third straight week; the band was rescued by a discretionary full-freight entry yet again.
+
+The go-live verdict remains **FAIL on nothing that happened this week.** All three failing criteria are dated Aug 7 or Aug 11; every criterion has passed on every session from Aug 10 onward for **five consecutive reviews**. `trial_start` has now read `UNSET` for a fifth review, and one unedited line in `PROJECT-CONTEXT.md` is still the only thing standing between this trial and a decidable verdict.
+
+## Proposed strategy changes (NOT auto-applied — human review required)
+
+- **`memory/PROJECT-CONTEXT.md` (proposed change): set `trial_start: 2026-08-10`.** Replace the literal `UNSET` on line 43 with the first trading day on which all five routine prompts were running v3.4 text. **Carried unchanged for a third week; it has been the top item for two.**
+- **Rationale:** While the line reads `UNSET` the go-live scorecard falls back to `min(date)` over `METRICS.jsonl` and permanently includes the 2026-08-06/07 seed pair, which predates both v3.4 fixes and fails `rule14_accuracy` and `rule16_meltup` by construction. The trial has now produced **two consecutive 7/7 weekly PASSes** and every criterion passes on every session from Aug 10 onward.
+- **Evidence:** This week's two scorecards side by side: trial window (2026-08-06..) FAILs `rule14_accuracy` on `['2026-08-07']`, `rule16_meltup` on 2 shallow rotations both dated Aug 7, and `deployment` on the Aug 11 run; the weekly window (2026-08-24..) PASSes all seven. `PROJECT-CONTEXT.md` lines 41–52 predicted this outcome in writing before the data existed.
+- **Conviction: HIGH — still the single blocking item for the go-live decision.** One-line human edit, zero trading-behaviour change. **Verify before applying:** Aug 10 is correct only if the v3.4 re-paste was complete before that Monday's pre-market; if any routine still ran v3.3 text that day, set it to the first session that did not.
+
+- **Buy-Side Gate / R:R floor (NEW — tier-aware R:R floor for the ETF core): apply the 2:1 R:R floor against a *tier-appropriate* stop width rather than the 10% default.** Concretely: size a `tier: core` ETF candidate's R:R using its structural stop (ATR- or level-based, typically 5–7% on a sector ETF) instead of the 10% trail default, or lower the core R:R floor to **1.5:1** while leaving the satellite floor at 2:1. Either variant, not both.
+- **Rationale:** A sector ETF's realistic 4–8-week target is single-digit percent. Against a **10%** denominator, clearing 2:1 requires a ≥20% projected move, which a broad sector ETF essentially never offers. **The core sleeve is therefore structurally close to unbuyable at the current floor** — which is why the two closest calls this week were XLF at **1.39:1** and XLE at **1.37:1**, both refused, both inside a 1.5:1 floor. This is arithmetic, not judgement, and it explains four consecutive shutout sessions on a rising tape better than the macro window does (the macro window gates *satellites*).
+- **Evidence:** TRADE-LOG market-opens 2026-08-24 through 2026-08-27 (four consecutive `Decision: HOLD`, 0 orders, weekly cap 0 of 5 used, R:R floor named as the binding constraint each day); the 2026-08-28 pre-market recording XLF 1.39:1 and XLE 1.37:1 as the two nearest misses with the Rule 5 relaxed floor armed and still inert; this week's attribution showing the core sleeve at **-1.19% per capital** against satellites at -0.55%, i.e. the sleeve that cannot be refreshed is the sleeve that is losing.
+- **Conviction: MEDIUM-HIGH on the diagnosis, MEDIUM on the fix.** The diagnosis is arithmetic and hard to dispute; the choice between a tier-aware denominator and a lower core floor is a genuine judgement call and the thresholds are a starting point, not a measured optimum. **This subsumes much of the Rule 5 proposal below** — if core candidates could clear the floor at all, Rule 5's relaxed floor would have something to admit.
+
+- **Rule 16 branch 1 (proposed change): give the ETF sector-quadrant exit an operational definition, or remove it.** Suggested test unchanged: rotate a core ETF when its **RS50 vs SPY is negative for 3 consecutive sessions AND its close is below a falling 50-DMA** — both legs absolute-ish, neither satisfiable by one day's noise. If no definition is agreed, delete the branch and let the decay chain plus the melt-up guard govern ETF exits alone. **Carried from W16/W17.**
+- **Rationale:** Twenty-two consecutive middays evaluated, zero exercised, every one a written judgement call. It is the **only path that can override the melt-up guard.** The pressure eased slightly this week — XLRE armed a genuine decay flag through the *numeric* branch on Friday, so the decay chain is demonstrably capable of producing an ETF exit without branch 1 — which is itself evidence for the "delete it" variant.
+- **Evidence:** TRADE-LOG middays 2026-08-24 through 2026-08-28 (five more undefined evaluations); 2026-08-28 midday (`XLRE flag=1`, melt-up guard disengaged at SPY 10d -0.94%, decision point Monday) demonstrating the numeric branch working unaided.
+- **Conviction: HIGH on the need, MEDIUM on the specific thresholds.** The non-negotiable part is that the branch stops being adjudicated by prose.
+
+- **`replace-stop` hwm handling (proposed change): carry the existing high-water mark forward through a trail-percentage change instead of resetting it to the current price.** If the broker cannot preserve hwm on replacement, record the pre-replacement hwm in the STOP UPDATE row and have Rule 8 read hwm-gain from the logged peak rather than the live order field. **Carried from W16/W17 — conviction UPGRADED.**
+- **Rationale:** The forward-looking risk this proposal describes **materialised this week and was averted only by explicit prose reasoning.** On the XLB scale-out, re-placement reset hwm $54.19 → $53.71; holding the trail at 5% would have set the stop at ~$51.02, **$0.46 below** the $51.4805 the cancelled order carried. Rule 9's check caught it and forced 4.1%, but *the ladder's own logic did not* — `sizing.py ladder` returned `target_trail_pct: 5` against a live 5% and declined as a no-op. On a position trading further below a much higher prior peak, the same sequence lowers the effective stop and only a human-written paragraph stands between that and a silently worse floor.
+- **Evidence:** TRADE-LOG 2026-08-26 STOP UPDATE (XLB, 5% → 4.1%, the arithmetic written out in full); 2026-08-19 STOP UPDATE (XLV, the prior recurrence); 2026-08-11 STOP UPDATE (XLB, the original).
+- **Conviction: HIGH — upgraded from MEDIUM.** Three occurrences, and the first one where the naive path would have made protection strictly worse.
+
+- **Rule 3 / position-sizing floor (proposed change): let a Rule 5 ballast restore be sized to the *restore budget* rather than to the standard minimum clip.** When the trigger is armed and `restore_dollars` is smaller than the 5%-of-equity minimum position, permit a `tier: core` **add to an existing holding** at exactly `restore_dollars`, bypassing the minimum-clip floor. Adds remain subject to the Rule 3 20% cap and the 85% ceiling. **Carried unchanged from W16/W17.**
+- **Rationale:** Rule 5 has now armed **5 times across the trial and completed 1 restore**. On each of the last three occasions the band was restored by an ordinary discretionary entry at the full 2:1 floor while the trigger sat armed and idle. The residual is a sizing interaction, not an R:R threshold. **Note the interaction with the new R:R proposal above:** if core candidates cannot clear 2:1 at all, relaxing the floor to 1.5:1 gives Rule 5 nothing to buy either — the two fixes are complementary, and the R:R one is upstream.
+- **Evidence:** `metrics.py rollup --since 2026-08-06` → `rule5_triggers: 5, rule5_acted: 1`; `--since 2026-08-24` → `rule5_triggers: 1, rule5_acted: 0` with the band restored the same session by CRWD at an unrelaxed 2:1 and no `rr-relaxed` tag; TRADE-LOG 2026-08-28 EOD ("the band was restored by a full-freight satellite, not by the mechanism built to restore it").
+- **Conviction: HIGH.** Narrowly scoped and it addresses the only mechanical finding that has survived five consecutive reviews.
+
+- **Operational (proposed change): set `TRADING_MODE=paper` explicitly in the routine UI.** **Twenty-seven consecutive sessions on the unset default** — now the longest-standing unactioned item in the log. The default is correct and every routine's mode guard verified it against the endpoint on every session, but the guard exists to catch a half-done live switch and cannot compare a mode that was never set against an endpoint that was. **Free, changes nothing, prerequisite before any live switch. Carried for a fifth week.**
+
+- **Core-sleeve attribution (NEW, informational — no rule change proposed):** three consecutive weeks of per-capital attribution now show the **ETF core underperforming the satellite sleeve** — W16 (core +0.21% / sat -0.15%, satellite worse), W17 (core +0.28% / sat +1.4%, satellite better), W18 (core -1.19% / sat -0.55%, satellite better). The v3 satellite-sleeve check exists to catch the *opposite* failure and correctly proposes nothing. **No change proposed yet — three weeks is not a verdict and W16 runs the other way** — but if the pattern holds a further two weeks, the ≥45% core floor is the rule to re-examine, and this note is the anchor for that comparison.
+
+- **XLB scale-out protection gap (NEW, informational — no rule change proposed):** the cancel → sell → re-place sequence left XLB **unprotected for ~6 seconds** because Alpaca reserves the full position under a standing trail (`qty_available: 0`). This is the third occurrence of the pattern (BTSG Jul 09, XLV Aug 19, XLB Aug 26) and is inherent to the broker's reservation model, not a rule failure. **No change proposed** — the alternative (a partial-cancel API) does not exist and holding the sell until after a replacement trail is placed would over-reserve. Recorded so the exposure is a known, bounded, deliberate cost rather than an undocumented one.
+
+- **Rule 16 melt-up guard (W15 proposal) — SHIPPED and VINDICATED, retired; still clean.** `shallow_rotations` = 0 for a third consecutive week. Inspected on this week's only decay event (XLRE, Aug 28) and correctly **disengaged**: SPY 10-session return -0.94%, nowhere near the +3.0% ceiling, so the flag is a genuine relative-weakness read and not a suppressed one. `suppressed` remains 0 for the phase; no `DECAY-SUPPRESSED` row exists anywhere in the file. No action.
+
+- **Rule 14 round-trip convention (W15 proposal) — SHIPPED, retired; still clean.** `rule14_accuracy` true on every session from Aug 10 onward, and the independent local derivation this review ran over Aug 24–28 (per-date `activities`) agrees with every logged token at **0**. The only inaccurate row in the metrics file remains 2026-08-07. No action.
