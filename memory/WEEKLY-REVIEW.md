@@ -1918,3 +1918,122 @@ Weekly scorecard (2026-09-07..2026-09-11, informational only): FAIL.
 - **TRADING_MODE (proposed change — carried forward, sixth week):** set `TRADING_MODE=paper` explicitly in the routine UI environment.
 - **Rationale:** the log's own counter reads **forty-eighth consecutive routine run on the unset default** as of Friday's midday — the guard's *default* clause, not an explicit value, is the only thing between an unset variable and a halt, and setting it is the one free prerequisite before any live switch.
 - **Evidence:** every market-open / midday / daily-summary row this week records `TRADING_MODE unset → defaults to paper` (TRADE-LOG 2026-09-07 through 2026-09-11, counter running 42nd → 48th); carried to weekly review in W15, W16, W17, W18 and W19 and again here without action.
+
+---
+
+## Week ending 2026-09-18
+
+### Stats
+| Metric | Value |
+|--------|-------|
+| Starting portfolio | $10,155.00 (Sep 11 EOD) |
+| Ending portfolio | $10,220.35 (Sep 18 EOD; live `account.equity` at review time **$10,227.79** — +$7.44 post-close mark drift, the usual cosmetic re-mark; snapshot basis authoritative per STEP 1) |
+| Week return | **+$65.35 (+0.644%)** |
+| S&P 500 week | **-0.340%** (SPY $764.29 Sep 11 → $761.69 Sep 18, Alpaca bars) |
+| Bot vs S&P | **+0.98pp** (endpoint arithmetic: +0.6435% − -0.3402% = +0.9837pp) — **see the dividend note below; this figure is inflated by ~0.25pp this week** |
+| Alpha vs SPX (v3) | **+0.72pp (headline)** — `metrics.py rollup --since 2026-09-14` returns `cum_alpha_pp 0.7223`, the source of record. Series: W13 +0.85 / W14 -3.21 / W15 -2.00 / W16 -0.27 / W17 +1.68 / W18 -1.27 / W19 +0.01 / W20 -0.21 → **W21 +0.72** — the best alpha week since W17 and the second-best of the phase. **Decomposition (rollup): cash drag -0.16pp / selection +0.88pp.** This is the inverse of the phase's usual shape and the first week where selection is the entire story: on a week SPY lost 0.34%, the 64% cash pile cost only a sixth of a point, and the three names that survived Wednesday's rotation beat the tape outright |
+| Core/Satellite P&L (v3) | **core -$48.70 / satellite +$114.05** (per capital: core **-1.86%** on ~$2,616 session-weighted, satellite **+5.13%** on ~$2,221). Attribution reconciles to **$0.00** against the +$65.35 equity move — cash delta +$2,391.37 equals XLF $1,974.48 + MPC $416.89 proceeds exactly, no fees this week |
+| Trades | **0 buys** (0/5 weekly cap used — the first zero-buy week of the phase) · **2 closures** (W:1 / L:1) · **open:3** |
+| Win rate | **50.0%** (1 of 2 closed) |
+| Best trade | **MPC +10.30%** (+$38.93, 1sh scale-out slice) |
+| Worst trade | **XLF -0.77%** (-$15.35, 35sh decay rotation) |
+| Profit factor | **2.54** ($38.93 gains / $15.35 losses; net realized **+$23.58**) |
+| daytrade_count | **0 (source=local, derived — field absent from the paper `/account` payload) [conservative: 2]**; delta vs prior week **0 -> 0 (source=local) [conservative: 2]**, no change. 106 trading days / **21 consecutive weeks at zero day trades** |
+
+**Benchmark provenance:** `prior_close` $764.29 (Sep 11) is read from the W20 entry as recorded, not re-queried. `last_close` $761.69 (Sep 18) from this week's `bars SPY 1Day 10`. **No prior week's benchmark figure has been revised.**
+
+**Dividend seam — the reason the two alpha figures disagree by 0.26pp this week.** Sep 18 is SPY's quarterly ex-dividend date. This week's bars pull reprices Sep 11 at **$762.40** against the **$764.29** recorded last week — a **-$1.89** move that is the dividend, not a price change, and that touches every pre-Sep-18 bar. The v3.3 cache rule is doing exactly the job it was written for, so the entry keeps $764.29 and edits nothing historical. But the consequence must be stated plainly rather than buried: the cached pair treats a dividend payment as a 0.25pp decline in SPY, which **flatters our endpoint alpha by that amount**. On the internally consistent adjusted pair ($762.40 → $761.69 = -0.093%) endpoint alpha is **+0.737pp**, within 0.014pp of the rollup's +0.7223pp. **The rollup figure is the honest one and is the headline.** The daily rollup is immune by construction: each METRICS row carries its own `spy_prior_close`/`spy_close` pair from a single query, so no row straddles the adjustment — the seam appears only in endpoint-to-endpoint arithmetic across an ex-div date. Worth remembering each quarter-end.
+
+**Metrics completeness:** all 5 session-days present in `memory/METRICS.jsonl` (Sep 14, 15, 16, 17, 18). Nothing is marked `incomplete`; no figure in this entry was hand-assembled.
+
+### Closed Trades
+| Ticker | Entry | Exit | P&L | Notes |
+|--------|-------|------|-----|-------|
+| XLF (35sh) | $56.852286 blended (Sep 9 + Sep 10 lots) | $56.4137 blended (Sep 16, three partials 12:05 CT) | **-$15.35 (-0.771%)** | **Rule 16 momentum-decay rotation, executed correctly.** Second consecutive midday flag (Sep 15 → Sep 16), below entry (-0.76%) AND lagging SPY by 1.08pp over 10 sessions (-1.39% vs -0.31%). Melt-up guard structurally disengaged on the benchmark leg (SPY 10-session -0.31%, 3.31pp under the +3.0% ceiling), so branch 2 could not withhold. Both stop legs cancelled to free `qty_available`, then closed; **no orphan order**. The rule did what it says — but see What Didn't Work: this was the book's *only other core ETF*, and nothing downstream noticed |
+| MPC (1sh of 2) | $377.96 (Sep 1) | $416.89 (Sep 16, 12:06 CT) | **+$38.93 (+10.30%)** | **Rule 8 ladder scale-out #1, cleared the +10 stock rung** at unrealized +10.23% (hwm-gain +10.56%). The deterministic sizer was called rather than the Sep 15 EOD forecast reused — and **disagreed with it**: `sizing.py scaleout --cur-qty 2 --scaleouts-due 1 --scaleouts-done 0` returns `sell_qty: 1`, because the min-1-share floor binds at qty ≥ 2 and only qty 1 yields `sub_unit`. The forecast had called it a trail-tighten-only. Calling the sizer instead of trusting prose is the whole reason STEP 4 requires it. Position unprotected ~8 seconds during the cancel → sell → re-place sequence |
+
+### Open Positions at Week End
+| Ticker | Shares | Entry | Close | Unrealized | Stop |
+|--------|--------|-------|-------|-----------|------|
+| GILD | 11 | $144.3136 | $149.54 | **+$57.49 (+3.62%)** | $141.1275 (7% trail, GTC `c6c4a202`, hwm $151.75) — tightened 10%→7% Sep 18 on the ladder's +6 stock rung |
+| XLE | 25 | $64.79 | $64.3547 | **-$10.88 (-0.67%)** | $59.553 (10% trail, GTC `be71317b`, hwm $66.17) |
+| MPC | 1 | $377.96 | $425.00 | **+$47.04 (+12.45%)** | $402.32 (6% trail, GTC `9868db02`, hwm $428.00) — tightened 7%→6% Sep 16 on the +10 rung |
+
+**daytrade_count: 0** (source=local, derived — field absent) [conservative: 2]. Zero unprotected positions at every EOD this week (thirty-eighth consecutive session). Rule 3 max weight GILD 16.09%; Rule 12 max sector Energy 19.90%; satellites 2/3, ≤2 per sector. **Core sleeve 43.73% of deployed — below the ≥45% floor, see What Didn't Work.**
+
+### What Worked
+- **The book that was left standing beat the tape.** Selection alpha **+0.88pp** is the strongest of the phase, and for once it is not a cash-pile artifact: GILD +$64.02 and MPC +$50.03 on the week against an SPY that fell. The satellite sleeve returned **+5.13% per capital** against core's **-1.86%**, reversing W20 and restoring the W17–W19 pattern.
+- **Rule 8's ladder paid, and the sizer caught a prose error before it cost anything.** The MPC scale-out booked +10.30% on a third of the position and tightened the runner's trail to 6%, which by Friday sat at $402.32 under a $425.00 close — a locked-in +6.4% floor on a name entered seventeen days ago. The Sep 15 EOD had pre-computed this rung wrong; STEP 4's "call the sizer, never compute inline" rule is the only reason that never reached an order.
+- **Rule 16 executed cleanly on its merits.** Two consecutive flags, both legs of the melt-up guard checked and found disengaged, stops cancelled before the close so `qty_available` was real, no orphan order left behind. The mechanics are now boringly reliable — which is exactly what makes the *consequence* below worth the attention instead.
+- **Process was spotless.** 20/20 routine slots, 10/10 Rule 14 audit tokens with both routines confirmed inside every session's own block, zero unprotected positions, zero money-moving breaches, zero day trades for a twenty-first consecutive week.
+
+### What Didn't Work
+- **The core sleeve fell through its own floor and nothing in the system could see it.** Selling XLF on Wednesday left XLE as the only core holding, and core has sat at **43.99% / 43.66% / 43.73%** of deployed ever since — three consecutive sessions under the ≥45% floor. This is not a bad decision; it is a **missing detector**. The core-floor gate lives in market-open's Buy-Side Gate, so it can only refuse a purchase that would breach the floor. No routine checks the floor after a *sell*, and Rule 16 is free to rotate out of a core ETF without anyone asking what that does to the sleeve. The same shape as the original Rule 14 fail-open: a rule that is stated as an invariant but enforced on only one of the two paths that can violate it.
+- **Deployment is now the defining failure of the phase, not a side effect.** Fifteen consecutive sessions below the 75% floor — three full weeks. Sep 16's **35.75%** is the phase low by 14pp, and Friday closed at **35.99%** with $6,541.54 idle. `rule5_triggers: 5, rule5_acted: 0`: the re-deployment trigger armed on **every session of the week** and bought nothing on any of them.
+- **Zero buys in a week the trigger armed five times.** The weekly cap is 5 and 0 were used. The relaxed R:R floor is reachable — XLF cleared it twice only last week — so the binding constraint is idea supply, and the screens are returning an empty set day after day while the trigger keeps arming into the void.
+- **A +0.72pp alpha week is the wrong signal to take comfort from.** The book beat SPY because a third of it happened to be two good names, not because the strategy ran. At 36% deployed the portfolio is closer to a cash position with three lottery tickets than to the core-satellite design, and the same concentration that produced +0.88pp of selection alpha this week is what produced -0.53pp last week. Neither number is evidence about the strategy.
+
+### Key Lessons
+- **An invariant enforced on one path is not an invariant.** The ≥45% core floor was written as a property of the book and implemented as a condition on buying. The moment a sell could violate it, it did — within one session of the opportunity arising, and it stayed violated for three sessions with every routine reporting clean. Every rule phrased as "the book must always look like X" needs asking: *what are all the ways the book can stop looking like X, and does something check after each of them?*
+- **Cash drag and selection alpha swap signs week to week, and neither is a verdict.** W20: drag +0.32 / selection -0.53. W21: drag -0.16 / selection +0.88. Same book, same under-deployment, opposite decomposition — driven almost entirely by whether SPY rose or fell. This is precisely why the go-live scorecard is process-only and alpha is informational: two weeks of this cannot distinguish skill from tape direction, and a scorecard that gated on it would gate on a coin flip.
+- **Quarter-end ex-dividend dates put a seam in any endpoint-to-endpoint benchmark figure.** The cache rule protects the *record*; it does not make the arithmetic right across an ex-div date. The per-session rollup is the figure to trust, and the next such seam is due at December quarter-end.
+- **The trigger arming is not the same as the trigger working.** `rule5_triggers: 5, rule5_acted: 0` says the plumbing is fine and the supply is zero. Five weeks of raising and lowering an R:R threshold has not changed that, because the threshold was never what was binding.
+
+### Adjustments for Next Week
+- **Core floor is the first thing to fix** — it is a live, three-session-old rule violation with a known cause and no detector. Proposal below adds the post-sell check.
+- **Re-deployment: stop tuning the threshold, widen the universe.** Carried forward from W20 with a week of confirming evidence (5 armed, 0 acted, screens empty on all five). Proposal below.
+- Hold GILD / XLE / MPC; all three stops are live and tightening on the ladder as designed, and MPC's runner is now protected 6.4% above cost.
+- **Do not treat this week's +0.72pp as validation.** If Monday's pre-market returns another empty screen, the deployment problem is the only thing worth working on.
+
+### Go-live scorecard (v3.4)
+
+```
+Go-live scorecard — TRIAL WINDOW 2026-08-06..2026-09-18 (32 sessions). Verdict: FAIL.
+Weekly scorecard (2026-09-14..2026-09-18, informational only): FAIL.
+```
+
+**Trial window resolution.** `memory/PROJECT-CONTEXT.md` still reads `trial_start: UNSET` — the literal placeholder, not a date — so the window falls back to the earliest `METRICS.jsonl` date, **2026-08-06**. This is the seventh consecutive weekly review resolving it this way, and PROJECT-CONTEXT's own note predicts the exact consequence: the fallback drags in the deliberately defective 2026-08-06/07 seed pair, which predates both the Rule 16 melt-up guard and the Rule 14 round-trip fix. Both windows agree on the verdict, so nothing is being decided by the placeholder — but two of the three FAILs are historical artifacts and only one is current behaviour.
+
+| Criterion | Verdict | Detail |
+|---|---|---|
+| `cadence` | **PASS** | 128/128 routine slots across 32 sessions, zero missing |
+| `rule14_tokens` | **PASS** | 64/64 Rule 14 audit tokens present |
+| `rule14_accuracy` | **FAIL** | inaccurate on `['2026-08-07']` — the seed pair, pre-fix. No occurrence in the 30 sessions since |
+| `unprotected` | **PASS** | zero held positions without a GTC trailing stop at any EOD |
+| `breaches` | **PASS** | zero money-moving rule breaches |
+| `rule16_meltup` | **FAIL** | 2 shallow melt-up rotations, **both dated 2026-08-07** — the seed pair, pre-guard. Zero in the 30 sessions since |
+| `deployment` | **FAIL** | `2026-08-11: 3 consecutive sessions below the 75.0% floor` — and far worse now: the current below-floor run stands at **15 consecutive sessions** (2026-08-31 → 2026-09-18, unbroken) |
+
+**`alpha_informational` (NOT a gate):** trial window `cum_alpha_pp +0.1102`, `cum_cash_drag_pp +0.1939`, `cum_selection_alpha_pp -0.0837` over 32 sessions. Essentially flat against SPY, with the tiny positive coming from cash drag rather than selection. Recorded, not gating — 32 sessions is still too short to separate this from noise.
+
+**`deployment` diagnostics (required when it FAILs).** Trial window: **`rule5_triggers: 18, rule5_acted: 4`**. This week: **`rule5_triggers: 5, rule5_acted: 0`**. The trigger arms and the screens admit nothing — the `triggers > 0, acted == 0` reading, i.e. the melt-up RS hole described in `docs/LIVE-SMOKE-TEST.md` §8, not a broken Rule 5. `sessions_in_band: 9` of 32. Neither number changes the verdict; both say the fix belongs in idea supply, not in the trigger.
+
+**Diagnostic, clearly labelled as NOT the verdict:** re-running the scorecard `--since 2026-08-10` (i.e. excluding the seed pair) returns `rule14_accuracy` PASS and `rule16_meltup` PASS across 30 sessions — **and still FAILs overall on `deployment`** (`2026-08-12: 3 consecutive sessions below the 75.0% floor`). Recorded so the record shows which FAILs are live defects and which are historical; **the verdict is unchanged either way and the headline stays FAIL.** The criteria have not been edited and will not be.
+
+## Proposed strategy changes (NOT auto-applied — human review required)
+
+- **Rule 4 / core floor (proposed change — NEW, and the most urgent item here):** make the ≥45% ETF-core floor a **post-sell check**, not only a buy-side gate. Concretely: (a) `midday` must evaluate the resulting core share *before* executing any Rule 16 rotation, Rule 7 hard-close or sector-kill that would exit a `Tier: core` position, and where the sell would drop core below 45% of deployed, either withhold it for one session and log a `CORE-FLOOR HOLD` row, or execute it and write a `CORE-FLOOR BREACH` row that the next `market-open` must clear before any satellite purchase; (b) `daily-summary` must compute core-share at EOD and record it in the snapshot alongside deployment, so the state is visible even when no sell occurred.
+- **Rationale:** the floor is stated as a property of the book but enforced only on the buy path, so the first sell that could violate it did — and the violation then survived three sessions with every routine reporting clean, because nothing measures it.
+- **Evidence:** TRADE-LOG `2026-09-16 — TRADE: XLF side=sell qty=35` (Rule 16 decay-chain exit of a `Tier: core` ETF, correctly executed under Rule 16's own terms); resulting core share **43.99%** (Sep 16), **43.66%** (Sep 17), **43.73%** (Sep 18) against the ≥45% floor, computed from the Sep 16/17/18 EOD snapshot tables; `metrics.py` `breaches: []` on all three sessions, confirming no existing check covers this.
+
+- **Rule 5 / pre-market screen (proposed change — carried forward from W20, with a week of confirming evidence):** when the re-deployment trigger has been armed for **3+ consecutive sessions with `rule5.acted: false` on each**, widen the pre-market's screened universe for `tier: core` candidates only — add the remaining S&P sector SPDRs and the broad-market ETFs (SPY, RSP, IWM) to the core screen for that session — rather than relaxing the R:R floor any further.
+- **Rationale:** unchanged and now stronger — the binding constraint is idea *supply*, not the threshold, and this week removes the last doubt: the trigger armed on **5 of 5 sessions and acted on none**, while deployment fell to the phase low of 35.75%.
+- **Evidence:** `metrics.py rollup --since 2026-09-14` → `rule5_triggers: 5, rule5_acted: 0`; trial window `rule5_triggers: 18, rule5_acted: 4`, `sessions_in_band: 9` of 32; **fifteen consecutive sessions below the 75% floor** (2026-08-31 → 2026-09-18); zero buys in a week with 5 of 5 weekly-cap slots free; W20's evidence that the relaxed 1.5:1 floor is reachable (XLF cleared it at 1.61:1 and 1.55:1 on Sep 9/10).
+
+- **Rule 9 (proposed change — carried forward from W20, unchanged):** add a bounded exception — when a position's trailing stop sits **within 3% of the current price** (Rule 9's own stated minimum distance) **and** the Rule 8 ladder's target trail for the position's current rung is *looser* than the standing trail, permit a one-time widening to the ladder's target trail, capped at the ladder value and logged as a `STOP RELAXED` row with the triggering rung. Never permit widening for any other reason.
+- **Rationale:** Rule 9 currently forbids the only remedy for a stop it has itself locked beneath its own minimum-distance floor, converting a protected position into an unmanageable one.
+- **Evidence:** TRADE-LOG `2026-09-09 — TRADE: XLB side=sell qty=27` (stop-fill at $51.59 on a 4.1% trail, booking +3.02% against a +4.73% unrealized); the Sep 4 EOD snapshot recording 1.63% of room against Rule 9's own 3% floor with the ladder's +7 rung returning a *looser* 5% target that Rule 9 blocked; the condition flagged on **nine consecutive sessions** Aug 28 → Sep 8 with no available action. *(No new instance this week — both stop changes were tightenings that cleared Rule 9 unaided, MPC's by $3.69. The proposal stands on the XLB evidence.)*
+
+- **PROJECT-CONTEXT `trial_start` (proposed change — carried forward from W20, unchanged):** set `trial_start: 2026-08-10` in `memory/PROJECT-CONTEXT.md`, replacing the `UNSET` placeholder. 2026-08-10 is the first session after the 2026-08-06/07 seed pair — the first trading day on which the Rule 16 melt-up guard and the Rule 14 round-trip fix were both live.
+- **Rationale:** the placeholder has now reached the go-live scorecard unset for **seven** consecutive weekly reviews and costs two false FAILs every week, both attributable in full to the single 2026-08-07 row.
+- **Evidence:** trial-window scorecard `--since 2026-08-06` FAILs `rule14_accuracy` (`inaccurate on ['2026-08-07']`) and `rule16_meltup` (2 shallow rotations, both 2026-08-07); diagnostic `--since 2026-08-10` PASSes both across 30 sessions. **Stated plainly so this is not read as gaming the window: the correction does NOT change the verdict.** `deployment` FAILs under both windows and the headline stays FAIL. The proposal is worth making because it makes the scorecard report current behaviour truthfully, not because it improves the outcome.
+
+- **TRADING_MODE (proposed change — carried forward, seventh weekly review):** set `TRADING_MODE=paper` explicitly in the routine UI environment.
+- **Rationale:** the guard's *default* clause, not an explicit value, remains the only thing between an unset variable and a halt. It is the one free prerequisite before any live switch and the longest-standing open item in the log.
+- **Evidence:** every market-open / midday / daily-summary row this week records `TRADING_MODE unset → defaults to paper`; the log's own counter reads **fifty-fourth consecutive session on the unset default** as of Friday's midday. Carried in W15–W20 and again here without action.
+
+**Satellite-sleeve check (v3):** **not triggered.** The satellite sleeve **outperformed** core this week (+5.13% vs -1.86% per capital), and W20 had core ahead — so there is no 3-week run of satellite underperformance. No allocation-shrink proposal is owed.
+
+### Overall Grade: B-
+
+Positive alpha (+0.72pp, best since W17), flawless process (20/20 slots, 10/10 audit tokens, zero unprotected positions, zero breaches, 21 straight weeks at zero day trades), and two textbook rule executions in Rule 8 and Rule 16. Held down by the two things that actually matter for the go/no-go: **deployment at 36% with a fifteen-session below-floor run and zero buys against five armed triggers**, and a **live three-session core-floor violation that no detector caught**. The week's return came from a concentrated remnant beating a falling tape, not from the strategy running — and a strategy that isn't deployed can't be graded higher than the portion of it that ran.
