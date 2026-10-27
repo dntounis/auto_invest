@@ -4,4 +4,4 @@ Single-line ledger updated by `scripts/telegram.sh` on every successful send.
 Read by `daily-summary` to detect 48h+ silence and prepend a heartbeat line
 to the EOD Telegram body.
 
-last_telegram: 2026-10-26T20:16:00Z
+last_telegram: 2026-10-27T13:38:59Z
