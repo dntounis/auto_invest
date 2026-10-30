@@ -2571,3 +2571,162 @@ Weekly scorecard (2026-10-12..2026-10-16, informational only): FAIL.
 ### Overall Grade: C-
 
 The headline is the best alpha of the phase, **+1.98pp**, and it is worth almost nothing: the decomposition is cash drag +1.9775pp against selection −0.0004pp, which is to say the bot made zero decisions across five sessions and was paid for it because SPY fell 1.97% instead of rising 1.16% as it did last week, when the identical stance scored a D. Grading that as a recovery would be grading a coin flip. The process remains immaculate for a third straight week and now across the whole trial — 20/20 slots, 10/10 tokens, zero unprotected positions for a 70th session, zero breaches in 51 sessions, 25 weeks at zero day trades — and the week surfaced two findings of real value: that the cumulative cash-drag term was never a measured cost but an unhedged direction bet (one week erased seven weeks of it, while selection sat unmoved at −2.11pp), and that the audit sweep's anchoring is ambiguous enough to invent three gaps that do not exist. Against that, the deadlock stopped being arguable. **IHI cleared the armed R:R floor at 2.99:1 — the highest any core ETF has managed in the trial, by nearly double — and was refused on a sector identity that returns 100% for any first position; WMT and QCOM were refused the same day on a core-floor identity that returns 0% at any size while the book is empty.** Those two gates cannot both be satisfied from a flat book, which means the bot is now structurally incapable of opening a position until a human amends one of them. That is worse than W24's drought, and it is why this is not a C: the machinery is in excellent order, the diagnosis is sharper than it has ever been, and the strategy spent a full week unable to act at all. The go-live verdict stays **FAIL** on `deployment` for an eleventh review.
+
+---
+
+## Week ending 2026-10-30
+
+*(Week 27. **Note the gap in this series: there is no `## Week ending 2026-10-23` entry** — that review never ran. See Rule violations.)*
+
+### Stats
+| Metric | Value |
+|--------|-------|
+| Starting portfolio | $10,075.58 |
+| Ending portfolio | $10,075.58 |
+| Week return | **$0.00 (0.0000%)** — equity identical on all five sessions |
+| S&P 500 week | **−0.559%** (SPY $759.97 Oct 23 [bootstrapped from bars query] → $755.72 Oct 30, Alpaca bars) |
+| Bot vs S&P | **+0.5395pp** (`metrics.py rollup`, source of record) |
+| Alpha vs SPX (v3) | **+0.5395pp (headline)** — and it is 100% cash drag; see the decomposition below |
+| Cash drag / selection (v3.4) | **cash drag +0.5395pp · selection alpha +0.0000pp.** The entire figure is the cost-of-being-uninvested term running *in our favour* because SPY fell. Selection is exactly zero because nothing was owned — not because selection was good |
+| Core/Satellite P&L (v3) | **core $0.00 / satellite $0.00** = **$0.00**, reconciling exactly to the $0.00 equity move. Both sleeves held nothing on all five sessions — an **empty** split, not a zero-sum one; no per-capital figure is computable in either sleeve (second consecutive such week) |
+| Trades | **0** (W:0 / L:0 / open:0) — **0 of 5** weekly cap used, seventh straight week |
+| Win rate | n/a (no closed trade) |
+| Best trade | n/a |
+| Worst trade | n/a |
+| Profit factor | n/a |
+| daytrade_count | **0 (source=local, derived — field absent from the paper `/account` payload) [conservative: 0]**; delta vs prior recorded week **0 -> 0 (source=local) [conservative: 0]**, no change. **136 trading days / 27 weeks at zero day trades** |
+
+**Data completeness:** `METRICS.jsonl` is **complete for this week** — all five sessions (2026-10-26…2026-10-30) present, 4 routine slots each. No figure above is hand-assembled or marked `incomplete`. The series is **not** complete for the *trial*: 2026-10-22 and 2026-10-23 have no row at all (see Rule violations).
+
+**Benchmark provenance:** `prior_close` **$759.97 (Oct 23) — bootstrapped from this week's bars query**, because the prior week's WEEKLY-REVIEW entry does not exist to chain from (the Oct 23 review never ran), so no cached `last_close` was available. This is the bootstrap branch the rule provides for, used here for the first time since the series began. `last_close` **$755.72 (Oct 30)** from this week's `bars SPY 1Day 10`, last bar asserted dated 2026-10-30 ✓. Both legs Alpaca; no web-sourced index level was substituted, and no historical figure was edited in place. **Convention note, not a discrepancy:** the price-chained week return is **−0.5592%** (alpha +0.5592pp) while `rollup` reports **+0.5395pp**; the 0.0197pp difference is the arithmetic sum of five daily returns versus their compounded product. The rollup figure is the one of record per STEP 3. *(Footnote on a prior week, appended here per STEP 3 rather than edited into history: none owed — no prior benchmark figure is restated or corrected.)*
+
+**Rule 14 resolution (one resolution, used for both the pre-flight and the delta):** `alpaca.sh dtc` → `{"daytrade_count": null, "source": "unavailable"}` — a **successful** call with the field simply absent, which v3.4 routes to the local derivation; an `error` is barred from that path and this was not one. `activities` polled **per-day with the date passed** across the five business days 2026-10-26 → 2026-10-30 returns **`[]` on every one of the five dates**. TRADE-LOG corroborates: **zero header-anchored `### … — TRADE:` rows** in the week, of either side ⇒ `tradelog_count = 0`. `DTC = max(0, 0) = 0`, `DTC_SOURCE=local`. Raw sell-only tally `DTC_CONSERVATIVE = 0` — logged, never gating; the bracket is carried because a local derivation ran this session. The two evidence sources agree, so no URGENT was owed on the disagreement clause, and 0 is what Rules 13/15 make structurally true, so the non-zero alarm did not fire. **No closes are proposed in this review — the book is flat, so there is nothing to close** — and the pre-flight is therefore non-binding. Rule 15 is likewise vacant.
+
+**Rule 14 audit-token sweep (v3.3):** run-row-anchored per the W25 proposal (8) reading. Expected `2 × 5 sessions = 10`, plus 0 for manual `/trade` entries (none). **Found 10.** Session by session, each day carrying exactly one token in its market-open block and one in its midday block: Oct 26 **1/1** · Oct 27 **1/1** · Oct 28 **1/1** · Oct 29 **1/1** · Oct 30 **1/1**. **Zero `Rule 14 audit gap` findings.** Matches `metrics.py scorecard` at 10/10. *(A naive `grep -c 'Rule 14 DTC:'` over the week returns more than 10 because several rows quote the token in prose before writing it, and a header-anchored sweep returns phantom gaps where a midday run row sits under the market-open header — both confirmed again this week, which is why proposal (8) is carried.)*
+
+### Closed Trades
+| Ticker | Entry | Exit | P&L | Notes |
+| *(none)* | — | — | — | No position was opened or closed in the week. Last fill of any kind: **2026-10-09 SOXX ROTATE-EXIT** |
+
+### Open Positions at Week End
+| Ticker | Entry | Close | Unrealized | Stop |
+| *(none — book flat)* | — | — | — | — |
+
+**daytrade_count: 0** (source=local, derived — field absent) [conservative: 0]. **Zero unprotected positions at every EOD this week — 75th consecutive session**, trivially so; `positions` and `orders open` both return `[]` on every session. Rule 3 max weight **0%** ✓ (ceiling 20%). Positions **0 → 0 of 6**, satellites **0 → 0 of 3** ✓. Deployment **0.00% on all five sessions**, `sessions_in_band: 0 of 5` — the **42nd consecutive `METRICS.jsonl` row** below the 75% floor (2026-08-31 → 2026-10-30 inclusive; run broken by 2026-08-28 at **80.78%**, the last in-band session of the trial). **ETF core 0% of a deployed base of $0** — the floor is vacant, not satisfied. Max sector exposure n/a.
+
+**Satellite-sleeve check (v3):** **not triggered.** Per-capital across the last three *recorded* reviews — W23: core **+3.53%** / satellite **−4.10%** (satellite under) · W24: core **−5.19%** / satellite **−0.37%** (satellite **over**) · W25: both sleeves **empty, not computable**. This week likewise empty. The requirement is 3+ **consecutive** weeks of satellite underperformance; there has been exactly one (W23) and it did not extend, and two of the last three comparisons do not exist at all because the book was flat. **No allocation-shrink proposal is owed.** Worth restating plainly: this check has now been structurally unanswerable for three weeks, and will stay so until a position is opened.
+
+### Go-live scorecard (v3.4)
+
+```
+Go-live scorecard — TRIAL WINDOW 2026-08-06..2026-10-30 (59 sessions). Verdict: FAIL.
+Weekly scorecard (2026-10-26..2026-10-30, informational only): FAIL.
+```
+
+Trial-window scorecard, `python3 scripts/metrics.py scorecard --file memory/METRICS.jsonl --since 2026-08-06`:
+
+```json
+{
+  "verdict": "FAIL",
+  "window": "2026-08-06..2026-10-30",
+  "sessions": 59,
+  "criteria": [
+    {"name": "cadence",          "pass": true,  "detail": "236/236 routine slots"},
+    {"name": "rule14_tokens",    "pass": true,  "detail": "118/118 Rule 14 audit tokens"},
+    {"name": "rule14_accuracy",  "pass": false, "detail": "inaccurate on ['2026-08-07']"},
+    {"name": "unprotected",      "pass": true,  "detail": "zero unprotected positions"},
+    {"name": "breaches",         "pass": true,  "detail": "zero money-moving rule breaches"},
+    {"name": "rule16_meltup",    "pass": false, "detail": "2 shallow melt-up rotations (guard should make this 0)"},
+    {"name": "deployment",       "pass": false, "detail": "2026-08-11: 3 consecutive sessions below the 75.0% floor"}
+  ],
+  "alpha_informational": {"cum_alpha_pp": -2.9675, "cum_cash_drag_pp": -0.8606, "cum_selection_alpha_pp": -2.1069}
+}
+```
+
+| Criterion | Result | Detail |
+|---|---|---|
+| `cadence` | **PASS** | 236/236 routine slots over the 59 recorded sessions — **but see the caveat below; this PASS is not trustworthy this week** |
+| `rule14_tokens` | **PASS** | 118/118 audit tokens, zero gaps across the whole trial |
+| `rule14_accuracy` | **FAIL** | `inaccurate on ['2026-08-07']` — the seed row alone, predating the v3.4 round-trip convention. Unchanged for twelve reviews |
+| `unprotected` | **PASS** | zero held positions without a GTC trailing stop at any EOD, 59 sessions |
+| `breaches` | **PASS** | zero money-moving rule breaches, 59 sessions |
+| `rule16_meltup` | **FAIL** | 2 shallow rotations, **both 2026-08-07** (BIIB −0.39%, XLF −1.01% into a +4.48% SPY 10-session tape) — the exact evidence the v3.4 guard was written from. Zero since |
+| `deployment` | **FAIL** | first flagged run `2026-08-11`; the **live** run is 42 consecutive sessions below the 75% floor (2026-08-31 → 2026-10-30). Twelfth consecutive review failing this criterion |
+
+**Verdict: FAIL — do not go live.** `deployment` fails in every window and in all twelve reviews; the other two FAILs are the 2026-08-06/07 seed pair and nothing else.
+
+**`deployment` diagnostics (v3.4, required when it FAILs):** trial window `rule5_triggers: 45, rule5_acted: 5`; this week `rule5_triggers: 5, rule5_acted: 0`. The reading is unambiguous and has not changed: **`triggers > 0, acted == 0`** — the relaxed 1.5:1 R:R floor armed on every single session of the week (41 consecutive armings by Friday) and the screens still admitted nothing. This is the melt-up RS hole of `docs/LIVE-SMOKE-TEST.md` §8, not a broken trigger. Neither number changes the verdict; both say the fix belongs upstream in the gates, not in Rule 5.
+
+**Weekly scorecard (informational only):** `FAIL`, sole failing criterion `deployment` — `2026-10-28: 3 consecutive sessions below the 75.0% floor`. The weekly and trial verdicts **agree** this week, so no boundary-straddle divergence needs explaining. `alpha_informational` for the week: `cum_alpha_pp 0.5395, cum_cash_drag_pp 0.5395, cum_selection_alpha_pp 0.0`. **Alpha is recorded, not gated** — correctly so, since a week in which the bot made no decision cannot measure selection.
+
+**The criteria were not edited to fit the result.** One of them nevertheless looks wrong in hindsight and is reported as such rather than changed: `cadence` reads **236/236 PASS** while **two entire trading sessions (2026-10-22, 2026-10-23) have no row in `METRICS.jsonl` at all**. `metrics.py` sums `routines_expected` / `routines_logged` over the rows that exist, so a session that produced no row is invisible to the criterion it is supposed to fail. The verdict stands as computed; proposal (10) below asks for the fix.
+
+### What Worked
+- **The Rule 14 machinery continues to be the one part of this system that is unambiguously finished.** 10/10 tokens this week, 118/118 across 59 sessions, the `unavailable` → local-derivation branch taken correctly on every one of the ten resolutions and never once collapsed into `error`. 27 weeks at zero day trades, which is the visa-safety objective met outright.
+- **The W25 proposal (8) reading was applied and it worked.** Anchoring the sweep on the `- market-open <date>:` / `- midday <date>:` run rows produced 1/1 on all five sessions and matched `metrics.py` exactly, where a header-anchored sweep would again have invented gaps. The proposal is still owed as a prompt amendment, but the diagnosis is confirmed a second week.
+- **The cash-drag/selection decomposition earned its place again, in the opposite direction from last week.** +0.5395pp of headline alpha, of which **+0.5395pp is cash drag and +0.0000pp is selection**. Without the split this week reads as a modest win; with it, it reads as what it is — SPY fell 0.56% and we were not there, for the second time in three weeks. The decomposition is the only thing standing between this record and a flattering misreading of it.
+
+### What Didn't Work
+- **A whole weekly review went missing and nothing noticed for seven days.** There is no `## Week ending 2026-10-23` entry and no `### 2026-10-23 — WEEK SUMMARY` row; the Oct 22–23 cron outage took the Friday review with it. Rule 18's cadence sweep covers `pre-market`, `market-open`, `midday` and `daily-summary` — **`weekly-review` is not in the sweep at any point**, so no routine was ever going to raise it. This is the trial's first silent loss of a routine's entire output, and it is exactly the missing-detector shape the rulebook warns about.
+- **The trial's benchmark chain had to be bootstrapped for the first time.** Because that review never ran, no cached `last_close` existed for Oct 23 and `prior_close` had to come from a fresh bars query — the one path the provenance rule explicitly built an escape hatch for, now used in anger. It cost nothing this week (Oct 23 settles at 759.97 either way), but the "cache, never re-query" discipline is only as strong as the weakest week in the chain, and that week is now a hole.
+- **Seventh consecutive week at zero trades, and the W25 deadlock is unamended.** The diagnosis has not moved because it does not need to: with `CORE_MV = $0` and `positions = 0`, the ≥45% core floor evaluates to an unconditional refusal of any satellite at any size, and the 50% sector cap returns 100% for any single-sector ETF bought first. Both gates were restated as proposals (1) and (2) a week ago and neither has been applied, so the bot spent another five sessions structurally incapable of opening a position. The `rule5_triggers: 5, acted: 0` line is the arithmetic of that, not a separate problem.
+- **`cadence` passed a window containing two sessions that do not exist in the file.** The criterion cannot distinguish "no routine was missing" from "no row was written", which means the single scorecard check responsible for catching a cron outage is blind to the most complete form of one.
+
+### Key Lessons
+- **A detector that iterates over the records it is auditing cannot detect a missing record.** `cadence` sums expected-vs-logged slots per row, so a session with no row contributes nothing to either side and passes silently. Any completeness check needs an *external* notion of which sessions should exist — a trading calendar — not the file's own contents.
+- **Coverage gaps compound into the data record, not just the schedule.** The Oct 22–23 outage is now simultaneously a missing review, a two-row hole in `METRICS.jsonl`, a bootstrapped benchmark link, and an eight-session jump in the trial count (51 → 59) that no review narrates. One cron failure produced four separate downstream artifacts, and only the first was ever alerted on.
+- **Being flat is a position, and this week it happened to be the right one.** +0.54pp for owning nothing while SPY fell 0.56% is the same unhedged direction bet that cost −1.16pp the week it went the other way. Three weeks of this now say the same thing: the cumulative cash-drag term is not a measured cost, it is variance, and reading a good week of it as progress would be reading a coin flip.
+
+### Adjustments for Next Week
+- **Nothing is auto-applied.** Per DECIDED G, every item below is a proposal for human review; `TRADING-STRATEGY.md` is untouched by this routine.
+- **The two load-bearing asks are unchanged and now two weeks old:** proposals (1) and (2). Amending **either** one unblocks re-entry; amending neither guarantees an eighth flat week. This is not a preference — it is the arithmetic of two gates that cannot both be satisfied from a flat book.
+- **The new ask is proposal (9):** add `weekly-review` to the Rule 18 cadence sweep. Until it is there, a missing Friday review is undetectable by construction, as it was this time.
+- Operationally: the Oct 22–23 cron outage still needs root-causing. It has now cost two trading sessions, one weekly review, and two rows of the trial series.
+
+## Proposed strategy changes (NOT auto-applied — human review required)
+
+- **(1) Core floor ≥45% — bootstrap exemption (carried from W22/W23/W24/W25, unchanged, PROVEN on the tape, URGENT):** replace the hard satellite gate with a two-part form. **(a)** When `CORE_MV = $0` **and** `positions = 0`, waive the ≥45% core-floor test for the **first** position of a re-entry, whatever its tier, and re-impose it from the second position onward. **(b)** Compute the floor against *post-trade* deployed value rather than pre-trade, so a simultaneous core+satellite pair can satisfy it jointly.
+- **Rationale:** with `CORE_MV = $0` the gate evaluates `0 / S = 0% < 45%` for **any** satellite at **any** size, so it is not a risk limit, it is an unconditional refusal.
+- **Evidence:** TRADE-LOG `2026-10-16` — WMT (R:R 2.05) and QCOM (2.45) both refused **solely** on the core-floor identity. Seventh consecutive week at zero buys; 0/5 weekly cap used for a seventh week; `long_market_value` $0.00 entering and leaving all five sessions of this week.
+
+- **(2) Sector-concentration cap — first-position exemption for `tier: core` ETFs (carried from W25, unchanged):** when `positions = 0`, exempt a `tier: core` **sector** ETF from the 50% sector-concentration cap for the first position only, with the cap re-imposed in full from the second position onward; alternatively, compute single-fund sector concentration against the **target** deployed base (75% of equity) rather than the current one.
+- **Rationale:** the cap returns 100% for *any* single-sector fund bought as the first position on a flat book, because the denominator is the position itself. With (1) unamended the two gates are jointly unsatisfiable: satellites die on the core floor, sector cores die on the sector cap, and only a broad-market core can pass — which in 41 armed sessions has never cleared the R:R floor.
+- **Evidence:** TRADE-LOG `2026-10-16` — **IHI** refused at **R:R 2.99**, the highest R:R any core ETF has produced in the trial, on the sector identity alone. `rule5_triggers: 45, rule5_acted: 5` trial-wide, with **zero** actions in seven weeks.
+
+- **(3) Rule 5 / core-ballast R:R exemption (carried from W23/W24/W25, unchanged):** exempt broad-market `tier: core` ETFs from the R:R floor when the Rule 5 relaxation is armed, substituting a trend test (200-bar high, positive RS on both windows) for the reward test.
+- **Rationale:** R:R is a stock-selection filter; the ballast's job is removing cash drag, not selection. An ETF at a fresh high has no overhead resistance against which to measure a target, so it scores 0.00 **because** it is strong.
+- **Evidence:** carried unchanged — TRADE-LOG `2026-10-06` records XLK, QQQ and ARKK all at exactly **0.00** R:R while at their own 200-bar highs and positive on both RS windows. No broad-market fund has cleared the relaxed 1.5:1 floor in **41** armed sessions.
+
+- **(4) Rule 16 / Rule 5 arbitration (carried from W24/W25, unchanged):** when a Rule 16 decay rotation would take deployment below the 75% floor and the Rule 5 trigger is already armed, require an admissible replacement to exist before the rotation executes, or downgrade the rotation to a trail-tighten.
+- **Rationale:** rotation presumes a replacement. With no admissible replacement a rotation is a liquidation, and the rulebook has no arbitration between a sell-side rule that can act and a buy-side rule that cannot.
+- **Evidence:** 2026-10-09 — `decay` returned `rotate=1` on SOXX at −1.79% with IT still in the leading quadrant, taking deployment 11.16% → **0.00%**. That exit is the direct cause of the `CORE_MV = $0` deadlock in (1) and (2), and of all five flat sessions this week.
+
+- **(5) PROJECT-CONTEXT `trial_start` (carried from W20–W25, unchanged):** set `trial_start: 2026-08-10` in `memory/PROJECT-CONTEXT.md`, replacing the `UNSET` placeholder.
+- **Rationale:** the placeholder has now reached the go-live scorecard unset for **twelve** consecutive weekly reviews and costs two false FAILs every week, both attributable in full to the 2026-08-06/07 seed pair that predates the Rule 16 guard and the Rule 14 round-trip fix. `PROJECT-CONTEXT.md` itself documents this ("an unset value guarantees a no-go verdict for the life of the trial").
+- **Evidence:** `--since 2026-08-06` (59 sessions) FAILs `rule14_accuracy` (`inaccurate on ['2026-08-07']`) and `rule16_meltup` (2 shallow rotations, both 2026-08-07). The go/no-go verdict is unchanged either way — `deployment` fails in every window — so applying this is zero-risk to the decision and removes two permanent false signals.
+
+- **(6) Rule 14 `[conservative:]` omission clause (carried from W24/W25, unchanged):** state the clause as a function of the token's own `source` field — carry `[conservative: <M>]` whenever the token reads `source=local`, omit it whenever it reads `source=api`.
+- **Rationale:** the current "whenever a local derivation ran this session" wording has been resolved in **both** directions by the logs themselves, which makes it ambiguous rather than mis-followed. A token reading `source=local` **is** the output of a local derivation.
+- **Evidence:** fourth consecutive week. This week's five market-open and five midday tokens are all bracket-free at `source=local`, while this review carries `[conservative: 0]`.
+
+- **(7) `daily-summary` benchmark capture (carried from W23/W24/W25):** have `daily-summary` take `spy_prior_close` from its own prior `METRICS.jsonl` row rather than from the live bars pull, logging any divergence against fresh bars as a provenance note instead of letting it enter the chain.
+- **Rationale:** the same "cache the prior close, never re-query" discipline the weekly benchmark provenance rule mandates, applied one level down. The 15:00 CT capture runs before consolidation, so the daily series systematically records a pre-settlement close.
+- **Evidence:** carried. This week the daily rows and the settled bars agree to the cent on all five sessions, so no new instance — but the W25 bootstrap below shows the chain has a second, worse failure mode when a *week* goes missing, which (9) addresses.
+
+- **(8) Rule 14 audit-token sweep anchoring (carried from W25, unchanged, now confirmed twice):** state in all three routine prompts that the weekly sweep anchors on the `- market-open <date>:` and `- midday <date>:` **run rows**, never on `## … Market-Open Run` / `## … Midday Run` headers, and that `midday` must emit its run row even when it writes no header of its own.
+- **Rationale:** a detector that returns different answers depending on surrounding structure the writer is free to vary is not a detector.
+- **Evidence:** applied this week and correct — run-row anchoring gives 1/1 on all five sessions, matching `metrics.py` 10/10, whereas a bare string grep over the same rows returns 12 because several rows quote the token in prose before writing it. Second consecutive week the anchoring choice changes the answer.
+
+- **(9) Rule 18 — add `weekly-review` to the cadence sweep (proposed change — NEW, and the week's most important finding):** extend Rule 18 so that **Monday's `pre-market`**, as part of its existing prior-session sweep, verifies that a `## Week ending <prior Friday>` entry exists in `WEEKLY-REVIEW.md` **and** a matching `### <prior Friday> — WEEK SUMMARY` row exists in `TRADE-LOG.md`. If either is absent: send a Telegram **URGENT** naming the missing review, and write a `MISSING ROUTINE — weekly-review <date>` placeholder. Classify `weekly-review` as **not recoverable** (its window has closed and its inputs have moved), consistent with how Rule 18 already treats `market-open` and `pre-market`.
+- **Rationale:** Rule 18 enumerates four routines and `weekly-review` is not one of them, so a missed Friday review has **no detector at all** — it is the only routine in the system whose complete absence is silent. Its output is also uniquely load-bearing downstream: the benchmark chain reads the prior review's `last_close`, the satellite-sleeve check reads the prior three reviews' attribution rows, and the `daytrade_count` delta reads the prior review's recorded value. A missing review silently degrades all three.
+- **Evidence:** **this week.** No `## Week ending 2026-10-23` entry and no `### 2026-10-23 — WEEK SUMMARY` row exist; the Oct 22–23 cron outage took the Friday review with it and **nothing raised it for seven days** — it was found only because this review went looking for a `prior_close` to chain from and there was none. Consequences already realised: the benchmark chain took its bootstrap branch for the first time in the trial, and the trial session count jumped 51 → 59 with no review narrating the intervening eight sessions.
+
+- **(10) `cadence` criterion — audit against a trading calendar, not against the file (proposed change — NEW, detector defect, materially affects the go-live verdict):** change `metrics.py scorecard`'s `cadence` check to compare the set of dates present in `METRICS.jsonl` against the **expected set of trading days** in the window, and FAIL on any trading day with no row, in addition to the existing per-row slot sum. Report the two sub-results separately (`sessions_missing` and `slots_missing`).
+- **Rationale:** `cadence` sums `routines_expected` / `routines_logged` **over the rows that exist**, so a session that wrote no row contributes 0 to both sides and is invisible. The one scorecard criterion whose job is to catch a cron outage therefore cannot catch the most complete form of one — a session where every routine failed. This is the same missing-detector shape as the original Rule 14 fail-open and as (9).
+- **Evidence:** the trial scorecard this week reports **`cadence: PASS, 236/236 routine slots`** over window `2026-08-06..2026-10-30`, which **contains two trading days with no row whatsoever** — 2026-10-22 and 2026-10-23 (`METRICS.jsonl` jumps 2026-10-21 → 2026-10-26). 59 rows for a window containing 61 trading days, scored as a clean pass. TRADE-LOG `2026-10-23 — MISSING ROUTINE: daily-summary (Rule 18)` documents the outage that `cadence` did not see.
+
+### Go-live scorecard — see the section above. **Verdict: FAIL** (trial window 2026-08-06..2026-10-30, 59 sessions), on `deployment`, `rule14_accuracy` and `rule16_meltup`; the latter two are the seed pair alone. `deployment` fails in every window and has now failed in **all twelve reviews**.
+
+### Overall Grade: D+
+
+The week returned exactly nothing — $10,075.58 in, $10,075.58 out, not one order placed for a seventh consecutive week — and the **+0.54pp** of headline alpha is **+0.54pp of cash drag against +0.00pp of selection**, which is to say SPY fell 0.56% and we were not there. Three weeks running, that term has been pure direction variance: it paid +1.98pp, then it paid +0.54pp, and the week it ran the other way it cost −1.16pp, all from the identical stance of owning nothing. The W25 deadlock is unamended and therefore unchanged — the ≥45% core floor refuses any satellite at any size while `CORE_MV = $0`, the 50% sector cap refuses any sector ETF bought first, and the relaxed 1.5:1 R:R floor armed on all five sessions and admitted nothing (`triggers: 5, acted: 0`, a 41st consecutive arming). What stops this being another C- is that the process record, immaculate for three straight weeks, broke: **an entire weekly review went missing on 2026-10-23 and nothing in the system was capable of noticing** — Rule 18 sweeps four routines and `weekly-review` is not one of them — and it surfaced only because this review needed a cached SPY close to chain from and found a hole. The same outage left two trading days with no `METRICS.jsonl` row at all, which the `cadence` criterion scored **236/236 PASS**, because it audits the rows that exist rather than the days that should. Two blind detectors, found in one week, both of the exact shape that let the Rule 14 fail-open survive fourteen weeks. The diagnosis is good work and proposals (9) and (10) are the week's real output; the trading is now seven weeks of nothing, and the go-live verdict stays **FAIL** on `deployment` for a twelfth review.
