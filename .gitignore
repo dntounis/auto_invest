@@ -5,3 +5,4 @@
 /DAILY-SUMMARY.md
 tests/.tmp/
 backtest/data/
+__pycache__/
