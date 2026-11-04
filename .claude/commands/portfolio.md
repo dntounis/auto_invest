@@ -1,5 +1,6 @@
 ---
 description: Read-only snapshot of the account (paper or live, per TRADING_MODE), positions, open orders, and stops
+model: claude-opus-5-5
 ---
 
 Print a clean ad-hoc snapshot. **No state changes, no orders, no file writes.**

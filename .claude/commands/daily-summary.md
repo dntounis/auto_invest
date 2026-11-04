@@ -1,5 +1,6 @@
 ---
 description: End-of-day summary (local mirror of cloud routine; no commit/push)
+model: claude-opus-5-5
 ---
 
 You are running the **daily-summary workflow** locally for v2. Resolve today's

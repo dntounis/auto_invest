@@ -2,6 +2,17 @@
 
 Each `.md` file in this directory is a prompt for a Claude Code cloud routine. Paste the contents **verbatim** into the routine UI.
 
+## Model (v3.5) — pin every routine to Claude Opus 5.5
+
+Every routine (and every local `.claude/commands/` mirror, via its `model:`
+frontmatter) runs on **Claude Opus 5.5 — model ID `claude-opus-5-5`**, the latest
+Opus. In the Routines UI, open each routine → **Model** → select *Claude Opus 5.5*
+and save; do not leave it on the account default, which silently drifts when the
+default changes and makes week-over-week behaviour comparisons meaningless.
+All five routines must run the **same** model — the weekly review attributes
+behaviour changes to rule changes, and a mixed-model week confounds that.
+`tests/test_routines.sh` fails if any prompt or mirror names a different model.
+
 ## One-time prerequisites
 
 1. **Install the Claude GitHub App on this repo.** Visit the install page, select only `dntounis/auto_invest` (least privilege), and grant access. Without this, the cloud container cannot clone or push.
@@ -14,6 +25,7 @@ In Claude Code cloud → Routines → New Routine:
 1. **Name:** "auto_invest pre-market" (or "auto_invest daily-summary")
 2. **Repository:** `dntounis/auto_invest`
 3. **Branch:** `main`
+3a. **Model:** Claude Opus 5.5 (`claude-opus-5-5`) — see *Model (v3.5)* above.
 4. **Environment variables** — set ALL of these in the routine's env config (not in a `.env` file):
    - `ALPACA_API_KEY` (paper)
    - `ALPACA_SECRET_KEY` (paper)

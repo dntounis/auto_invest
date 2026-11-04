@@ -18,6 +18,10 @@ short bullets, no preamble, no fluff.
 - Wrapper-side kill-switch in `scripts/alpaca.sh` still gates state-changing subcommands; the env says `true` so they execute.
 - Visa-aware: zero day trades by construction (Rules 13–15). If `daytrade_count` ever ≥ 2, all sells abort with Telegram URGENT.
 
+## Model + backtest (v3.5)
+- All routines and `.claude/commands/` mirrors pin **Claude Opus 5.5 (`claude-opus-5-5`)** — set it in the Routines UI → Model; `tests/test_routines.sh` enforces consistency.
+- `backtest/` replays the routine chain on historical bars (read-only `alpaca.sh bars-range`). Results + recommendation: `backtest/README.md`. No rule change applied (DECIDED G).
+
 ## Read-Me-First (every session)
 Open these in order before doing anything else:
 1. `memory/PROJECT-CONTEXT.md` — mission, mode, repo

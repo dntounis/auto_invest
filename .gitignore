@@ -4,3 +4,4 @@
 .DS_Store
 /DAILY-SUMMARY.md
 tests/.tmp/
+backtest/data/

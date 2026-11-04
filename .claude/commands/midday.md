@@ -1,5 +1,6 @@
 ---
 description: Midday position management (local mirror of cloud routine; no commit/push)
+model: claude-opus-5-5
 ---
 
 You are running the **midday position-management workflow** locally. Resolve

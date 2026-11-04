@@ -1,5 +1,6 @@
 ---
 description: Market-open execution (local mirror of cloud routine; no commit/push, kill-switch-gated)
+model: claude-opus-5-5
 ---
 
 You are running the **market-open execution workflow** locally. Resolve today's

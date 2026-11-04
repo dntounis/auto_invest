@@ -1,5 +1,6 @@
 ---
 description: Manual one-off trade entry (subject to all v2 buy-side gates and risk rules)
+model: claude-opus-5-5
 ---
 
 You are running a **manual trade entry**. Args from the user: `TICKER`, optional `THESIS`, optional `STOP_PCT` (default 10).

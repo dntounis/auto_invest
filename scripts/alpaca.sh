@@ -232,8 +232,37 @@ n = int(sys.argv[1])
 d['bars'] = bars[-n:]
 print(json.dumps(d))" "$count"
         ;;
+    bars-range)
+        # Read-only — no kill-switch gate (v3.5, backtest support). Returns every
+        # bar for SYM between START and END (inclusive ISO dates or RFC3339),
+        # following Alpaca's next_page_token pagination, as one JSON object
+        # {"symbol": SYM, "bars": [...]}. Split-/dividend-adjusted.
+        sym="${1:?usage: bars-range SYM TIMEFRAME START END}"
+        timeframe="${2:?usage: bars-range SYM TIMEFRAME START END}"
+        start="${3:?usage: bars-range SYM TIMEFRAME START END}"
+        end="${4:?usage: bars-range SYM TIMEFRAME START END}"
+        tmpd="$(mktemp -d)"
+        trap 'rm -rf "$tmpd"' EXIT
+        token=""
+        n=0
+        while :; do
+            url="$DATA/stocks/$sym/bars?timeframe=$timeframe&start=$start&end=$end&limit=10000&adjustment=all"
+            [[ -n "$token" ]] && url="$url&page_token=$token"
+            n=$((n + 1))
+            curl -fsS -H "$H_KEY" -H "$H_SEC" "$url" > "$tmpd/page_$(printf '%05d' "$n").json"
+            token="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("next_page_token") or "")' "$tmpd/page_$(printf '%05d' "$n").json")"
+            [[ -z "$token" ]] && break
+        done
+        python3 -c '
+import glob, json, os, sys
+bars = []
+for f in sorted(glob.glob(os.path.join(sys.argv[1], "page_*.json"))):
+    bars += json.load(open(f)).get("bars") or []
+print(json.dumps({"symbol": sys.argv[2], "bars": bars}, separators=(",", ":")), end="")
+' "$tmpd" "$sym"
+        ;;
     *)
-        echo "Usage: bash scripts/alpaca.sh <account|dtc|positions|position|quote|orders|order|cancel|cancel-all|close|close-all|trailing-stop|replace-stop|activities|bars|scale-out> [args]" >&2
+        echo "Usage: bash scripts/alpaca.sh <account|dtc|positions|position|quote|orders|order|cancel|cancel-all|close|close-all|trailing-stop|replace-stop|activities|bars|bars-range|scale-out> [args]" >&2
         exit 1
         ;;
 esac

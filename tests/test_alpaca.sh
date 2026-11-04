@@ -587,4 +587,22 @@ assert_contains "$out" '"source": "error"'
 assert_not_contains "$out" '"source": "unavailable"'
 
 rm -rf tests/.tmp/alp.*
+# v3.5: bars-range is read-only (not kill-switch gated) and validates its args
+start_test "bars-range: missing args -> usage error, no network call"
+TMP="$(mktemp -d tests/.tmp/alp.XXXXXX)"
+out=$(
+    cd "$TMP"
+    cp -r "$ROOT/scripts" .
+    rm -f .env
+    export ALPACA_API_KEY="dummy" ALPACA_SECRET_KEY="dummy"
+    export ALPACA_ENDPOINT="https://paper-api.alpaca.markets/v2"
+    export ALPACA_DATA_ENDPOINT="https://data.invalid/v2"
+    export TRADING_ENABLED="false"
+    bash scripts/alpaca.sh bars-range SPY 1Day 2026-01-01 2>&1
+)
+rc=$?
+assert_exit_code 1 "$rc"
+assert_contains "$out" "usage: bars-range SYM TIMEFRAME START END"
+assert_not_contains "$out" "REFUSED" "bars-range must not be kill-switch gated"
+
 print_summary

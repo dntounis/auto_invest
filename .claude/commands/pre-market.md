@@ -1,5 +1,6 @@
 ---
 description: Pre-market research run (local mirror of cloud routine; no commit/push)
+model: claude-opus-5-5
 ---
 
 You are running the **pre-market research workflow** locally. Resolve today's date with `DATE=$(TZ=America/Chicago date +%Y-%m-%d)` — match the cloud routine's TZ so local entries align with cron-fired entries.

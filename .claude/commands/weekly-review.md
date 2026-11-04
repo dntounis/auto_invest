@@ -1,5 +1,6 @@
 ---
 description: Weekly review (local mirror of cloud routine; no commit/push)
+model: claude-opus-5-5
 ---
 
 You are running the **weekly-review workflow** locally for week ending today.

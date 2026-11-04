@@ -5,6 +5,9 @@ the same way as v1: copy the file's contents into the Anthropic Routines UI's
 Prompt field, set env vars in the env-vars textbox, set the cron schedule and
 TZ, save, smoke-test with Run now.
 
+**Model (v3.5):** every routine below → Model = **Claude Opus 5.5 (`claude-opus-5-5`)**.
+Re-check this on all five existing routines when upgrading; the UI default is not pinned.
+
 **Pre-flight (one-time):**
 
 - [ ] All v2 commits on `main`. Verify: `git log --oneline -25 origin/main` shows
