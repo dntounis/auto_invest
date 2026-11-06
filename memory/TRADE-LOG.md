@@ -5784,3 +5784,48 @@ GILD's own Rule 16 evaluation is a clean no-flag: `decay --unrealized-pct 5.8043
   - `DTC = max(activities_count, tradelog_count) = max(0, 0) = 0`, `DTC_SOURCE=local`. Counted as same-day **round trips** per v3.4, not as raw sells. The two evidence sources **agree**, so no disagreement URGENT was owed; 0 < 2 and the source is neither `none` nor `error`, so no sell block applied — vacuously, since zero sells were scheduled.
   - `[conservative: M]` bracket **omitted** per v3.4: it is included only when a **STEP 5 mid-loop** local derivation ran this session, and STEP 5 never executed (zero scheduled actions), so there is no raw sell count to carry.
   - Standing degradation carried forward: the broker's own `daytrade_count` is **still unretrievable** on this endpoint, so the Rule 14 `>= 2` abort is gated on local inference alone. Vacuous at zero positions and zero sells, but escalated to `weekly-review` for a fourth consecutive session.
+
+### 2026-11-05 — MISSING ROUTINE: daily-summary (Rule 18)
+
+- Detected by `pre-market` 2026-11-06 STEP 0. The most-recent `— EOD Snapshot` header in this
+  log is `## Nov 04 — EOD Snapshot (Day 139, Wednesday)` (line 5690); the prior trading session
+  was **Thursday 2026-11-05**, so **no EOD snapshot exists for Nov 05** and the Nov 05
+  `daily-summary` did not log. Corroborated by `git log`: the newest EOD commit is
+  `fa7ad0d EOD snapshot 2026-11-04`, with `7a6c723 midday 2026-11-05` and
+  `3d587b9 market-open 2026-11-05` after it and **no** `EOD snapshot 2026-11-05` commit on
+  `origin/main`. Unlike the 2026-11-04 pre-market placeholder — which turned out to be a *late
+  push* rather than a missed run — `origin/main` was re-fetched at this run and still carries no
+  Nov 05 EOD commit, so this is a genuinely missed routine. URGENT Telegram sent (message_id
+  **347**).
+- **This is the second consecutive day with a missing routine, and the third missed routine in
+  two sessions:** `pre-market` 2026-11-05 (placeholder at RESEARCH-LOG line 10178, still
+  unreconciled), which halted `market-open` 2026-11-05 at STEP 1, and now `daily-summary`
+  2026-11-05. `midday` 2026-11-05 is the only Nov 05 routine that logged. Escalated to
+  `weekly-review` today as a **cron-health** item, not a strategy item.
+- **Rule 13 recovery (v3.3) executed on this branch and resolved to zero placements — vacant,
+  not skipped.** The recovery is unconditional *on the missing branch*, and this run entered it:
+  `bash scripts/alpaca.sh positions` → **`[]`** and `bash scripts/alpaca.sh orders open` → `[]`,
+  so the set of held positions needing a `type=trailing_stop` is **empty by construction** and
+  no `trailing-stop` call was made. **No position is left unprotected by the missed
+  `daily-summary`**, because `market-open` 2026-11-05 HALTED at STEP 1 and filled **0 orders**
+  (`grep -cE '^### 2026-11-05 — TRADE: .*side=buy'` = **0**), so Nov 05 opened no position for
+  Rule 13 to protect. The usual danger of a skipped `daily-summary` — every position opened that
+  day left permanently stop-less, with `market-open` never placing one and `midday` only able to
+  *tighten* an existing stop — **did not materialise this time, and only because the book was
+  flat**. Had Nov 05 filled anything, this placeholder would be a protection incident rather
+  than a cadence note.
+- Rule 17 clean at this run: row-anchored `grep -cE '^(#+ .*|- )STOP-PLACEMENT-FAILED'` over all
+  5786 prior lines = **0**, so no unresolved placement marker was open and the Rule 17 retry had
+  nothing to retry. No `STOP-PLACEMENT-FAILED` marker is opened by this row either, since no
+  placement was attempted or failed.
+- Visa-safety not engaged: zero sells on any path, zero positions, `daytrade_count` effect nil.
+  Placing a stop is not a sell in any case; none was placed.
+- **Lost state, recorded rather than reconstructed:** the Nov 05 EOD equity/cash snapshot and
+  day-P&L line are **permanently absent from this log** and are not back-filled here — this
+  append-only file is not rewritten after the fact. For reference only, from this morning's live
+  pull: equity **$10,075.58**, cash **$10,075.58** (100.00%), `last_equity` $10,075.58,
+  `balance_asof` **2026-11-05**, `accrued_fees` 0, `pending_reg_taf_fees` 0 — i.e. the Nov 05
+  session closed flat and unchanged, so the missing snapshot would have read $0.00 / 0.0000% on
+  the Nov 04 basis. `METRICS.jsonl` carries **no Nov 05 row**; the series therefore has a
+  one-session gap at Nov 04→Nov 06 that every consecutive-session counter downstream must read
+  across, including the Rule 5 below-floor streak.
