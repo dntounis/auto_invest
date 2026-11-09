@@ -6096,3 +6096,81 @@ GILD's own Rule 16 evaluation is a clean no-flag: `decay --unrealized-pct 5.8043
   `daily-summary` slide is a Rule 13 protection-correctness defect the first time a position
   fills. Top scheduling fix for `weekly-review`.
 - Rule 14 DTC: n/a (halted before gate evaluation)
+- midday 2026-11-09: 0 sells, 0 scale-outs, 0 stop-tightenings, 0 decay-flags. **NO-ACTION day
+  — `positions` returns `[]` and `orders open` returns `[]`**, so STEP 3's actionable set is
+  empty and the routine took the documented "skip to STEP 6, then continue to STEP 7" branch,
+  which still writes this mandatory Rule 18 cadence token and the `Rule 14 DTC:` audit line
+  below. Equity **$10,075.58**, cash **$10,075.58** (100.00% of equity), `long_market_value` 0,
+  `position_market_value` 0 — **twenty-third consecutive session on a flat book**, and the
+  `balance_asof` field still reads **2026-11-06**, consistent with no activity since Friday.
+  **The empty actionable set is the entire book, not a Rule 15 residue.** Today's `market-open`
+  **halted at its STEP 1** (no `RESEARCH-LOG.md` entry for 2026-11-09 — commit `2650d59`), so it
+  placed zero orders and opened zero positions; the Friday **SCHD 46sh limit @ $34.86 expired
+  unfilled** at 2026-11-06T21:00:55Z and was never re-placed. There is therefore **no same-day
+  position for Rule 15 to filter out**, and nothing whatsoever to evaluate for **Rule 7** (no
+  position can be ≤ −7%), **Rule 8** (no winner, no open trailing stop to tighten — `orders
+  open` is empty, so no `OID`/`QTY`/`trail_percent`/`hwm` exists and `sizing.py ladder` was not
+  called), **Rule 16** (no held position, so **no `DECAY-FLAG` row is owed or written** — the
+  chain has been dormant since the 2026-10-09 SOXX exit and writing a flag row for a name not
+  held would corrupt it), or **Rule 10** (no actionable position in any sector, so the doomed-
+  sector scan has an empty domain and no sector-kill batch was built). `TIER` / `LADDER_TIER`
+  were never bound because no position existed to bind them for.
+  **Rule 13 n/a:** midday never places new stops, only tightens existing ones — and with zero
+  positions there is nothing to protect and no downstream `daily-summary` placement owed today.
+  **Rule 17 clean:** row-anchored `grep -cE '^(#+ .*|- )STOP-PLACEMENT-FAILED'` = **0**, so no
+  unresolved placement marker is open; no `CATCH-UP PENDING` row is open either.
+  **Market context (read-only, no position to apply it to):** SPY `1Day` ×11 gives last
+  **751.57** (in-progress bar, o 741.95 / h 751.76 / l 741.025 / v 18.8M) against the **765.37**
+  close of 2026-10-26 ten bars back → 10-session return **−1.80%**. That is **below** the
+  Rule 16 melt-up benchmark threshold of +3.0%, so had any position been held and flagged, the
+  v3.4 guard would **not** have suppressed its rotation — recorded for the weekly review's
+  `rule16_meltup` audit even though it is counterfactual at zero positions. SPY remains well off
+  the 766.81 Nov 04 high after the −4.41% Nov 05 session, recovering +2.21% today.
+  **Mode guard (v3.4):** `TRADING_MODE` **unset → defaults to `paper`** per the guard's own
+  default clause — the env sweep prints it `MISSING`, which is the *unset* case the guard
+  explicitly defaults, **not** an invalid value (an invalid value is a STOP; this is not one),
+  and the default is taken from the documented rule, never inferred from the endpoint.
+  `ALPACA_ENDPOINT` = `https://paper-api.alpaca.markets/v2` contains `paper-api.alpaca.markets`
+  ✓ — mode and endpoint agree in both directions, neither inferred from the other.
+  `TRADING_ENABLED=true` ✓. `MODE_LABEL` = `(paper)`, no `🔴 LIVE` prefix. **No environment STOP
+  was taken on any path**, so this cadence row is written as an ordinary NO-ACTION row, not
+  withheld — the v3.3/v3.4 "write nothing on an environment STOP" clause never engaged.
+  *(One-hundred-fifteenth consecutive session on the unset `TRADING_MODE` default — still the
+  longest-standing open item in this log, carried under DECIDED G.)* No `.env` created, written
+  or sourced; all seven resolvable required vars plus `GITHUB_TOKEN` came from process env.
+  **Branch note:** the runtime injected a `claude/bold-volta-4c5jpp` branch requirement; the
+  routine's own OVERRIDE — Branch Policy takes precedence, so this append-only memory write was
+  committed and pushed directly to `main`.
+  **DST slide, fourth corroboration:** this run fired at **11:05 CST**, ~2h35m after the 08:30
+  CST open rather than at the intended midday slot — the crons still have not followed CT across
+  the Nov 01 transition. Immaterial today (flat book, nothing to manage), but on a session with
+  open positions an early-shifted midday evaluates Rule 7/8/16 against a materially different
+  tape than intended. Remains the top scheduling fix for `weekly-review`.
+- Rule 14 DTC: 0 (source=local) (sell attempted: no)
+  - `bash scripts/alpaca.sh dtc` → `{"daytrade_count": null, "source": "unavailable"}` — the call
+    **succeeded** and the paper endpoint simply omits the field, so this is the `unavailable`
+    branch, **not** `error` (no non-zero curl status, no non-JSON body). Per Rule 14(c) the
+    `error` path must never be collapsed into `unavailable`; it was not, and the local derivation
+    is therefore legitimately permitted here.
+  - **Primary evidence — `alpaca.sh activities`**, called once per business day across today and
+    the last 5 business days (2026-11-09, 11-06, 11-05, 11-04, 11-03): **every call returned
+    `[]`**. Zero `FILL`/`PARTIAL_FILL` activities of either side on any day →
+    **activities_count = 0** same-day round trips. Today's `[]` independently corroborates that
+    no order filled this morning, consistent with market-open's STEP 1 halt.
+  - **Corroboration — TRADE-LOG.md** over the same window: row-anchored
+    `grep -cE '^### 2026-11-(03|04|05|06|09) — (TRADE|SCALE-OUT|.*ROTATE-EXIT)'` returns **0** —
+    zero `side=buy` rows and zero `side=sell` / `SCALE-OUT` / `ROTATE-EXIT` rows in the window.
+    The **last TRADE row of any side is 2026-10-09** (SOXX sell), 21 sessions and far outside the
+    lookback. → **tradelog_count = 0**.
+  - `DTC = max(activities_count, tradelog_count) = max(0, 0) = 0`, `DTC_SOURCE=local`. Counted as
+    same-day **round trips** per v3.4, not as raw sells. The two evidence sources **agree**, so no
+    disagreement URGENT was owed; 0 < 2 and the source is neither `none` nor `error`, so **no
+    Rule 14 abort path was taken** and no sell was blocked. Structurally this must be 0 under
+    Rules 13/15 — and it is, from both evidence sources independently.
+  - `[conservative: M]` bracket **omitted** per v3.4: it is included only when a **STEP 5
+    mid-loop** local derivation ran this session, and STEP 5 never executed (zero scheduled
+    actions), so there is no raw sell count to carry.
+  - Standing degradation carried forward: the broker's own `daytrade_count` is **still
+    unretrievable** on this endpoint — **eighth consecutive session** — so the Rule 14 `>= 2`
+    abort remains gated on local inference alone. Vacuous at zero positions, but it would become
+    the live PDT gate the moment the book is non-flat; already escalated to `weekly-review`.
