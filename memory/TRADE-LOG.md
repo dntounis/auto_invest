@@ -6013,3 +6013,86 @@ GILD's own Rule 16 evaluation is a clean no-flag: `decay --unrealized-pct 5.8043
 - Worst: n/a (no closed trade)
 - daytrade_count delta: 0 -> 0 (source=local) [conservative: 0] — `alpaca.sh dtc` → `{"daytrade_count": null, "source": "unavailable"}` (successful call, field absent on the paper endpoint → the v3.4 local derivation, never the sell-blocking `error` path). `activities` queried per date across 2026-10-30, 11-02, 11-03, 11-04, 11-05, 11-06 returns `[]` on all six; TRADE-LOG corroborates with **0** header-anchored `### … — TRADE:` rows of either side in the week. `DTC = max(0,0) = 0`. 28 weeks / 141 sessions at zero day trades
 - Rule violations: **Rule 5 band breach — deployment 0.00% on all 5 sessions** (46th consecutive `METRICS.jsonl` row below the 75% floor, run unbroken since 2026-08-31; last in-band session 2026-08-28 at 80.78%). **Rule 18 cadence — three gaps in two days:** (a) `pre-market` **never ran 2026-11-05** (no `## 2026-11-05` header in RESEARCH-LOG, no pre-market commit), which halted that day's `market-open` at STEP 1; (b) `daily-summary` **never ran 2026-11-05** (`### 2026-11-05 — MISSING ROUTINE` row, no EOD snapshot, no commit); (c) `market-open` **2026-11-04 halted on a late push, not a missing run** — `a1780ee pre-market research 2026-11-04` landed on `origin/main` *after* `239b6b1 market-open 2026-11-04` had read the clone and halted, so a session's Buy-Side Gate was lost to a race, not to an outage. **`METRICS.jsonl` has no row at all for 2026-11-05**, so the weekly rollup omits a −4.41% SPY session and its alpha figure is **incomplete** (see WEEKLY-REVIEW). **Benchmark-chain defect confirmed on 4 of 4 rows:** every Nov row records an intraday `spy_close` against a settled `spy_prior_close`, understating weekly alpha by a further 0.78pp (proposal (7)). Rules 3/6/7/9/10/13/15/16 vacuous (zero positions held at any point). Rule 14 audit-token sweep **10/10 tokens present, both tokens in every one of the five sessions — no gap**; 8 of the 10 carry a resolved numeric count, the two `market-open` tokens of 2026-11-04 and 2026-11-05 reading `n/a (halted before gate evaluation)`, which is the halt branch honestly reported rather than a missing token
+
+## 2026-11-09 — Market-Open Run (Day 142, Monday, Week 29 Day 1)
+
+- market-open 2026-11-09: 0 orders placed, 0 filled. **HALTED at STEP 1 — no RESEARCH-LOG
+  entry for today. Upstream pre-market failure; no ideas evaluated. Telegram alert sent**
+  (message_id **353**; the separate Rule 18 URGENT naming the missing routine is message_id
+  **352**). Pre-market Decision=**n/a — no entry exists to carry one**, which is the halt
+  condition itself and must not be read as a HOLD: a HOLD writes a dated header with a
+  `**Decision:**` line and would have passed STEP 1 to be gated at zero ideas, whereas
+  `grep -cE '^## 2026-11-09' memory/RESEARCH-LOG.md` = **0** — indeed `grep -c '2026-11-09'`
+  = **0**, not one string match in the whole file — both in the working tree and in
+  `git show origin/main:memory/RESEARCH-LOG.md`, with `origin/main` head still `3c04279
+  weekly-review 2026-11-06` across **two** re-fetches, re-fetched deliberately because the
+  2026-11-04 identical placeholder turned out to be a *late push*, not a missing run.
+  **STEP 0 (Rule 18 catch-up) executed explicitly and was NOT skipped on the "this routine
+  only buys" reading**, per the v3.3 warning: header-anchored `grep -cE '^#+ .*CATCH-UP'` over
+  all **6,015** prior lines returns **0** rows of either kind (every `CATCH-UP` string match in
+  this file is narrative prose inside prior run rows, not a header), so nothing was owed from a
+  missed midday and **no catch-up sell, sector-kill batch or scale-out executed**; no
+  `CATCH-UP PENDING` row was aged out of the 10-trading-day / 200-row lookback, so no
+  manual-review URGENT was owed. `^#+ .*STOP-PLACEMENT-FAILED` likewise returns **0**, so no
+  Rule 17 marker is open or owed. Because STEP 0 resolved no count and ran no local derivation
+  of its own, the Rule 14 token below takes the v3.4 `n/a` form — this is the documented
+  "STEP 1 halt in which STEP 0 executed nothing" case, **not** the exception where STEP 0 sold
+  and must write a real number with its `[conservative:]` bracket. **No step past STEP 1 ran**,
+  so STEP 2's accumulators (`COMMITTED_COST`, `COMMITTED_CORE_MV`, `COMMITTED_SECTOR_MV`,
+  `COMMITTED_POS`, `COMMITTED_SAT`, `RESTORE_REMAINING`) were never initialised and nothing
+  downstream was evaluated: no quote, no `sizing.py` call of any mode, no order of any kind.
+  **HEADROOM: not computed** (STEP 2 unreached) — on the live book it would have been
+  `0.85 × $10,075.58 − $0 = **$8,564.24**`, recorded here as arithmetic for context only, not
+  as a gate that ran. Deployment **0.00%**, ETF-core % of deployed **undefined** (zero
+  denominator), sector spread **empty**, satellite slots used **0 of 3**, all positions
+  **0 of 6** — the book has been flat since the **2026-10-09 SOXX rotation exit** and the
+  equity line is unchanged at $10,075.58 throughout. **Week 29 opens with the trade budget at
+  0 of 5 used**, unchanged by this run; Week 28 closed **1 order placed, 0 filled** — Friday's
+  SCHD 46sh day-TIF limit @ $34.86 was still working at that run's end and `orders open` → `[]`
+  this morning confirms it **expired at Friday's close rather than filling**, so the tenth
+  consecutive week with an unspent budget stands and no position was inherited into Week 29.
+  Live state at 13:36 UTC: equity **$10,075.58**, cash **$10,075.58** (100.00%),
+  `long_market_value` **$0**, `position_market_value` **$0**, `buying_power` $40,302.32 (regt
+  $20,151.16, non-marginable $10,075.58), `last_equity` $10,075.58 identical to live equity,
+  `sma` $10,075.58 (`balance_asof` **2026-11-06**), `accrued_fees` 0, `pending_reg_taf_fees` 0,
+  `status` ACTIVE, `trading_blocked`/`account_blocked` false; `positions` → `[]`, `orders open`
+  → `[]`. **Rule 13 inapplicable** (this routine never places stops, and 0 positions were
+  opened); **Rule 14 not exercised on the buy side** (the gate was never reached) and **not
+  exercised on the sell side** (no sell existed on any path); **Rule 15 inapplicable** (nothing
+  opened today, nothing closed). Idempotency (DECIDED H) moot — no candidate set to compare
+  against, and `orders open` is empty. **Rule 5 REDEPLOY: not armed — and the reason is the
+  halt, not a recovery.** STEP 2 is where the arming computation lives and STEP 2 was never
+  reached, so `sizing.py redeploy` was **not called**, `SESSIONS_BELOW_BAND` was not counted
+  as a gate input, `RESTORE_REMAINING` was never initialised and the v3.4 restore clamp stayed
+  unexercised a further session; `rule5.triggered` is therefore **false** for metrics purposes.
+  For context only, not as a computation that gated anything: deployment sits at **0.00%** and
+  a v3.4-correct count over `METRICS.jsonl` (on `deployment_pct < 75.0`, **not** on
+  `in_band == false`) returns **46** consecutive recorded sessions below the 75% floor, last
+  in-band session **2026-08-28 at 80.78%** — so the trigger *would* have armed had STEP 2 run,
+  exactly as Friday's record shows (`rule5.triggered: true`, `acted: false`). This is the third
+  session in five on which the diagnostic designed to show "the relaxation is armed and then
+  wasted upstream" shows nothing at all, because the halt lands before the diagnostic — a
+  finding about the instrumentation, not a change in the book.
+  **Mode guard (v3.4):** `TRADING_MODE` **unset → defaults to `paper`** per the guard's own
+  default clause — the env sweep prints it `MISSING`, which is the *unset* case the guard
+  explicitly defaults, **not** an invalid value (an invalid value is a STOP; this is not one),
+  and the default is taken from the documented rule, never inferred from the endpoint.
+  `ALPACA_ENDPOINT` = `https://paper-api.alpaca.markets/v2` contains `paper-api.alpaca.markets`
+  ✓ — mode and endpoint agree in both directions, neither inferred from the other.
+  `TRADING_ENABLED=true` ✓. `MODE_LABEL` = `(paper)`, no `🔴 LIVE` prefix on either message.
+  **No environment STOP was taken on any path**, so this is the STEP 1 halt row, not the
+  pre-STEP-0 environment halt row. No `.env` created, written or sourced; all eight resolvable
+  required vars plus `GITHUB_TOKEN` came from process env. *(One-hundred-fourteenth consecutive
+  session on the unset default — still the longest-standing open item in this log, carried under
+  DECIDED G; setting `TRADING_MODE=paper` explicitly in the routine UI remains the one free
+  prerequisite before any live switch.)* **Branch note:** the runtime injected a
+  `claude/beautiful-ride-u7ni0m` branch requirement; the routine's own OVERRIDE — Branch Policy
+  takes precedence, so this append-only memory write was committed and pushed directly to
+  `main`, as the spec requires for the next scheduled run to read it as fresh state.
+  **DST slide, third corroboration:** this run fired at **07:36 CST, ~54 min before the 08:30
+  CST open**, matching Nov 04 (07:35) and Nov 05 (07:36) — the crons still have not followed CT
+  across the Nov 01 transition. Irrelevant to today's outcome (the halt precedes STEP 5a), but
+  it would degrade every fill on a session that reaches sizing, and the symmetric ~47-min-early
+  `daily-summary` slide is a Rule 13 protection-correctness defect the first time a position
+  fills. Top scheduling fix for `weekly-review`.
+- Rule 14 DTC: n/a (halted before gate evaluation)
