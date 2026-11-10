@@ -6202,3 +6202,111 @@ GILD's own Rule 16 evaluation is a clean no-flag: `decay --unrealized-pct 5.8043
 **Mode guard (v3.4):** `TRADING_MODE` **unset → defaults to `paper`** per the guard's own default clause — the env sweep prints it `MISSING`, which is the *unset* case the guard explicitly defaults, **not** an invalid value (an invalid value is a STOP; this is not one), and the default is taken from the documented rule, never inferred from the endpoint. `ALPACA_ENDPOINT` = `https://paper-api.alpaca.markets/v2` contains `paper-api.alpaca.markets` ✓ — mode and endpoint agree in both directions, neither inferred from the other; `TRADING_ENABLED=true` ✓; `MODE_LABEL` `(paper)`, no `🔴 LIVE` prefix. No `.env` created, written or sourced; all seven resolvable required vars plus `GITHUB_TOKEN` came from process env. *(One-hundred-sixteenth consecutive session on the unset default — still the longest-standing open item in this log, carried under DECIDED G.)* `DATE` resolved `TZ=America/Chicago date +%Y-%m-%d` = **2026-11-09** at 14:16 CST (20:16Z), so the UTC container clock did not date this snapshot forward. **Heartbeat:** `last_telegram` read **2026-11-09T13:38:27Z** before this routine's own sends — ~6h, well under the 48h threshold, so no heartbeat prefix was prepended. **Timing note (DECIDED G — flagged, not acted on), fifth corroboration:** this run fired at **14:16 CST, ~44 min early**, the same UTC-anchored-cron/DST slide that has run every session since Nov 01, and today `midday` fired at 11:05 CST, ~2h35m early. Rule 13's premise is that stops queue *at* the close and cannot fire same-day; a 14:16 CST placement would sit live for three-quarters of an hour of regular session. **Harmless again only because nothing filled** — the protection-correctness defect is now one fill away for the third consecutive session, and the same scheduler that is shifting these runs is the one that dropped pre-market entirely this morning. Top scheduling fix for `weekly-review`, fourth consecutive session. **Branch note:** the runtime injected a `claude/gifted-thompson-m9o0su` branch requirement; the routine's own OVERRIDE — Branch Policy takes precedence, so this append-only memory write was committed and pushed directly to `main`.
 
 **Pre-market plan today: none — no research entry exists to carry a decision.** This must not be read as a HOLD: a HOLD writes a dated `## 2026-11-09 — Pre-market Research` header with a `**Decision:**` line and would have passed market-open's STEP 1 to be gated at zero ideas. No such header exists anywhere, in the working tree or on `origin/main`, so the field is **n/a (routine did not run)** and the day had no decision surface at all. **Tomorrow: pre-market at 6:00 CT (CST in effect) — and the single thing to watch is whether it fires**; the SCHD order is resolved and closed, so `market-open` carries no deferred reconciliation into Tuesday. Carried unpatched into Week 29's review: the **cron reliability failure** (now 3 lost routine-slots in 4 sessions, promoted above the DST slide as the top item), the **~44-minute early `daily-summary` / ~2h35m early `midday`** that Rule 13 depends on luck to survive, the **unretrievable broker `daytrade_count`** (9 sessions), the **macro gate's single-source design**, and the **intraday-vs-settled benchmark chain** now with three confirmed restatement seams.
+
+## 2026-11-10 — Market-Open Run (Day 143, Tuesday, Week 29 Day 2)
+
+- market-open 2026-11-10: **4 orders placed, 0 filled.** Pre-market Decision=**TRADE**.
+  All four ideas — `pm-2026-11-10-SCHD`, `-SPLV`, `-XLP`, `-XLV`, every one `tier: core` and
+  every one `rr-relaxed: yes (Rule 5 redeploy)` — **passed the full v3.3 accumulating
+  buy-side gate and were placed in the mandated R:R/ticker order SCHD → SPLV → XLP → XLV**;
+  **zero ideas were rejected by any gate.** `HEADROOM` at STEP 2 = `0.85 × $10,075.58 − $0`
+  = **$8,564.24**; equity $10,075.58, cash $10,075.58, `long_market_value` $0, `positions`
+  → `[]` (twenty-second consecutive session), `orders open` → `[]` at STEP 2 so the
+  DECIDED-H idempotency check found **no prior BUY for any candidate** and skipped nothing.
+  Sized live via `sizing.py size` against post-open asks, each clip clamped by the in-code
+  16% `max_pos_pct` (`clamped=cap` on all four, as pre-market predicted): **SCHD 45sh @ ask
+  $35.40 → $1,593.00 (15.81%), SPLV 20sh @ $77.57 → $1,551.40 (15.40%), XLP 17sh @ $90.63 →
+  $1,540.71 (15.29%), XLV 8sh @ $187.69 → $1,501.52 (14.90%)**; total reserved **$6,186.63 =
+  61.40% of equity**, well inside the 85% ceiling, leaving `HEADROOM` $2,377.61. Limits set
+  at `ask × 1.001` per `MAX_ENTRY_SLIPPAGE_PCT=0.10`: **$35.44 / $77.65 / $90.72 / $187.88**,
+  day TIF, no stops attached. **Portfolio shape as it would stand if all four fill:**
+  deployment **61.40%** (still below the 75% floor — a deliberately partial restore, see the
+  Rule 5 line); **ETF core 100% of deployed** vs the ≥45% floor; **4 positions ≤ 6**;
+  **0 of 3 satellite slots used, 0 per sector**, so the ≤2-satellites-per-sector limit is
+  vacuous. Sector spread by look-through attribution (the convention today's RESEARCH-LOG
+  documents and the only honest one for broad funds — attributing a multi-sector fund's whole
+  cost to one GICS sector would read SCHD at 100% and refuse it): peak sector share after
+  each successive reservation ran **Energy 19.00% → Staples 18.51% → Staples 45.31% →
+  Staples 34.31%**, with Health Care ending at **29.88%**. **The Rule 12 ordering bound
+  exactly as pre-market said it would and was the tightest gate of the run: XLP's
+  re-assertion cleared at 45.31% of deployed with only 4.69pp of margin, and it cleared
+  *only* because SCHD and SPLV were reserved ahead of it** — had either broad fund been
+  skipped, XLP read ~58.7% and XLV ~55.7% and both would have been refused. Week 29 trade
+  budget: **4 of 5 committed by placement, 0 of 5 consumed by fills** (`grep -cE '^### 2026-11-(09|10) — TRADE'`
+  = 0 before this run), leaving one trade for the week on either reading. **Rule 13: this
+  routine placed no stop of any kind** — all four trails are `daily-summary`'s job at 15:00 CT,
+  and with zero fills there is as yet nothing to protect. **Rule 15: inapplicable** — no sell
+  was placed or contemplated on any path, and no position exists to be same-day. **Rule 14:
+  buy-side buffer check only** (see the audit line below).
+  **Two operational facts belong in the record, neither of them a strategy change.**
+  (i) **The routine fired at 07:35 CST, ~55 minutes before the 08:30 CST open** — the same
+  UTC-anchored DST slide `pre-market` logged at 05:02 CST. At 07:35 only SCHD had a usable
+  quote (`ap` 35.72, fresh 13:30:06Z); **SPLV and XLP returned `ap=0` with 2026-11-09T21:00Z
+  stamps and bids 2.94% and 2.87% below their prior closes — far outside the 0.10%
+  `MAX_ENTRY_SLIPPAGE_PCT` the stale-quote fallback requires**, so the literal fallback would
+  have skipped both, and skipping SPLV would in turn have made XLP *and* XLV inadmissible on
+  Rule 12. **A scheduler artifact would have destroyed three of four ideas and left the
+  47-session-armed Rule 5 relaxation spent on one clip.** This run therefore waited for the
+  open and re-quoted rather than sizing off dead books. At 08:19 CST quotes appeared but
+  symmetric and ~6–7% wide around the prior closes (SCHD 34.47/36.62, SPLV 75.03/80.45, XLP
+  88.36/94.16, XLV 182.89/194.88); at **08:30:14 CST** they collapsed to **0.03%/0.41%/0.23%/0.10%**
+  and those are the asks every clip above was sized on. **No gate was relaxed, no rule bent,
+  no price estimated by eye — the wait bought real asks, nothing else.**
+  (ii) **Zero fills, and the cause is the slippage cap meeting a fast tape, not a rejected
+  order.** All four orders are live and working (`status: new`, `filled_qty: 0`,
+  `initial_margin` $3,096.56 reserved, `expires_at` 21:00Z). In the ~90 seconds between the
+  08:30:14 sizing quotes and the 08:32:55 re-check the asks ran to **35.50 / 77.85 / 91.02 /
+  188.28**, putting **every limit below the market by 0.06–0.20%** — more than the 0.10% cap
+  permits. The 12×5s poll returned all four still open, so per STEP 6 they are left to fill
+  or expire at the close. **This is the second consecutive session a correctly-gated core
+  entry has gone unfilled on this cap** (Friday's SCHD 46sh @ $34.86 expired the same way),
+  and it is now the binding constraint on ever restoring the deployment band: the sizing,
+  the gates and the research all worked, and the book is still flat. **Proposed to
+  `weekly-review` as the top execution item — raise `MAX_ENTRY_SLIPPAGE_PCT` for `tier: core`
+  ETF entries, or quote-and-place inside one tick rather than across a 90-second gate pass.
+  NOT applied here: DECIDED G forbids this routine from changing strategy, and widening a
+  slippage cap mid-run to force a fill is exactly the kind of self-authorised drift the rule
+  exists to prevent.**
+- Rule 5 REDEPLOY: armed (deployment 0.00%, 47 sessions below band, restore $7,556.69, R:R floor 1.5)
+  — counted per v3.4 on `deployment_pct < 75.0` strictly, **not** on `in_band == false`: 47
+  consecutive below-floor rows in `METRICS.jsonl` back to the 2026-08-28 row at 80.78%.
+  `RESTORE_REMAINING` was initialised to $7,556.69 and decremented only by `rr-relaxed` ideas,
+  all four of which were: $7,556.69 → $5,963.69 → $4,412.29 → $2,871.58 → **$1,370.06**. The
+  clamp bound in the direction v3.4 intended — each `IDEA_HEADROOM` was
+  `min(HEADROOM, RESTORE_REMAINING)` and the restore budget, not the ceiling, was the smaller
+  number on every one of the four calls, so the relaxation bought ballast toward the floor and
+  could not have spent the room to the ceiling. **No relaxed-spend clause is appended because
+  nothing filled: $0 of $7,556.69 was actually deployed, $6,186.63 is merely reserved by four
+  working limits, and `rule5.acted` must read false for this session.**
+- Rule 14 DTC: 0 (source=local) [conservative: 0] — **buy-side buffer check only, no sells this
+  run.** `alpaca.sh dtc` → `{"daytrade_count": null, "source": "unavailable"}`: the call
+  **succeeded** and the paper endpoint simply omits the field, so this is the `unavailable`
+  branch and never the sell-blocking `error` branch. Local derivation per midday STEP 2:
+  `activities` returned `[]` for every one of the last 5 business days (2026-11-10/09/06/05/04)
+  and row-anchored `grep -cE '^### 2026-11-(04|05|06|09|10) — (TRADE|SCALE-OUT|EXIT|ROTATE-EXIT)'`
+  = 0 same-day round trips, so `DTC = max(0, 0) = 0` ≤ 1 and the Rule 14 buffer admitted new
+  entries with full PDT room. **Eleventh consecutive session the broker's own `daytrade_count`
+  is unretrievable** — standing instrumentation degradation, escalated to `weekly-review` for a
+  ninth session. The `[conservative: 0]` bracket is carried because a local derivation ran this
+  session (Rule 14's wording in `TRADING-STRATEGY.md`), even though STEP 0 itself ran none;
+  it is 0 either way, since **STEP 0 executed nothing and no sell was placed on any path**.
+- STEP 0 (Rule 18 catch-up) executed explicitly and was **NOT** skipped on the "this routine
+  only buys" reading, per the v3.3 warning. Header-anchored `grep -cE '^#+ .*CATCH-UP'` over all
+  6,204 prior lines returns **0** rows of either kind — every `CATCH-UP` string match in this file
+  is narrative prose inside earlier run rows, not a header — so **no `CATCH-UP PENDING` row is
+  unresolved, none was aged out of the 10-trading-day / 200-row lookback, no manual-review URGENT
+  was owed, and no catch-up sell, sector-kill batch or scale-out executed.** Because STEP 0
+  resolved no count of its own, the `Rule 14 DTC` token above is the buy-side gate's own
+  resolution, not a STEP 0 one. `^(#+ .*|- )STOP-PLACEMENT-FAILED` likewise returns **0**, so no
+  Rule 17 marker is open or owed.
+- Mode guard: `TRADING_MODE` **unset → defaults to `paper`** per the guard's own default clause.
+  The env sweep prints it `MISSING`, which is the *unset* case the guard explicitly defaults —
+  **not** an invalid value, which would be a STOP; this is not one — and the default is taken from
+  the documented rule, never inferred from the endpoint. `ALPACA_ENDPOINT` =
+  `https://paper-api.alpaca.markets/v2` contains `paper-api.alpaca.markets` ✓, so mode and
+  endpoint agree in both directions. `TRADING_ENABLED=true` ✓. `MODE_LABEL` = `(paper)`, no
+  `🔴 LIVE` prefix on any message. No `.env` created, written or sourced.
+- PENDING 2026-11-10 SCHD: limit order placed @ $35.44 (45 sh), not yet filled as of market-open run
+- PENDING 2026-11-10 SPLV: limit order placed @ $77.65 (20 sh), not yet filled as of market-open run
+- PENDING 2026-11-10 XLP: limit order placed @ $90.72 (17 sh), not yet filled as of market-open run
+- PENDING 2026-11-10 XLV: limit order placed @ $187.88 (8 sh), not yet filled as of market-open run
