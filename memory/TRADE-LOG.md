@@ -6385,3 +6385,83 @@ GILD's own Rule 16 evaluation is a clean no-flag: `decay --unrealized-pct 5.8043
   `Tier: core`, catalysts `pm-2026-11-10-{SCHD,SPLV,XLP,XLV}`, sectors per the look-through
   attribution in today's market-open row — alongside the Rule 13 trailing stops it already owes
   on all four (none exists yet; `orders open` → `[]`).
+
+### 2026-11-10 — TRADE: SCHD side=buy qty=45
+- Entry: $35.44
+- Tier: core
+- Stop level: $32.2245 (trailing 10%, placed this session — see STOP PLACED row below)
+- Sector: Multi-sector (broad U.S. dividend-quality fund; look-through attribution per today's RESEARCH-LOG convention, not attributed wholly to one GICS sector)
+- Thesis: The fastest-compounding Rule-12-admissible broad fund on the board and the instrument that legally re-opened a flat book — +25.18% over 200 sessions (+2.65%/month realised, best of any candidate screened), above both DMAs on a rising 50-DMA (35.65 / 34.12 / 32.16, DMA50 up from 33.93 ten sessions ago), both RS legs positive (RS10 +2.65pp / RS50 +4.90pp) through a tape where SPY was −1.66% on 10 sessions and below its own 50-DMA, and only 2.01% off its 200-session high. With Waller openly backing a December hike and the momentum factor itself −22% off its high, dividend-quality ballast was the measured leadership. Taken as a Rule 5 core ballast re-deployment after 47 consecutive sessions below the 75% deployment floor, under the relaxed 1.5:1 core R:R floor.
+- Catalyst: pm-2026-11-10-SCHD (link to RESEARCH-LOG entry 2026-11-10)
+- Target: $41.00 (R:R 1.50:1 — `rr-relaxed: yes (Rule 5 redeploy)`, admitted at the 1.5:1 core floor)
+- Realized P&L: n/a (open position)
+- Fill provenance: placed by `market-open` as a day limit @ $35.44 (`ask × 1.001`, `MAX_ENTRY_SLIPPAGE_PCT=0.10`); filled **at the limit, not through it**, in one print at 14:35:54Z = 08:35:54 CT, ~58 min after the market-open run's 12×5s poll window closed. Row written by `daily-summary` per the bookkeeping gap midday 2026-11-10 flagged as owed; `entry_date` is resolved from the broker fill timestamp, not assumed.
+
+### 2026-11-10 — TRADE: SPLV side=buy qty=20
+- Entry: $77.65
+- Tier: core
+- Stop level: $70.245 (trailing 10%, placed this session — see STOP PLACED row below)
+- Sector: Multi-sector (broad S&P 500 low-volatility fund; look-through attribution)
+- Thesis: The strongest 10-session relative strength of any broad fund on the board (+4.72pp) paired with the lowest trailing volatility of any credible candidate (ATR14 1.39%) — above both DMAs on a rising 50-DMA (77.83 / 73.69 / 73.82, DMA50 up from 73.38), both RS legs positive (RS10 +4.72pp / RS50 +5.99pp), 2.04% off its 200-session high. A VIX that had collapsed 22% from 25.64 to 19.92 while the index sat below its 50-DMA is precisely the regime in which low-beta broad exposure outperforms cap-weighted. Second broad fill, and the one that made the two sector ideas behind it Rule-12 admissible. Rule 5 core ballast re-deployment under the relaxed 1.5:1 core R:R floor.
+- Catalyst: pm-2026-11-10-SPLV (link to RESEARCH-LOG entry 2026-11-10)
+- Target: $89.50 (R:R 1.50:1 — `rr-relaxed: yes (Rule 5 redeploy)`, admitted at the 1.5:1 core floor)
+- Realized P&L: n/a (open position)
+- Fill provenance: day limit @ $77.65 placed by `market-open`; filled at the limit in **two prints** (13sh then 7sh, both @ $77.65) at 14:35:54–14:37:45Z = 08:35:54–08:37:45 CT. Row written by `daily-summary` per midday's bookkeeping-gap note; `entry_date` from broker fill timestamps.
+
+### 2026-11-10 — TRADE: XLP side=buy qty=17
+- Entry: $90.72
+- Tier: core
+- Stop level: $81.9945 (trailing 10%, placed this session — see STOP PLACED row below)
+- Sector: Consumer Staples (sector SPDR)
+- Thesis: The second-strongest measured sector on the board and, besides health care, the only sector with both RS legs positive — confirmed independently by a +17.7% YTD rank second only to a rolling-over energy complex. Above both DMAs on a rising 50-DMA (90.89 / 85.00 / 83.87, DMA50 up from 84.15), RS10 +4.99pp and RS50 +8.99pp, 2.69% off its 200-session high, $1.74B/day. Staples lead when the market reprices a hike into a growth scare, which is what a 3.9% CPI print alongside Waller's hike talk would do. **Third fill, strictly conditional on both broad funds filling first:** Rule 12 was the tightest gate of the run — XLP's re-assertion cleared at 45.31% peak sector share of deployed with only 4.69pp of margin, and cleared *only* because SCHD and SPLV were reserved ahead of it. Rule 5 core ballast re-deployment under the relaxed 1.5:1 core R:R floor.
+- Catalyst: pm-2026-11-10-XLP (link to RESEARCH-LOG entry 2026-11-10)
+- Target: $104.52 (R:R 1.50:1 — `rr-relaxed: yes (Rule 5 redeploy)`, admitted at the 1.5:1 core floor)
+- Realized P&L: n/a (open position)
+- Fill provenance: day limit @ $90.72 placed by `market-open`; filled at the limit in one print at 14:35:54–14:37:45Z = 08:35:54–08:37:45 CT. Row written by `daily-summary` per midday's bookkeeping-gap note; `entry_date` from the broker fill timestamp.
+
+### 2026-11-10 — TRADE: XLV side=buy qty=8
+- Entry: $187.85125 (blended average across several prints; the working limit was $187.88)
+- Tier: core
+- Stop level: $169.6275 (trailing 10%, placed this session — see STOP PLACED row below)
+- Sector: Health Care (sector SPDR)
+- Thesis: The strongest relative strength on the entire 16-name board by a wide margin — RS10 +6.70pp and RS50 +12.37pp, both roughly double the next-best sector — and the destination of the rotation out of the AI-capex unwind. Above both DMAs on a rising 50-DMA (188.33 / 173.54 / 158.60, DMA50 up from 171.04), +20.60% over 200 sessions, 2.07% off its 200-session high, deepest sector liquidity on the board at $2.11B/day. Fourth fill, conditional on both broad funds filling; ended the run at 29.88% look-through sector share. Rule 5 core ballast re-deployment under the relaxed 1.5:1 core R:R floor.
+- Catalyst: pm-2026-11-10-XLV (link to RESEARCH-LOG entry 2026-11-10)
+- Target: $216.58 (R:R 1.50:1 — `rr-relaxed: yes (Rule 5 redeploy)`, admitted at the 1.5:1 core floor)
+- Realized P&L: n/a (open position)
+- Fill provenance: day limit @ $187.88 placed by `market-open`; filled **across several prints averaging $187.85125** — inside the limit, the only one of the four to average better than its cap — at 14:35:54–14:37:45Z = 08:35:54–08:37:45 CT. Blended average is the reason actual cost basis ($6,192.85) exceeded the $6,186.63 reserved by only +$6.22. Row written by `daily-summary` per midday's bookkeeping-gap note; `entry_date` from broker fill timestamps.
+
+### 2026-11-10 — STOP PLACED: SCHD trail 10%
+- Order ID: 28540b2f-e742-4b8a-9d5c-3643568fad15
+- Trigger reason: routine placement at market close (Rule 13)
+- Links to BUY: pm-2026-11-10-SCHD
+- Detail: 45sh GTC trailing_stop, `hwm` $35.805, initial `stop_price` $32.2245, `extended_hours=false`, `status=new`, expires 2027-02-08.
+
+### 2026-11-10 — STOP PLACED: SPLV trail 10%
+- Order ID: 110c6e6f-8e74-4985-85c6-2f2c312b359b
+- Trigger reason: routine placement at market close (Rule 13)
+- Links to BUY: pm-2026-11-10-SPLV
+- Detail: 20sh GTC trailing_stop, `hwm` $78.05, initial `stop_price` $70.245, `extended_hours=false`, `status=new`, expires 2027-02-08.
+
+### 2026-11-10 — STOP PLACED: XLP trail 10%
+- Order ID: 3584259f-d25c-48c8-adbb-b1084c2d402e
+- Trigger reason: routine placement at market close (Rule 13)
+- Links to BUY: pm-2026-11-10-XLP
+- Detail: 17sh GTC trailing_stop, `hwm` $91.105, initial `stop_price` $81.9945, `extended_hours=false`, `status=new`, expires 2027-02-08.
+
+### 2026-11-10 — STOP PLACED: XLV trail 10%
+- Order ID: aea77fec-7edf-4d2b-8761-c28ee4bbba6e
+- Trigger reason: routine placement at market close (Rule 13)
+- Links to BUY: pm-2026-11-10-XLV
+- Detail: 8sh GTC trailing_stop, `hwm` $188.475, initial `stop_price` $169.6275, `extended_hours=false`, `status=new`, expires 2027-02-08.
+
+## Nov 10 — EOD Snapshot (Day 143, Tuesday)
+**Portfolio:** $10,111.21 | **Cash:** $3,882.73 (38.40%) | **Day P&L:** +$35.63 (+0.35%) | **Phase P&L:** +$111.21 (+1.11%)
+
+| Ticker | Shares | Entry       | Close     | Day Chg | Unrealized P&L    | Stop                  |
+| ------ | ------ | ----------- | --------- | ------- | ----------------- | --------------------- |
+| SCHD   | 45     | $35.44      | $35.805   | +0.44%  | +$16.43 (+1.03%)  | $32.2245 (trail 10%)  |
+| SPLV   | 20     | $77.65      | $78.06    | +0.30%  | +$8.20 (+0.53%)   | $70.245 (trail 10%)   |
+| XLP    | 17     | $90.72      | $91.0856  | +0.22%  | +$6.22 (+0.40%)   | $81.9945 (trail 10%)  |
+| XLV    | 8      | $187.85125  | $188.45   | +0.06%  | +$4.79 (+0.32%)   | $169.6275 (trail 10%) |
+
+**Notes:** The flat book ended. All four of this morning's `market-open` limit orders filled between 08:35:54 and 08:37:45 CT — roughly an hour after that routine's 12×5s poll window closed with them still working, which is why it reported "4 orders placed, 0 filled" and why `midday` found a four-position book with no BUY rows behind it. Every fill came **at or inside the limit** (SCHD $35.44, SPLV $77.65 in two prints, XLP $90.72, XLV blended $187.85125 against a $187.88 cap), so Friday's unfilled slippage cap was a timing problem, not a pricing one; actual cost basis $6,192.85 vs $6,186.63 reserved, the +$6.22 being XLV's blend. This routine therefore did double duty: it converted all four `PENDING` lines into proper `### 2026-11-10 — TRADE: … side=buy` rows — the bookkeeping gap midday explicitly flagged as owed tonight, with `Tier: core`, `Sector:` and catalyst tags that tomorrow's Rule 10/12/16 evaluations need — and then placed the Rule 13 stops the book had been carrying none of (`orders open` was `[]` all day). **Four 10% GTC trailing stops are live**, order IDs recorded above, `extended_hours=false`, initial stops ~9.6% below the mark, so nothing could fire into today's close and the structural zero day-trade count is intact. The morning's research called for exactly this: a `TRADE` decision on four `tier: core` ideas, all `rr-relaxed: yes (Rule 5 redeploy)` under the relaxed 1.5:1 core floor after 47 sessions below the deployment band, with dividend-quality and low-volatility ballast ahead of staples and health care because Waller is backing a December hike into a 3.9% CPI print and the momentum factor is 22% off its high. The thesis paid on day one, modestly: the book is +$35.63 with all four names green, while SPY fell 0.52% (752.69 → 748.809) — **+0.87pp of daily alpha, of which +0.67pp is selection and +0.20pp is the cash drag turning helpful on a down day.** The whole book sits in a 0.3–1.0% band, the signature of a low-volatility ETF core rather than conviction. Shape is compliant on every count: ETF core **100% of deployed** vs the ≥45% floor, 0 of 3 satellite slots used, 4 of 6 position slots, peak look-through sector share 34.31% (staples) with health care 29.88%, largest single position 15.94% against the 20% cap. Deployment is **61.60%**, still below the Rule 5 75% floor — a deliberately partial restore, with $1,370.06 of restore budget unspent and one trade left in the Week 29 budget (4 of 5). `TRADING_MODE` remains unset and defaulted to `paper` for a sixty-eighth consecutive session, and Alpaca's own `daytrade_count` was unretrievable for an eleventh — both long-standing items for `weekly-review`, neither blocking. Zero breaches: no day trade, no stop moved down, no position near the −7% hard-close (the worst is 7.3pp above it), no sell attempted on any path.
