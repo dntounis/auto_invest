@@ -6310,3 +6310,78 @@ GILD's own Rule 16 evaluation is a clean no-flag: `decay --unrealized-pct 5.8043
 - PENDING 2026-11-10 SPLV: limit order placed @ $77.65 (20 sh), not yet filled as of market-open run
 - PENDING 2026-11-10 XLP: limit order placed @ $90.72 (17 sh), not yet filled as of market-open run
 - PENDING 2026-11-10 XLV: limit order placed @ $187.88 (8 sh), not yet filled as of market-open run
+
+## 2026-11-10 — Midday Run (Day 143, Tuesday, Week 29 Day 2)
+
+- midday 2026-11-10: 0 sells, 0 scale-outs, 0 stop-tightenings, 0 decay-flags. **NO-ACTION day
+  — all four held positions are same-day entries, so STEP 3's actionable set is empty** and the
+  routine took the documented "skip to STEP 6, then continue to STEP 7" branch, which still
+  writes this mandatory Rule 18 cadence token and the `Rule 14 DTC:` audit line below.
+  **All four of today's market-open limit orders FILLED after that routine's run.** market-open
+  (commit `6b3d4ab`) reported `4 orders placed, 0 filled` because its 12×5s poll ended with all
+  four still working; `activities 2026-11-10` now shows every one filled at **14:35:54–14:37:45Z
+  = 08:35:54–08:37:45 CT**, i.e. 55–60 min after that ~07:37 CT run and ~22 min after the 08:30
+  CT regular open. Fills came in **at the limit, not through it**: SCHD 45sh @ $35.44 (one fill),
+  XLP 17sh @ $90.72 (one fill), SPLV 20sh in two prints (13sh then 7sh, both @ $77.65), XLV 8sh
+  across several prints averaging **$187.85125**. So the slippage cap that went unfilled Friday
+  did fill today — the entries were simply slower than the poll window, not refused. Cost basis
+  **$6,192.85** actually deployed vs $6,186.63 reserved (+$6.22, XLV's blended average).
+- Rule 14 DTC: 0 (source=local) (sell attempted: no)
+  `alpaca.sh dtc` returned `{"daytrade_count": null, "source": "unavailable"}` — the paper
+  endpoint still omits the field — so the v3.3 broker-first local derivation ran. **Primary
+  evidence `activities` over the last 5 business days:** 2026-11-10 shows FILL/PARTIAL_FILL
+  rows for SCHD, SPLV, XLP, XLV **all `side=buy`, zero sells**; 2026-11-09, 11-06, 11-05 and
+  11-04 each returned `[]`. No symbol has both a buy and a sell fill on any one date, so
+  `activities_count = 0` under the v3.4 **round-trip** convention. **Corroboration TRADE-LOG:**
+  zero `TRADE`/`SCALE-OUT`/`ROTATE-EXIT` rows dated in that window, so `tradelog_count = 0`.
+  `DTC = max(0, 0) = 0`, `source=local`, the two sources **agree** so no disagreement URGENT is
+  owed, and the derived count is the structural 0 Rules 13/15 predict — no Rule 13/15 bypass
+  alarm. Gate genuinely exercised and passed (0 < 2); it blocked nothing because nothing was
+  sellable. `[conservative: M]` is **omitted** per v3.4 — no STEP 5 mid-loop local derivation
+  ran this session, so there is no raw sell count to report.
+- Rule 15 (same-day skip) is the **entire** reason this is a no-action day, and it is doing real
+  work rather than being vacuous as it was yesterday. Every held name has `entry_date == today`,
+  established from **broker fill timestamps**, not assumed: SCHD, SPLV, XLP, XLV all filled
+  2026-11-10. All four are therefore READ-ONLY — not closed, stops not adjusted — and are
+  dropped from the actionable set, leaving it empty. Consequently **nothing was evaluated for
+  Rule 7** (no actionable position can be ≤ −7%), **Rule 8** (no actionable winner; and no open
+  trailing stop exists on any name — `orders open` → `[]` — so no `OID`/`QTY`/`trail_percent`/
+  `hwm` exists and `sizing.py ladder` was not called), **Rule 16** (**no `DECAY-FLAG` row is
+  owed or written** — the chain has been dormant since the 2026-10-09 SOXX exit, and writing a
+  flag for a Rule-15-skipped same-day name would fabricate the first link of a consecutiveness
+  chain out of a position that was never eligible to be flagged), or **Rule 10** (no actionable
+  position, hence no sector tally; the doomed-sector scan was not run).
+- **P&L at 11:05 CT, from `positions.current_price` per STEP 3 (never `quote.ap`):** SCHD
+  $35.645 vs $35.44 → **+0.58%** (+$9.23); XLP $91.13 vs $90.72 → **+0.45%** (+$6.97); SPLV
+  $77.90 vs $77.65 → **+0.32%** (+$5.00); XLV $187.86 vs $187.85125 → **+0.00%** (+$0.07).
+  Total unrealized **+$21.27**. Every name green, the whole book inside a 0.6% band — the
+  signature of a four-ETF low-volatility core, not of conviction. **Nothing is near any
+  threshold in either direction:** the worst name is 7.00pp above the Rule 7 −7% hard-close and
+  the best is 3.42pp below the first ETF ladder rung (+4%), so this would have been a no-action
+  day on the numbers even if Rule 15 had not already made it one. Equity **$10,096.85** (from
+  $10,075.58 at yesterday's close, +$21.27 = exactly today's unrealized, so no realized P&L and
+  no fees), cash **$3,882.73**, `long_market_value` **$6,214.12** → deployment **61.54%**, still
+  **below the Rule 5 75% floor** as market-open intended (a deliberately partial restore);
+  `balance_asof` reads 2026-11-09. ETF core **100% of deployed** vs the ≥45% floor, **4 of 6**
+  position slots used, **0 of 3** satellite slots.
+- **BOOKKEEPING GAP — PENDING rows never converted to BUY rows; `daily-summary` owes four
+  tonight.** market-open wrote four `PENDING 2026-11-10 <TICKER>` lines, correctly, since it saw
+  no fills; the fills then landed minutes later with no routine scheduled between them and now.
+  So all four positions are held in Alpaca with **no `### 2026-11-10 — TRADE: <T> side=buy` row**
+  in this log. STEP 3's desync branch reads on its face as a `MEMORY-STATE DESYNC` warranting an
+  URGENT "manual review required" — **this is deliberately not logged as one, and the distinction
+  matters.** That branch exists to stop a routine *silently assuming* an `entry_date` when the
+  log cannot supply one, and it diagnoses the cause as "likely a failed market-open commit".
+  Neither applies: commit `6b3d4ab` succeeded, the PENDING rows document all four entries with
+  size, limit and `tier: core`, and `entry_date` was resolved **positively from broker fill
+  timestamps**, which are stronger evidence than a log row. Raising an URGENT claiming manual
+  review on four fully-documented, broker-confirmed, Rule-15-protected entries would be a false
+  alarm, and the gating outcome is identical either way — non-actionable. **But the metadata gap
+  is real and bites tomorrow, not today:** tomorrow these names are aged and actionable, and
+  Rule 16 needs a `Tier:` field, Rule 10 needs `Sector:`, and Rule 8's `SO_DONE` count needs a
+  position row to count against. midday is not the author of BUY rows, so it has not invented
+  four. `daily-summary` tonight MUST convert each PENDING line into a proper BUY row —
+  **SCHD 45sh @ $35.44, SPLV 20sh @ $77.65, XLP 17sh @ $90.72, XLV 8sh @ $187.85125**, all
+  `Tier: core`, catalysts `pm-2026-11-10-{SCHD,SPLV,XLP,XLV}`, sectors per the look-through
+  attribution in today's market-open row — alongside the Rule 13 trailing stops it already owes
+  on all four (none exists yet; `orders open` → `[]`).
