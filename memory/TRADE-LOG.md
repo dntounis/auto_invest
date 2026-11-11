@@ -6465,3 +6465,148 @@ GILD's own Rule 16 evaluation is a clean no-flag: `decay --unrealized-pct 5.8043
 | XLV    | 8      | $187.85125  | $188.45   | +0.06%  | +$4.79 (+0.32%)   | $169.6275 (trail 10%) |
 
 **Notes:** The flat book ended. All four of this morning's `market-open` limit orders filled between 08:35:54 and 08:37:45 CT — roughly an hour after that routine's 12×5s poll window closed with them still working, which is why it reported "4 orders placed, 0 filled" and why `midday` found a four-position book with no BUY rows behind it. Every fill came **at or inside the limit** (SCHD $35.44, SPLV $77.65 in two prints, XLP $90.72, XLV blended $187.85125 against a $187.88 cap), so Friday's unfilled slippage cap was a timing problem, not a pricing one; actual cost basis $6,192.85 vs $6,186.63 reserved, the +$6.22 being XLV's blend. This routine therefore did double duty: it converted all four `PENDING` lines into proper `### 2026-11-10 — TRADE: … side=buy` rows — the bookkeeping gap midday explicitly flagged as owed tonight, with `Tier: core`, `Sector:` and catalyst tags that tomorrow's Rule 10/12/16 evaluations need — and then placed the Rule 13 stops the book had been carrying none of (`orders open` was `[]` all day). **Four 10% GTC trailing stops are live**, order IDs recorded above, `extended_hours=false`, initial stops ~9.6% below the mark, so nothing could fire into today's close and the structural zero day-trade count is intact. The morning's research called for exactly this: a `TRADE` decision on four `tier: core` ideas, all `rr-relaxed: yes (Rule 5 redeploy)` under the relaxed 1.5:1 core floor after 47 sessions below the deployment band, with dividend-quality and low-volatility ballast ahead of staples and health care because Waller is backing a December hike into a 3.9% CPI print and the momentum factor is 22% off its high. The thesis paid on day one, modestly: the book is +$35.63 with all four names green, while SPY fell 0.52% (752.69 → 748.809) — **+0.87pp of daily alpha, of which +0.67pp is selection and +0.20pp is the cash drag turning helpful on a down day.** The whole book sits in a 0.3–1.0% band, the signature of a low-volatility ETF core rather than conviction. Shape is compliant on every count: ETF core **100% of deployed** vs the ≥45% floor, 0 of 3 satellite slots used, 4 of 6 position slots, peak look-through sector share 34.31% (staples) with health care 29.88%, largest single position 15.94% against the 20% cap. Deployment is **61.60%**, still below the Rule 5 75% floor — a deliberately partial restore, with $1,370.06 of restore budget unspent and one trade left in the Week 29 budget (4 of 5). `TRADING_MODE` remains unset and defaulted to `paper` for a sixty-eighth consecutive session, and Alpaca's own `daytrade_count` was unretrievable for an eleventh — both long-standing items for `weekly-review`, neither blocking. Zero breaches: no day trade, no stop moved down, no position near the −7% hard-close (the worst is 7.3pp above it), no sell attempted on any path.
+
+## 2026-11-11 — Midday Run (Day 144, Wednesday, Week 29 Day 3)
+
+- midday 2026-11-11: 0 sells, 0 scale-outs, 0 stop-tightenings, 4 decay-flags. **NO-ACTION
+  day, but for the first time in this book's life a *substantive* one** — all four positions
+  aged past Rule 15 overnight, so STEP 3's actionable set is **4 of 4** rather than empty, and
+  every sell-side rule was genuinely evaluated against live prices and live sizer output
+  instead of being skipped for want of an eligible position. Rule 7 (no name within 6.8pp of
+  the −7% hard-close), Rule 8 (both winners far below the first ETF rung, `target_trail_pct`
+  null on all four, `scaleouts_due` 0), Rule 16 (all four *outperforming* SPY on 10 sessions,
+  `flag=0 rotate=0 suppressed=0`, no sector out of the leading quadrant) and Rule 10 (no exit
+  row inside the lookback, so no doomed sector) each returned no action on its own merits.
+- Rule 14 DTC: 0 (source=local) (sell attempted: no)
+  `alpaca.sh dtc` → `{"daytrade_count": null, "source": "unavailable"}` — **twelfth consecutive
+  session the broker omits its own field**, a standing instrumentation degradation escalated to
+  `weekly-review` for a tenth session — so the v3.3 broker-first local derivation ran.
+  **Primary evidence `activities` over the last 5 business days:** 2026-11-11 returns a single
+  `FEE`/`CAT` row (−$0.01, the CAT fee on yesterday's 6 trades) and **zero fills of either
+  side**; 2026-11-10 returns 6 FILL/PARTIAL_FILL rows, **all `side=buy`** (SPLV 13+7, XLP 17,
+  SCHD 45, XLV 7+1), zero sells; 2026-11-09, 11-06 and 11-05 each `[]`. No symbol carries both
+  a buy fill and a sell fill on any one calendar date, so `activities_count = 0` under the v3.4
+  **round-trip** convention — note this is exactly the case the v3.4 fix addressed: the old
+  count-every-sell convention would also have read 0 here, but only because nothing sold at
+  all. **Corroboration TRADE-LOG:** header-anchored scan for `side=sell` / `SCALE-OUT` /
+  `ROTATE-EXIT` rows dated 2026-11-05…2026-11-11 returns **0**, so `tradelog_count = 0`.
+  `DTC = max(0, 0) = 0`, the two sources **agree** (no disagreement URGENT owed), and the
+  derived count is the structural 0 Rules 13/15 predict — no Rule 13/15 bypass alarm.
+  Gate genuinely exercised and passed (0 < 2); unlike yesterday it did not merely pass
+  vacuously — it was the pre-flight for a batch that four live positions were eligible for.
+  `[conservative: M]` **omitted** per v3.4: no STEP 5 mid-loop local derivation ran, because no
+  sell was placed on any path, so there is no raw sell count to report.
+- **Rule 15 no longer the reason for inaction, and the bookkeeping gap is closed.** Yesterday's
+  run was a no-action day *solely* because every name was same-day; `daily-summary` then
+  converted all four `PENDING` lines into proper `### 2026-11-10 — TRADE: … side=buy` rows with
+  `Tier: core`, `Sector:` and `pm-2026-11-10-*` catalysts (commit `ce8ef4f`), exactly the debt
+  midday flagged as owed. So `entry_date` for all four resolves to **2026-11-10 from a log BUY
+  row** — no desync branch, no URGENT, no assumption from broker timestamps needed — and
+  `2026-11-10 < 2026-11-11`, making **SCHD, SPLV, XLP and XLV all actionable**. All four also
+  now carry live Rule 13 GTC trailing stops (`orders open` → 4 rows, 10% each), so `hwm` exists
+  on every name and `sizing.py ladder` was called **with** `--hwm-pct` on all four, not in the
+  degraded no-stop mode yesterday forced.
+- **P&L at midday, from `positions.current_price` per STEP 3 (never `quote.ap`):**
+  SCHD $35.825 vs $35.44 → **+1.09%** (+$17.33); SPLV $77.80 vs $77.65 → **+0.19%** (+$3.00);
+  XLP $90.6001 vs $90.72 → **−0.13%** (−$2.04); XLV $187.57 vs $187.85125 → **−0.15%**
+  (−$2.25). Total unrealized **+$16.04**. The book gave back $19.59 of yesterday's $35.63 —
+  every name is red *on the day* (SCHD −0.01%, SPLV −0.37%, XLP −0.47%, XLV −0.69%) while
+  still at or near flat *vs entry*, which is the AI-reprieve rotation this morning's research
+  called: CoreWeave's beat put Nasdaq back in front and defensive ballast underperforms a
+  rising tape. That is the mild-underperformance case, not a loss — **SPY itself is only
+  $748.81 → $760.50 over the same stretch**, so the book is lagging a bounce, not breaking.
+  Equity **$10,091.61** (from $10,111.21 at yesterday's close, −$19.60), cash **$3,882.72**,
+  `long_market_value` **$6,208.89** → deployment **61.52%**, still **below the Rule 5 75%
+  floor**; `balance_asof` reads 2026-11-10. ETF core **100% of deployed** vs the ≥45% floor,
+  **4 of 6** position slots, **0 of 3** satellite slots, largest position SCHD at 15.98% of
+  equity against the 20% cap.
+- **Rule 7 (hard-close) — evaluated on all 4, fired on none.** Worst name is XLV at −0.15%,
+  i.e. **6.85pp above** the −7% threshold; XLP −0.13% is 6.87pp above. Nothing is remotely
+  close, and no position has ever traded below its entry by more than a fraction of a percent.
+- **Rule 8 (profit ladder) — evaluated on all 4 with HWM, fired on none.** `LADDER_TIER = etf`
+  for every name, **derived from the instrument itself** (SCHD = broad dividend-quality fund,
+  SPLV = broad low-volatility fund, XLP and XLV = sector SPDRs) and **not** from the
+  `core == etf` shortcut — the v3.3 distinction is vacuous today only because all four happen
+  to be both, and this is recorded as instrument-derived, **not** `(fallback)`. `TIER = core`
+  (role) on all four, from each BUY row. HWM-gains off the live stops' `hwm`: SCHD $35.87 →
+  **+1.21%**, SPLV $78.11 → **+0.59%**, XLP $91.12 → **+0.44%**, XLV $189.20 → **+0.72%**.
+  Every call returned `{"tier": "etf", "target_trail_pct": null, "scaleouts_due": 0}` — the
+  first ETF rung is **+4%**, so the best name (SCHD, +1.21% peak) is **2.79pp short of it**.
+  No scale-out owed, hence `sizing.py scaleout` was **not** called (no `SCALEOUTS_DUE` to pass
+  and no `SO_DONE` to count), and no `SCALE-OUT-DEFERRED` row is owed either. No tighten: with
+  `target_trail_pct` null there is nothing to compare against the current 10% trails, and
+  Rule 9 forbids raising a trail regardless.
+- **Rule 16 (momentum-decay) — evaluated on all 4, `flag=0 rotate=0 suppressed=0` on all 4.**
+  10-session returns from `alpaca.sh bars <T> 1Day 11` (last close vs the close 10 bars
+  earlier, 2026-10-28 → 2026-11-11): **SPY −1.53%** (772.31 → 760.50) against **XLV +4.37%**
+  (179.72 → 187.57), **XLP +4.33%** (86.84 → 90.60), **SPLV +3.65%** (75.07 → 77.81),
+  **SCHD +2.09%** (35.09 → 35.825). **Every position beats SPY by 3.6–5.9pp on the decay
+  window** — the opposite of the lag the rule hunts for — so `sizing.py decay` returned
+  `reason=no_flag` for all four even before the below-entry test. `PRIOR_FLAG = 0` on all four:
+  the most recent `DECAY-FLAG` rows in this log are **SOXX 2026-10-09** and **GILD 2026-10-02**,
+  no row has ever existed for any of these four tickers, and the chain has been dormant for 23
+  sessions. **STEP 4's if/else-if chain resolved at branch 4 (no action) for every name** —
+  branch 1 did **not** fire because no held sector has left the leading momentum quadrant
+  (today's research has XLV at RS10 +7.98 / RS50 +13.17 and XLP at +7.02 / +9.81, both above
+  both DMAs on a **rising** 50-DMA, the two strongest sectors on a 20-ticker board; SCHD
+  +4.59/+5.52 and SPLV +6.15/+6.95 likewise), branch 2 did not fire because `suppressed=0`
+  (the melt-up guard never armed — it needs SPY 10-session **> +3.0%** and SPY is **−1.53%**,
+  so the guard is 4.53pp from arming even though both losers' drawdowns are indeed shallower
+  than the −2.0% floor), and branch 3 did not fire because `rotate=0`.
+- **Melt-up guard explicitly did not arm, and the distinction matters for the go-live
+  criterion.** XLP (−0.13%) and XLV (−0.15%) sit well inside the −2.0% drawdown floor, which
+  is half of what branch 2 needs — but the benchmark leg fails decisively (**SPY −1.53% vs the
+  +3.0% threshold**). So these are shallow losers in a *falling* benchmark that they are
+  nonetheless **beating by 4.5pp**, not shallow losers failing to carry a fast tape. No
+  `DECAY-SUPPRESSED` row is owed; none exists anywhere in this log to date, so **no
+  `since_suppressed` field is written on any row below** (there is no prior-trading-day
+  suppression for any ticker), and `rule16.shallow_rotations` stays at 0 with nothing to
+  classify.
+- **Rule 10 (sector-kill) — doomed-sector scan run, zero doomed sectors.** Lookback is the
+  shorter of the 20 most recent EXIT rows or the last 30 calendar days; 30 days back is
+  **2026-10-12**, and the most recent `side=sell` row in this log is **SOXX 2026-10-09**, 33
+  calendar days / 23 sessions ago. **The 30-day window therefore contains zero exit rows**, so
+  no sector can show two consecutive negative realized P&Ls and the sector tally is empty
+  before it starts. Held sectors for the record: Multi-sector (SCHD, SPLV — look-through),
+  Consumer Staples (XLP), Health Care (XLV); none is doomed. Evaluated once per unique sector,
+  not once per position, per the v3 note.
+- **Standing items carried, neither blocking:** `TRADING_MODE` **unset → defaulted to `paper`**
+  for a **sixty-ninth** consecutive session (the guard's own default clause; the env sweep's
+  `MISSING` is the *unset* case it defaults, not an invalid value, which would be a STOP, and
+  the default is taken from the documented rule, never inferred from the endpoint).
+  `ALPACA_ENDPOINT` = `https://paper-api.alpaca.markets/v2` contains `paper-api.alpaca.markets`
+  ✓ — mode and endpoint agree in both directions. `TRADING_ENABLED=true` ✓. `MODE_LABEL` =
+  `(paper)`, no `🔴 LIVE` prefix owed on any message. No `.env` created, written or sourced.
+  **STEP 7 is silent by design** — zero actions taken and `DTC = 0 < 2`, and none of the six
+  prefix conventions (hard-close, sector-kill, rotate, scale-out, stop-update, abort) has a
+  triggering event, so no Telegram is sent and `HEARTBEAT.md` is unchanged this run (committed
+  anyway to keep the commit atomic, per STEP 8).
+- **Note for `daily-summary` tonight:** nothing is owed. All four BUY rows exist, all four
+  Rule 13 stops are live and were placed yesterday (IDs `28540b2f…` SCHD, `110c6e6f…` SPLV,
+  `3584259f…` XLP, `aea77fec…` XLV), no position was opened today, so STEP 4 has no new stop to
+  place; the Rule 18 cadence token above is written, so the midday catch-up sweep must **not**
+  fire and must not write duplicate `DECAY-FLAG` rows over the four below.
+
+### 2026-11-11 — DECAY-FLAG: SCHD flag=0
+- unrealized +1.09% | 10-session pos +2.09% vs SPY −1.53% | prior_flag=0 | rotate=0
+- Above entry and beating SPY by 3.62pp — `reason=no_flag`, `suppressed=0`. Sector (multi-sector
+  dividend quality, RS10 +4.59 / RS50 +5.52) in the leading quadrant, so branch 1 is silent too.
+
+### 2026-11-11 — DECAY-FLAG: SPLV flag=0
+- unrealized +0.19% | 10-session pos +3.65% vs SPY −1.53% | prior_flag=0 | rotate=0
+- Above entry and beating SPY by 5.18pp — `reason=no_flag`, `suppressed=0`. Sector (broad low
+  volatility, RS10 +6.15 / RS50 +6.95, above both DMAs on a rising 50-DMA) leading.
+
+### 2026-11-11 — DECAY-FLAG: XLP flag=0
+- unrealized −0.13% | 10-session pos +4.33% vs SPY −1.53% | prior_flag=0 | rotate=0
+- Below entry by 0.13% but **beating SPY by 5.86pp on the decay window**, so no lag leg and
+  `reason=no_flag`. Melt-up guard did **not** arm (`suppressed=0`): the drawdown is inside the
+  −2.0% floor but SPY's −1.53% is 4.53pp below the +3.0% benchmark threshold. Consumer Staples
+  still the #2 sector on the board (RS10 +7.02 / RS50 +9.81, rising 50-DMA) — branch 1 silent.
+
+### 2026-11-11 — DECAY-FLAG: XLV flag=0
+- unrealized −0.15% | 10-session pos +4.37% vs SPY −1.53% | prior_flag=0 | rotate=0
+- Below entry by 0.15% but **beating SPY by 5.90pp**, so `reason=no_flag`, `suppressed=0` (same
+  benchmark-leg failure as XLP). Health Care is the strongest sector on the 20-ticker board
+  (RS10 +7.98 / RS50 +13.17, above both DMAs, rising 50-DMA) — emphatically in the leading
+  quadrant, so branch 1 does not fire.
