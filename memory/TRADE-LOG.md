@@ -6677,3 +6677,93 @@ GILD's own Rule 16 evaluation is a clean no-flag: `decay --unrealized-pct 5.8043
 | XLV    | 8      | $187.85125  | $188.48   | -0.25%  | +$5.03 (+0.34%)   | $171.594 (trail 10%)  |
 
 **Notes:** **Two of four routines failed to fire, and for the second session running the one that failed was `market-open`.** The morning's research was again unambiguous — a `TRADE` decision with three fully-gated `tier: core` ideas (RSP, VIG, XLF), the Week-29 cap binding at 4 of 5 narrowing it to exactly one order: **`pm-2026-11-12-RSP`, 7 shares @ $222.65 limit, $1,558.55, 15.34% of equity**, which would have taken the book to 5 of 6 positions and **77.13% deployed, inside the Rule 5 75–85% band for the first time in forty-nine sessions**. It was never placed. `midday` also never ran. Rule 18's sweep fired twice, two URGENT Telegrams went out, and both placeholders are written above. That is **three cron skips in four sessions** (pre-market 11-09, market-open 11-11, market-open + midday 11-12), and the second consecutive day a planned, deployment-restoring entry was lost to the scheduler rather than to the strategy. **Zero trades today (0 opened, 0 closed)**, Week-29 budget still **4 of 5**, deployment **61.65%** — a **forty-ninth** consecutive session below the floor. The midday catch-up was run here in full per Rule 18 v3.3 and found **nothing owed on any path**: `DTC = 0` derived broker-first from five business days of `activities` (zero sells anywhere in the window, corroborated by a TRADE-LOG whose last sell is SOXX on 10-09), all four positions aged past Rule 15 and genuinely evaluated, and every rule declined on its own merits — worst name 7.34pp above the −7% hard-close, best HWM peak (SCHD +2.34%) 1.66pp short of the first +4% ETF rung, **all four beating SPY by 2.7–5.0pp on the decay window**, zero exit rows inside the Rule 10 lookback, melt-up guard unable to arm on either leg. No sell, no scale-out, no tightening, no suppression — only the four `DECAY-FLAG` rows that keep tomorrow's consecutiveness chain honest. **No stops were placed tonight and none was owed:** no position was opened today, and all four Rule 13 GTC trailing stops are live and ratcheting — SCHD's `hwm` lifted to $36.27 (stop $32.643), SPLV's to $78.8394 ($70.95546), XLP's to $92.15 ($82.935), XLV's to $190.66 ($171.594) — so **zero unprotected positions**, and no trail was moved down. The tape: SPY −0.35% (759.81 → 757.16) against the book's +0.01%, so **+0.36pp of daily alpha**, +0.23pp selection and +0.13pp cash drag turning helpful on a down day — the mirror image of Wednesday, and the third straight session in which the 38% cash pile has set the sign of the result. The defensive ballast did its job on a red tape; the problem is there is not enough of anything. Shape remains compliant on every count: ETF core **100% of deployed** vs the ≥45% floor, 0 of 3 satellite slots, 4 of 6 position slots, largest position SCHD at **15.99%** of equity against the 20% cap. `TRADING_MODE` unset → defaulted to `paper` for a **seventy-first** consecutive session (the guard's documented default clause, never inferred from the endpoint, which reads `paper-api.alpaca.markets` and agrees in both directions), and Alpaca's `daytrade_count` was unretrievable for a **thirteenth** — both standing `weekly-review` items, neither blocking. Zero money-moving breaches: no day trade, no stop lowered, no name near the hard-close, no sell on any path. For the second day in a row the finding is not the strategy but the scheduler, and it is now worse: on 11-11 one routine was missing, today two were.
+
+## 2026-11-13 — Market-Open Run (Day 146, Friday, Week 29 Day 5)
+
+- market-open 2026-11-13: 1 order placed, 1 filled. Pre-market Decision=TRADE.
+  **The flat-book-then-stalled-redeployment run ends: `market-open` fired, and for the
+  first time in three sessions the planned entry was actually placed.** Mode guard
+  (v3.4): `TRADING_MODE` **unset → defaults to `paper`** per the guard's own default
+  clause (the env sweep prints it `MISSING`, which is precisely the *unset* case the
+  guard documents a default for — never inferred from the endpoint); `ALPACA_ENDPOINT`
+  = `paper-api.alpaca.markets`, so the guard passes in both directions.
+  `TRADING_ENABLED=true`. `MODE_LABEL=(paper)`. **Seventy-third consecutive session on
+  the unset default** — a standing `weekly-review` item under DECIDED G, not blocking.
+  **STEP 0 (Rule 18):** header-anchored `grep -nE '^#+ .*CATCH-UP PENDING|^- CATCH-UP
+  PENDING'` over the file returns **zero** real marker rows, so there was nothing owed
+  from a missed `midday` and STEP 0 executed no action of any kind — hence the real
+  numeric `Rule 14 DTC` token below is a buy-side figure only, and no
+  `DTC_CONSERVATIVE` bracket is written (STEP 0 ran no local derivation this run).
+  **STEP 2 snapshot:** equity **$10,121.50**, `long_market_value` **$6,238.78** →
+  deployment **61.64%**, cash **$3,882.72**, `HEADROOM` **$2,364.50**, 4 positions
+  (SCHD/SPLV/XLP/XLV, all `tier: core`), `CORE_MV` $6,238.78 = **100% of deployed**,
+  **0 of 3 satellite slots used**. Idempotency (DECIDED H): `orders` returns only the
+  four Nov 10 GTC trailing stops and **no BUY of any symbol today**, so no candidate
+  was skipped as a double-buy. **Gate results on all three ideas — all three passed,
+  only one could be placed:** `pm-2026-11-13-RSP` ✓ 5 of 6 positions · ✓ 5 of 5 weekly
+  trades · ✓ 13.04% ≤ 20% · ✓ $1,320.22 ≤ $3,882.72 cash · ✓ ETF core 100% ≥ 45% · ✓ 0
+  satellites in any sector · ✓ peak sector share 20.63% (staples, look-through
+  attribution per the convention at line 6226 — a broad fund is **not** charged wholly
+  to one GICS sector, which would read RSP at 100% and refuse the most
+  sector-diluting instrument on the board) · ✓ deployment 74.68% ≤ 85% · ✓ DTC 0 ≤ 1 ·
+  ✓ macro-window n/a (core) · ✓ **v3.4 stale-trigger re-check: the idea carries
+  `rr-relaxed: yes (Rule 5 redeploy)` and this run's `redeploy` recomputation returns
+  `triggered: true`, so the 1.5:1 admission still stands at market-open** — the entire
+  reason that check exists, and it held. `pm-2026-11-13-VIG` and `pm-2026-11-13-XLF`
+  **passed every gate and were not placed: the Week-29 budget bound at
+  `min(passing_ideas=3, weekly_cap_remaining=1) = 1`**, not a gate refusal. Rule 13:
+  **no trailing stop placed here** — RSP is unprotected until `daily-summary` places it
+  at 15:00 CT, which is the rule working, not a gap. Rule 15: RSP was opened today, so
+  it is same-day and `midday` must filter it out. Rule 14: buy-side only, no sell was
+  initiated on any path.
+- **Rule 5 REDEPLOY: armed** (deployment 61.64%, 50 sessions below band, restore
+  $1352.35, R:R floor 1.5) — relaxed spend $1320.22 of $1352.35.
+- Rule 14 DTC: 0 (source=local) — buy-side buffer check only, no sells this run.
+  `alpaca.sh dtc` returned `{"daytrade_count": null, "source": "unavailable"}` for a
+  **fifteenth** consecutive session (the paper endpoint omits the field), so the count
+  is derived locally per Rule 14(b): `alpaca.sh activities` returns **`[]`** — zero
+  fills of any side across the 5-business-day window — and the TRADE-LOG corroborant
+  finds no same-day buy+sell pair, its last sell of any kind being the SOXX rotate-exit
+  of 2026-10-09. `max(0, 0) = 0`. Note that `source=unavailable` is **not**
+  `source=error`: the HTTP call succeeded and the field is simply absent, which is the
+  case the local derivation exists for. Had it been `error` or `none` this routine would
+  still have permitted the buy (a buy cannot itself create a day trade, Rule 13 defers
+  the stop to close) while logging the degraded state — the permissiveness is buy-side
+  only and STEP 0's catch-up sells would have hard-aborted on the same token.
+- **Finding for `weekly-review` — the v3.4 restore clamp and integral share counts
+  interact to land *just under* the floor it is meant to restore to, and it did so
+  today.** This run sized **6 shares / $1,320.22 / 13.04%**, where pre-market planned
+  **7 shares / $1,545.04 / 15.26%**. Neither is wrong: pre-market sized against the
+  full `--headroom 2364.06` and the v3.4 Rule 5 restore clamp is explicitly
+  *market-open STEP 5c's* job, so STEP 5c correctly bound
+  `IDEA_HEADROOM = min(HEADROOM $2,364.50, RESTORE_REMAINING $1,352.35) = $1,352.35`
+  for this `rr-relaxed` core idea and the sizer returned `clamped=headroom`
+  (unclamped it returns `{"shares": 7, "cost": 1540.21, "clamped": "cap"}` — logged
+  here for audit, **not** used). The mechanical consequence: `restore_dollars`
+  $1,352.35 is by construction the clip landing deployment on *exactly* 75.00%, so the
+  largest whole-share clip that **fits inside** it necessarily lands **below** 75% —
+  **74.68%, short of the Rule 5 floor by 0.32pp** — while the next share up lands
+  76.86%, inside the band with cushion. On a $220 instrument one share is 2.17pp of
+  equity, so the floor is simply not reachable from below by an integral clip. The
+  clamp binds downward by design ("sized only to restore the band", "never exceed it
+  purely to fill headroom"), so **6 shares is the rule as written and was placed
+  without override** — but the arithmetic means the Rule 5 trigger will **re-arm on
+  Monday into a fifty-first below-floor session**, having spent 97.6% of the restore
+  budget to get 0.32pp short. The conflict is real and worth a rule change: a
+  `restore_dollars` bound that rounds to the *nearest* whole share, or that permits the
+  single share crossing the floor, would have landed the book in-band today. **Proposed,
+  not applied** — DECIDED G reserves strategy changes for `weekly-review`, which runs
+  at 16:00 CT today.
+- Week-29 budget now **5 of 5 used**; no further entry is possible before the cap
+  resets Monday. Book after fill: **5 of 6 positions, $7,559.09 deployed (74.68%),
+  100% ETF core, 0 of 3 satellites, cash $2,562.50**.
+
+### 2026-11-13 — TRADE: RSP side=buy qty=6
+- Entry: $220.036667 (avg fill; day-TIF limit placed at $220.25 = live ask $220.03 + 0.10% `MAX_ENTRY_SLIPPAGE_PCT`, filled inside the limit)
+- Tier: core
+- Stop level: pending (placed at daily-summary T 15:00 CT per Rule 13)
+- Sector: Multi-sector (broad equal-weight S&P 500 fund, ~0.2% per name; look-through attribution per the convention at line 6226, not attributed wholly to one GICS sector)
+- Thesis: The book's one measured deficiency is broad-market beta, and RSP is the only instrument that supplies it without buying the thing that broke this week. All four prior holdings are defensive and duration-sensitive (dividend, low-vol, staples, health care) at the moment the 10-yr has jumped ~13bp to ~5.125%; equal weight at ~0.2% a name sidesteps both that duration concentration and the 49.9%-Info-Tech tilt of the momentum factor that the Jensen Huang resignation has just repriced. Above all three DMAs ($220.72 / 214.78 / 207.59) with the 50-DMA now rising (214.78 vs 214.75 ten sessions ago — yesterday's sole quality caveat, resolved), both RS legs positive (RS10 +1.90pp / RS50 +2.15pp) against an SPY negative on both windows (ret10 −1.59%, ret50 −0.80%), 1.55% off its 200-session high, +15.60% over 200 sessions, ATR14 1.34%, and $2,290M/day — the deepest liquidity of the three candidates by nearly 8×, which was also the best guard against a stale post-PPI open quote. Honest caveat carried from research: RS10 +1.90pp is the weakest of the three candidates and the 50-DMA's rise is $0.03; RSP won the tie-break on construction and liquidity, not on strength of trend.
+- Catalyst: pm-2026-11-13-RSP (link to RESEARCH-LOG entry). October PPI printed at 08:30 ET, an hour before this entry was placed, so the order is post-print by construction (T+0, not T+1) — a materially better setup than the prior two sessions' unfilled attempts.
+- Target: $253.83 (R:R 1.50:1 — admitted under the Rule 5 re-deployment relaxation, `rr-relaxed: yes`, which lowers the core floor to 1.5:1; satellites remain at 2:1 in every regime)
+- Realized P&L: n/a (open position)
