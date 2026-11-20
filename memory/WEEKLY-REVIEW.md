@@ -3127,3 +3127,217 @@ Trial-window scorecard, `python3 scripts/metrics.py scorecard --file memory/METR
 ### Overall Grade: C+
 
 **Why C+ and not better:** the strategy did everything asked of it — five fully-gated entries, five fills at or inside their limits, five live GTC trails, zero unprotected positions, zero money-moving breaches, positive selection alpha for the first time in the trial, and every position green at week end. **Why C+ and not worse:** the bot still lost to the benchmark by **1.71pp** in a +2.56% week, the deployment floor was still missed, and a quarter of the week's routine slots never fired — taking two previously clean go-live criteria down with them. The grade is for a week in which the trading system proved it works and the scheduling around it proved it does not.
+
+## Week ending 2026-11-20
+
+*(Week 30. Prior entry is `## Week ending 2026-11-13`; the series carries holes at `2026-10-23` and `2026-11-05`, documented in the entries either side of them.)*
+
+### Stats
+| Metric | Value |
+|--------|-------|
+| Starting portfolio | $10,162.04 (prior review's recorded `account.equity`) |
+| Ending portfolio | $9,756.72 (`account.equity`) |
+| Week return | **−$405.32 (−3.9886%)** |
+| S&P 500 week | **−8.3982%** (SPY $754.21 Nov 13 → $690.87 Nov 20, Alpaca bars) |
+| Bot vs S&P | **+4.4096pp** price-chained from the two legs above |
+| Alpha vs SPX (v3) | **+4.4096pp (headline) — the largest weekly alpha of the trial, and the first positive one since Week 21.** The book fell 3.99% into an 8.40% index decline |
+| Cash drag / selection (v3.4) | **rollup as recorded: cash drag +1.7348pp · selection alpha +3.5021pp** (sum `cum_alpha_pp +5.2369`). **Both legs are positive for the first time in the trial** — being 16–25% in cash *helped* on a down tape, and the defensive core beat it on top. **+2.4382pp of the +3.5021pp of selection is one session**, Friday 2026-11-20: SPY −3.02%, the book −0.08%. The rollup's +5.2369pp runs 0.83pp above the price-chained +4.4096pp; the gap is the intraday-mark seam in finding (a) below, not a disagreement about the week |
+| Core/Satellite P&L (v3) | **core −$391.12 / satellite −$51.12** = **−$442.24**, reconciling to the −$442.25 move off the Monday-restated Nov 13 basis ($10,198.97) to the cent (±$0.01). **Per-capital: core −5.1217% on $7,636.48 · satellite −5.3828% on $949.68** — the satellite trailed the core by **0.26pp**, but on three sessions of life against the core's five. **First computable split in five weeks** (the sleeve was empty, not zero, in W26–W29), so the 3-consecutive-week satellite-sleeve test has a sample of **one** and does not fire |
+| Trades | **1** (W:0 / L:0 / open:1) — `pm-2026-11-18-HAS`, 8sh @ $118.71, `Tier: satellite`, Consumer Discretionary. **First single-stock satellite fill since the Oct 09 SOXX exit, 27 sessions.** Week-30 cap **1 of 5** |
+| Win rate | n/a (no trade closed; 30 weeks, 0 closed trades in the last 6) |
+| Best trade | n/a realized. Best unrealized: **XLP −0.27%** |
+| Worst trade | n/a realized. Worst unrealized: **XLV −5.59%**, 1.41pp clear of the −7% hard-close |
+| Profit factor | n/a (no realized P&L) |
+| daytrade_count | **0 (source=local, derived — field absent from the paper `/account` payload) [conservative: 0]**; delta vs prior recorded week **0 -> 0 (source=local) [conservative: 0]**, no change. **151 trading days / 30 weeks at zero day trades** |
+
+**Benchmark provenance (v3.3).** `prior_close` **$754.21 (Nov 13)** taken from the `## Week ending 2026-11-13` entry's cached `last_close` — **not** re-queried. This week's `bars SPY 1Day 10` returns **$754.37** for the same Nov 13 bar, a **+$0.16 retroactive adjustment**; using it would read −8.4176% instead of −8.3982%, a 1.9bp swing, and the cached link is what the rule requires. `last_close` **$690.87 (Nov 20)** from this week's `bars SPY 1Day 10`, last bar asserted dated 2026-11-20 ✓. No web-sourced index level is quoted; none is needed. **Note for next week: cache `last_close = $690.87 (2026-11-20)`.**
+
+**Rule 14 resolution (one resolution, used for both the pre-flight and the delta).** `alpaca.sh dtc` → `{"daytrade_count": null, "source": "unavailable"}` — a **successful** call with the field simply absent, which v3.4 routes to the local derivation; `error` is barred from that path and this was not one. `activities` polled **per-day with the date passed** across the five business days 2026-11-16 → 2026-11-20: **Nov 16 `[]` · Nov 17 `[]` · Nov 18 two rows, `partial_fill` 7sh buy HAS @ $118.71 and `fill` 1sh buy HAS @ $118.71, same order `2fd7992e`, both `side=buy` · Nov 19 one `FEE`/`CAT` row only (−$0.01, describing the Nov 18 trades, not a fill) · Nov 20 `[]`**. **Zero sell fills anywhere in the window** ⇒ no symbol holds both a buy and a sell fill on any one date ⇒ `activities_count = 0`. TRADE-LOG corroborates: the most recent header-anchored `side=sell` row anywhere in the log is still **SOXX 2026-10-09**, 42 calendar days back and outside the window ⇒ `tradelog_count = 0`. `DTC = max(0, 0) = 0`, `DTC_SOURCE=local`. Raw sell-only tally `DTC_CONSERVATIVE = 0` — logged, never gating; the bracket is carried because a local derivation ran this session. The two evidence sources agree, so no disagreement URGENT was owed, and 0 is what Rules 13/15 make structurally true, so the non-zero alarm did not fire. **No closes are proposed in this review** — nothing is within 1.4pp of the −7% hard-close and no thesis broke — so the pre-flight is non-binding. Rule 15 would have excluded nothing (no position was opened today).
+
+### Closed Trades
+| Ticker | Entry | Exit | P&L | Notes |
+|--------|-------|------|-----|-------|
+| — | — | — | — | **None.** Sixth consecutive week with zero closes. Nothing reached Rule 7 (−7%), no Rule 8 ladder rung (nearest is XLP, 4.3pp below the ETF +4% first step), no Rule 10 sector-kill (the lookback holds zero exit rows, so no sector tally can reach 2), and **no Rule 16 rotation despite six simultaneous flags on Thursday** — see What Worked |
+
+### Open Positions at Week End
+| Ticker | Tier | Entry | Close | Unrealized | Stop | Stop vs mkt |
+|--------|------|-------|-------|-----------|------|-------------|
+| HAS  | satellite | $118.7100   | $112.3200 | **−$51.12 (−5.383%)** | $106.776 (trail 10%, hwm $118.64) | 4.94% |
+| RSP  | core      | $220.0367   | $208.0000 | **−$72.22 (−5.470%)** | $199.125 (trail 10%, hwm $221.25) | 4.27% |
+| SCHD | core      | $35.4400    | $34.0178  | **−$64.00 (−4.013%)** | $32.643 (trail 10%, hwm $36.27)   | 4.04% |
+| SPLV | core      | $77.6500    | $75.4800  | **−$43.40 (−2.795%)** | $71.1135 (trail 10%, hwm $79.015) | 5.78% |
+| XLP  | core      | $90.7200    | $90.4800  | **−$4.08 (−0.265%)**  | $84.132 (trail 10%, hwm $93.48)   | 7.01% |
+| XLV  | core      | $187.8512   | $177.3500 | **−$84.01 (−5.590%)** | $172.197 (trail 10%, hwm $191.33) | **2.91%** |
+
+**daytrade_count: 0** (source=local, derived — field absent) [conservative: 0]. **Zero unprotected positions at every EOD this week — 90th consecutive session**: 6 held, **6 live GTC trailing stops**, every one verified in `orders open` with `status: new`, `trail_percent: 10`, `extended_hours: false`, `filled_qty: 0` and a ratcheted `hwm`. **No trail was moved down on any session.** Rule 3 max weight **15.69%** (SCHD) ✓ vs the 20% cap. Positions **5 → 6 of 6 — at the cap for the first time in the trial**; satellites **0 → 1 of 3** ✓. ETF core **$7,245.36 / $8,143.92 = 88.97% of deployed** ✓ vs the ≥45% floor. Peak **direct** sector share of deployed: Consumer Staples **18.89%** (XLP), Health Care **17.42%** (XLV), Consumer Discretionary **11.03%** (HAS), the remaining **52.66%** broad-fund look-through ✓ vs the 50% single-sector cap. Deployment **74.70% → 74.45% → 83.82% → 83.57% → 83.56%**, `sessions_in_band: 3 of 5` — **the 53-session run below the 75% floor (2026-08-31 → 2026-11-17) ended on Wednesday 2026-11-18, the first in-band session since 2026-08-28.** Current deployment on live marks **83.47%**.
+
+**One observation that is not a violation, recorded so it is not rediscovered.** XLV's stop sits **2.91% below market**, inside the 3% distance Rule 9 names. Rule 9 governs *tightening actions* — "never tighten a stop to within 3% of current price" — and nothing tightened it: the hwm ratcheted to $191.33 while price fell to $177.35, so a canonical 10% trail lands 2.91% away by arithmetic alone. No rule was broken and no action is owed, but the geometry means a 3% bounce-and-fade in XLV exits a position that is only −5.59% from entry. Worth knowing before it happens, not after.
+
+### Go-live scorecard (v3.4)
+
+```
+Go-live scorecard — TRIAL WINDOW 2026-08-06..2026-11-20 (73 sessions). Verdict: FAIL.
+Weekly scorecard (2026-11-16..2026-11-20, informational only): FAIL.
+```
+
+**Window provenance:** `trial_start:` in `PROJECT-CONTEXT.md` still reads the literal placeholder **`UNSET`** — which, being non-empty, is not even a usable date — so the window falls back to the earliest `date` in `METRICS.jsonl`: **2026-08-06**, taken as the minimum over all rows, not the first line. This is the **fifteenth** consecutive review to resolve it this way, and `PROJECT-CONTEXT.md` itself documents the consequence ("an unset value guarantees a no-go verdict for the life of the trial"). See proposal (5).
+
+```json
+{
+  "verdict": "FAIL",
+  "window": "2026-08-06..2026-11-20",
+  "sessions": 73,
+  "criteria": [
+    { "name": "cadence",         "pass": false, "detail": "286/292 routine slots; missing ['2026-11-09:pre-market', '2026-11-11:market-open', '2026-11-12:market-open', '2026-11-12:midday', '2026-11-13:midday', '2026-11-16:pre-market']" },
+    { "name": "rule14_tokens",   "pass": false, "detail": "144/146 Rule 14 audit tokens" },
+    { "name": "rule14_accuracy", "pass": false, "detail": "inaccurate on ['2026-08-07']" },
+    { "name": "unprotected",     "pass": true,  "detail": "zero unprotected positions" },
+    { "name": "breaches",        "pass": true,  "detail": "zero money-moving rule breaches" },
+    { "name": "rule16_meltup",   "pass": false, "detail": "2 shallow melt-up rotations (guard should make this 0)" },
+    { "name": "deployment",      "pass": false, "detail": "2026-08-11: 3 consecutive sessions below the 75.0% floor" }
+  ],
+  "alpha_informational": { "cum_alpha_pp": -2.2712, "cum_cash_drag_pp": -4.4674, "cum_selection_alpha_pp": 2.1962 }
+}
+```
+
+| Criterion | Verdict | Detail |
+|---|---|---|
+| `cadence` | **FAIL** | 286/292 slots. One new gap this week: **`2026-11-16:pre-market`**. The other five are last week's, unchanged |
+| `rule14_tokens` | **FAIL** | 144/146. **Zero new gaps this week** — the two missing are last week's Nov 12/13 middays. This week scored **10/10** |
+| `rule14_accuracy` | **FAIL** | `['2026-08-07']` alone — the pre-v3.4 seed row, unchanged for fifteen weeks. **See finding (b): this criterion does not validate the `source` field, and it should** |
+| `unprotected` | **PASS** | Zero, 73 of 73 sessions |
+| `breaches` | **PASS** | Zero money-moving breaches, 73 of 73 sessions |
+| `rule16_meltup` | **FAIL** | 2 shallow rotations, both **2026-08-07**, the seed pair. Unchanged. Trial `rule16_rotations: 9, suppressed: 2, shallow_rotations: 2` |
+| `deployment` | **FAIL** | `2026-08-11: 3 consecutive sessions below the 75.0% floor`. **The criterion now fails purely on history that can no longer change** — the live 53-session run ended Wednesday and the week's own worst run is **2** consecutive (Nov 16–17), which passes |
+
+**Verdict: FAIL — do not go live.** The verdict is unchanged for a fifteenth review, but **every one of the five failing criteria now fails on evidence that is either frozen in August or was generated before this week**, and that is a genuine change of shape rather than a restatement. `rule14_accuracy` and `rule16_meltup` are the 2026-08-06/07 seed pair and nothing else. `rule14_tokens` took **zero new gaps** after failing last week on fresh evidence. `cadence` took **one** new gap against last week's four. And `deployment` — failing for fifteen consecutive reviews, three weeks ago on a 51-session live run — now fails on a three-session run in **August**, because the live run ended on Wednesday. That is the first week of the trial in which the process scorecard improved on every axis it could.
+
+**`deployment` diagnostics (v3.4, required when it FAILs):** trial window `rule5_triggers: 52, rule5_acted: 7`; this week **`rule5_triggers: 2, rule5_acted: 0`**. The weekly arithmetic reads **`triggers > 0, acted == 0`** — the melt-up-RS-hole signature of `docs/LIVE-SMOKE-TEST.md` §8 — but **that reading is wrong this week and the diagnostic is what is misleading.** The relaxed 1.5:1 core floor armed Nov 17 and Nov 18; on Nov 18 the book *did* buy, but it bought **HAS, a `tier: satellite` name that qualified at the unrelaxed 2:1 floor and took no relief from the relaxation**, so `rule5.acted` is correctly `false` while deployment nonetheless jumped 74.45% → 83.82% and re-entered the band the same session. `acted == 0` here means "the relaxation was not the thing that fixed it", not "nothing was bought". Neither diagnostic changes the verdict; both need the amendment in proposal (16) before they can be read at face value.
+
+**Weekly scorecard (informational only):** `FAIL`, on **one** criterion — `cadence` (19/20 slots, missing `2026-11-16:pre-market`). The other six all **PASS**, including `deployment` (worst run 2 consecutive, inside the limit) and `rule14_tokens` (10/10). The weekly and trial verdicts **agree on the word and disagree on everything underneath it**: the trial FAILs on five criteria, four of which this week passed cleanly. **That divergence is not a Friday-boundary straddle** — it is the window: the trial window still contains the August seed rows that `trial_start: UNSET` refuses to let go of. The trial verdict stands as the go/no-go. `alpha_informational` for the week: `cum_alpha_pp +5.2369, cum_cash_drag_pp +1.7348, cum_selection_alpha_pp +3.5021` — **complete, not `incomplete`** (five of five sessions present in `METRICS.jsonl`). **Alpha is recorded, not gated** — and this is the week to restate why: a +4.41pp week after a −1.71pp week is 6.1pp of swing in ten sessions, which is exactly the noise the process-only criteria exist to avoid gating on. One good week is not evidence.
+
+**The criteria were not edited to fit the result.** Three notes where a criterion looks wrong in hindsight, reported rather than changed. **(a)** The rollup's `+5.2369pp` and the price-chained `+4.4096pp` differ by 0.83pp because `METRICS.jsonl` records `spy_close` as the **value at snapshot time**, not the official close — Nov 20 logs `694.285` against an actual close of `690.87`, Nov 17 logs `729.12` against `732.44` — while `spy_prior_close` *is* the official prior close. The daily series therefore mixes two conventions and the error does not cancel. Carried as proposal (7), now with a measured magnitude. **(b)** `rule14_accuracy` compares the recorded `dtc` **value** and ignores the recorded `source`. The Nov 16 row logs `"source": "none"` with `"dtc": 0, "accurate": true`, while that session's midday row in TRADE-LOG logs `source=local` — and under Rule 14 a `source=none` is a **sell-blocking, URGENT-worthy** state, not a passing one. The criterion passed a row that records the gate as unresolvable. **New, and the week's most important process finding** — see proposal (17). **(c)** `deployment`'s detail string still reports the **first** flagged run (`2026-08-11`) rather than the most recent, which this week *understates* nothing but last week overstated the problem's age in reverse; it remains unreadable without computing the live run separately. All verdicts stand as computed.
+
+### What Worked
+
+- **The defensive core did exactly what a core is for, and the numbers are not close.** SPY fell **8.40%** on the week; the book fell **3.99%**. Day by day the alpha was **+1.73 / +0.47 / −0.33 / +0.44 / +2.93pp**, positive on four of five, and **the one negative session was the day the satellite was bought**. XLP finished the week **−0.27% from entry** against an index down 8.4%, and on Friday XLP (+1.16%), XLV (+0.44%) and SPLV (+0.26%) **rose** on a −3.02% tape. The W29 review's finding — "selection alpha is positive for the first time in the trial" — held and then tripled: **+3.5021pp of selection this week against +0.8010pp last week.**
+- **Both alpha legs positive simultaneously, which has never happened before.** Cash drag has been a *cost* in every prior week of the trial (trial cumulative **−4.4674pp**); this week being 16–25% in cash contributed **+1.7348pp** because the uninvested fraction was the only part of the book that could not fall. That is not a strategy win — it is the arithmetic of a down tape — but it does mean the W15/W29 cash-drag finding is regime-dependent and the fix for it should not be "always be at 85%".
+- **The satellite sleeve is no longer empty, and it opened at the cap.** `pm-2026-11-18-HAS` is the first single-stock name to clear every v3 gate in 27 sessions — the only one of six screened to pass the DMA legs, `sizing.py rscreen` and the liquidity filter simultaneously (NVDA/JBL/OSCR failed the DMA legs; TXN/PAYC failed `rs10_negative_extended`). The v3.3 `rscreen` rewrite and the 16% sizing default are the two changes that made this reachable, and the book went **5 → 6 of 6 positions** for the first time in the trial.
+- **Deployment is back in band after 53 sessions.** The run below the 75% floor spanned 2026-08-31 → 2026-11-17 and broke on Nov 18 at **83.82%**, holding 83.57% and 83.56% through Friday. Three in-band sessions this week against **nine in the preceding 68**.
+- **Rule 16 did not liquidate two-thirds of the book, and the near-miss is the week's best piece of evidence.** Thursday posted **six simultaneous decay flags — the first full-book flag in the log** — and Friday's pre-market projected **four of six at `rotate=1`** (HAS, RSP, SCHD, XLV) with the melt-up guard dis-armed. Midday found **all six chains broken**: SPY's 10-session return had fallen from −2.34% at 08:15 CST to **−4.49%** by 11:07, so every holding flipped to *beating* the index and `sizing.py decay` returned `no_flag` across the board. The thinnest margin was **HAS at 0.86pp** — SPY rallying 0.80% in the remaining 3h53m would have re-flagged it. **The book was spared by an intraday index move, not by a rule**, and the Rule 16 / Rule 5 arbitration gap (proposal 4, carried since W24) is now the single most expensive un-written rule in the system.
+- **Process held under the worst tape of the trial.** Zero unprotected positions, zero stops moved down, zero money-moving breaches, zero day trades, 10/10 Rule 14 tokens, Rule 13 honoured to **46 seconds** after the close on HAS, zero Rule 17 markers, zero open `CATCH-UP` rows.
+
+### What Didn't Work
+
+- **`pre-market` missed Monday and it cost a whole session.** No RESEARCH-LOG entry for 2026-11-16 ⇒ `market-open` halted at STEP 1 with nothing to gate ⇒ **the first day of a fresh 5-trade Week-30 budget spent on a cron miss**, with deployment at 74.70% and the Rule 5 relaxation unable to arm because the routine that computes the arming never reached STEP 2. A missed `pre-market` is **not recoverable** under Rule 18 — the research window closes — so the placeholder was written and the day was lost. That is the **eighth** missed routine slot in eleven sessions.
+- **The Monday halt also produced the one genuinely bad Rule 14 record of the week.** `market-open 2026-11-16` wrote `Rule 14 DTC: n/a (halted before gate evaluation)` — the token is present, so `rule14_tokens` scores it — but the `METRICS.jsonl` row for that session records `"source": "none"`, which Rule 14 defines as a **sell-blocking state requiring a Telegram URGENT**, and `rule14_accuracy` passed it as `"accurate": true` anyway. No sell was attempted, so nothing was at risk; the defect is that **a row recording the day-trade gate as unresolvable scores as a pass**. This is the missing-detector shape the rulebook warns about, one layer up.
+- **HAS was bought into an FOMC-minutes session and the macro gate said `clear`.** The v3.2 proximity check screens **T+1/T+2 only**; the minutes landed at 14:00 ET on **T+0**, so the gate passed by its letter while contradicting its own written rationale ("a fresh satellite needs >2 sessions to build trailing-stop cushion"). HAS is **−5.38%** after three sessions and was the sole contributor to the week's only negative alpha day. The BUY row flagged this knowingly at entry, which is the right behaviour — but a gate that has to be overridden in prose on first use is mis-specified.
+- **The HAS clip was sized to a 12% stop and protected with a 10% one.** `sizing.py size --stop-frac 0.12` returned 8 shares (clamped on headroom from an unclamped 13), and `daily-summary` then placed the canonical Rule 6 **10%** trail. The direction is conservative — a tighter stop than the sizing assumed — but the risk-parity target the clip was built from is not the risk the position actually carries, and the two numbers should not be allowed to disagree silently.
+- **Cron drift is now eight consecutive sessions and it is touching real decisions.** `market-open` fired at **07:34–07:35 CST** against a design time of 08:30 (Wednesday's run read a **stale quote timestamped 2026-11-17T21:00:00Z** and nearly mis-priced the HAS entry); `midday` fired at 14:13–14:14 CST, **46–47 minutes before the close**, so every position close logged this week is a late-session mark rather than a closing print. Wednesday's Rule 13 placement landed 46s after the close **only because that run waited**; it was not scheduled to be safe.
+- **Six weeks, zero closed trades, and the win rate is still undefined.** Nothing reached a Rule 8 rung (XLP, the best name, is 4.3pp short of the ETF +4% step), no Rule 7 close, no Rule 10 tally. The ladder and the sector-kill machinery remain **entirely unexercised in live paper conditions** — a go-live decision would be made on an untested sell path.
+- **$9,756.72 against a $10,000.00 baseline.** Phase P&L is **−$243.28 (−2.43%)** and trial alpha is **−2.2712pp**. A +4.41pp week does not change that the bot is behind on the mandate.
+
+### Key Lessons
+
+- **A defensive core is an option on the tape, and this week it paid.** The same XLP/XLV/SPLV/SCHD/RSP book that produced −1.71pp of underperformance in a melt-up produced +4.41pp in a crash. Neither number is a judgement on the selection; both are the same positioning meeting a different regime. **This is precisely why the go-live criteria are process-only, and a 6.1pp two-week swing is the proof.**
+- **Cash drag is signed by the regime, not by the rule.** Eleven weeks of reviews have treated being under-deployed as a pure cost. This week it contributed **+1.73pp**. The W15/W29 conclusion ("the entire miss is the cost of being uninvested") was correct *in those weeks* and must not harden into "always deploy to 85%" — the fix for cash drag is a *mechanism that acts*, which Rule 5 now has, not a higher floor.
+- **Rule 16's inputs move faster than Rule 16's decisions.** Four of six positions moved from `rotate=1` to `flag=0` in under three hours on an index move, and a 0.86pp margin on HAS separated a quiet Friday from a two-thirds liquidation. A rule whose output inverts intraday on a benchmark input needs either a hysteresis band or an explicit arbitration against Rule 5 — the W24 proposal, un-adopted for six weeks, is the one that would have mattered most this week.
+- **A detector that scores presence rather than validity is not a detector.** `rule14_tokens` counts the token; `rule14_accuracy` checks the number and ignores the `source`. Monday's row records the gate as **unresolvable** and passes both. The original Rule 14 fail-open survived fourteen weeks for exactly this reason, and the audit layer built to catch it has inherited the shape.
+- **A gate that must be overridden in prose on its first live use is mis-specified, not merely conservative.** The T+1/T+2 macro window passed HAS into a T+0 FOMC-minutes session. The entry was documented honestly and the trade may still work; the rule is still wrong.
+- **Scheduler reliability is now the binding constraint on the strategy, ahead of the strategy.** Of eleven sessions, eight routine slots missed. The Monday miss cost a trading day of a 5-trade budget outright. No amount of rulebook work recovers a session that never ran.
+
+### Adjustments for Next Week
+
+- **Fix the cron schedule before anything else.** Eight consecutive sessions of DST drift and eight missed slots in eleven sessions. Re-anchor every routine to **America/Chicago local time** (proposal 13): `pre-market` 07:00 CT, `market-open` 08:30 CT, `midday` 11:30 CT, `daily-summary` 15:00 CT. This is a UI change, not a code change, and it dominates every other item on this list.
+- **Set `trial_start:` in `PROJECT-CONTEXT.md`** (proposal 5). Fifteen reviews have resolved the window by fallback. Four of the five failing trial criteria this week are either the August seed pair or pre-this-week evidence; three of them (`rule14_accuracy`, `rule16_meltup`, and `deployment`'s August run) **cannot ever clear while the window starts 2026-08-06**. One line of text.
+- **Carry Thursday's six-flag / Friday's four-rotate near-miss into the Rule 16 arbitration decision** (proposal 4). The book came within a 0.80% SPY rally of liquidating two-thirds of itself with no written rule to arbitrate. This is no longer hypothetical.
+- **Watch HAS and XLV.** HAS **−5.38%** after three sessions, 1.62pp from the Rule 7 hard-close and **aged past Rule 15** from Monday — it is the first position in the trial that can actually be hard-closed. XLV **−5.59%**, 1.41pp clear, with a stop sitting only **2.91%** below market. Both are live Rule 7 candidates on any further weakness, and a Rule 7 close would be **the first exercise of the sell path since 2026-10-09**.
+- **Expect the Rule 5 relaxation to stay dis-armed.** Deployment is 83.47% with 0 sessions below band, so the trigger is off. The Week-31 budget resets to **5 trades** with **0 of 6 position slots free** — so next week's only buy paths are **adds to existing holdings** (band headroom is thin: 85% of equity is $8,293.21 against $8,143.92 deployed, leaving **$149.29**, far short of the 5%-of-equity minimum-position floor of ~$487.84) or a buy that follows a sell. In practice: **Week 31 is a hold-or-rotate week, not a buy week**, and the honest expectation is zero new entries.
+- **Do not read one good week as validation.** Trial alpha is still **−2.2712pp** and the account is **−2.43%** against a $10,000 baseline after 30 weeks. The go/no-go verdict is **FAIL** and the correct action is to keep running paper.
+
+### Satellite-sleeve check (v3)
+**Not triggered — insufficient sample.** The test requires the satellite sleeve to underperform the ETF core on a per-capital basis for **3+ consecutive weeks**. W26/W27/W28/W29 all recorded an **empty** sleeve (no per-capital figure computable), so this week is the **first** computable comparison of the sequence: satellite **−5.3828%** vs core **−5.1217%**, a 0.26pp shortfall on three sessions of exposure against five. Run count: **1 of 3**. No proposal to shrink the sleeve is made, and the opposite reading is at least as likely — the sleeve has been *empty*, not *losing*, for five weeks, and getting a name into it was this week's structural achievement.
+
+### Go-live scorecard — see the section above. **Verdict: FAIL** (trial window 2026-08-06..2026-11-20, 73 sessions), on **five** criteria: `deployment` (fifteenth consecutive review, but now on an **August** run — the live 53-session run ended Wednesday), `rule14_accuracy` and `rule16_meltup` (the 2026-08-06/07 seed pair alone, unchanged), `rule14_tokens` (144/146 — **zero new gaps this week**) and `cadence` (286/292 — **one** new gap, `2026-11-16:pre-market`).
+
+### Overall Grade: B+
+
+Best relative week of the trial by a factor of two and a half, the satellite sleeve opened after 27 sessions, deployment back in band after 53, the full process suite clean under the worst tape the bot has seen, and the weekly scorecard failing on one criterion instead of three. Held off an A by things that were genuinely in the bot's control: **Monday was lost to a cron miss**, HAS was bought into a T+0 FOMC-minutes session by a gate that had to be overridden in prose, the sizing stop and the placed stop disagree, and **the Friday reprieve from a two-thirds liquidation was an accident of the tape, not a decision**. Absolute P&L is still **−2.43%** on the phase and trial alpha **−2.27pp** — one week does not reverse thirty.
+
+## Proposed strategy changes (NOT auto-applied — human review required)
+
+- **(1) Core floor ≥45% — bootstrap exemption (carried from W22–W25/W27–W29, unchanged, NOT BINDING):** the floor reads on an empty book as unsatisfiable. Core is now 88.97% of deployed and the first satellite entered without the floor binding, so this remains a documentation fix only.
+- **Rationale:** a rule that cannot be satisfied at zero positions should say so.
+- **Evidence:** W22–W29 entries; this week the floor never bound (`pm-2026-11-18-HAS` passed it at 88.66% post-fill).
+
+- **(2) Sector-concentration cap — first-position exemption for `tier: core` (carried from W23–W25/W27–W29, unchanged, NOT BINDING):** the 50% cap is unsatisfiable for a first ETF on an empty book.
+- **Rationale:** same unsatisfiable-at-zero shape as (1).
+- **Evidence:** peak direct sector share this week 18.89%; the cap was never approached.
+
+- **(3) Rule 5 / core-ballast R:R relaxation (carried from W24/W25/W27–W29, PARTIALLY DISCHARGED):** the relaxation armed twice this week and the band was restored on Nov 18 — but by a **satellite** buy at the unrelaxed 2:1 floor, not by the relaxation. The mechanism is in place; its *efficacy* is still unevidenced after 52 trial triggers and 7 actions.
+- **Rationale:** Rule 5 now acts, but nothing yet demonstrates that the relaxed floor is what restores the band.
+- **Evidence:** trial `rule5_triggers: 52, rule5_acted: 7`; this week `2, 0` with deployment restored anyway.
+
+- **(4) Rule 16 / Rule 5 arbitration (carried from W24/W25/W27–W29 — ESCALATED, this week's most expensive gap):** write an explicit arbitration for the case where Rule 16 would rotate out positions that Rule 5 has just armed a relaxation to buy, and add a hysteresis band so a decay chain cannot invert on a single intraday benchmark reading.
+- **Rationale:** Thursday posted the first full-book six-flag in the log and Friday's pre-market projected four of six at `rotate=1`; **all six chains broke between 08:15 and 11:07 CST on an SPY move alone**, with HAS surviving by 0.86pp (an 0.80% SPY rally would have re-flagged it). A two-thirds liquidation was averted by the tape, not by a rule. Six weeks carried, un-adopted, and now demonstrably load-bearing.
+- **Evidence:** TRADE-LOG 2026-11-19 midday (6 flags, all `flag=1`); 2026-11-20 midday (all six `no_flag`, SPY 10-session −2.34% → −4.49%); 2026-11-20 pre-market projection.
+
+- **(5) PROJECT-CONTEXT `trial_start` (carried from W20–W25/W27–W29, unchanged, URGENT and trivial):** set `trial_start: 2026-08-10` in `memory/PROJECT-CONTEXT.md`, replacing the `UNSET` placeholder. **Additionally: treat a non-date value as unset** — the resolution snippet tests for *emptiness* and `UNSET` is a non-empty string; it only reaches the fallback by luck of formatting.
+- **Rationale:** fifteenth consecutive fallback resolution, and this week it is the *only* thing keeping three criteria failing.
+- **Evidence:** `--since 2026-08-06` (73 sessions) FAILs `rule14_accuracy` (`['2026-08-07']`), `rule16_meltup` (2 shallow rotations, both 2026-08-07) and `deployment` (`2026-08-11`, a run that ended three months ago). All three are August-only. `deployment` would still FAIL on the Aug 31–Nov 17 run under a Aug-10 start, so the verdict does not change — which is exactly why applying this is zero-risk.
+
+- **(6) Rule 14 `[conservative:]` bracket (carried from W25/W27–W29, unchanged):** `METRICS.jsonl` records `dtc_conservative: null` while the TRADE-LOG tokens carry `[conservative: 0]`. Harmonise to one representation.
+- **Rationale:** two files disagree about whether a derivation produced a conservative count.
+- **Evidence:** all five `METRICS.jsonl` rows this week record `"dtc_conservative": null`; all ten TRADE-LOG tokens were written by sessions that ran a local derivation.
+
+- **(7) `daily-summary` benchmark capture (carried from W23–W25/W27–W29 — ESCALATED, now with a measured cost):** `daily-summary` must capture the **official** SPY close, not the value at snapshot time, or must tag the field as provisional.
+- **Rationale:** `spy_close` is recorded intraday while `spy_prior_close` is the official prior close, so the daily series mixes conventions and the error does not cancel. **Measured this week: the rollup reads +5.2369pp against a price-chained +4.4096pp — a 0.83pp overstatement of the week's alpha.** Nov 20 logs `694.285` vs an actual close of `690.87`; Nov 17 logs `729.12` vs `732.44`.
+- **Evidence:** `METRICS.jsonl` 2026-11-16..20 vs `bars SPY 1Day 10` this session; cron fired 14:13–14:14 CST, 46 min before the close, for an eighth consecutive session.
+
+- **(8) Rule 14 audit-token sweep anchoring (carried from W25/W27–W29, unchanged, fifth confirmation):** specify that the sweep greps **row-anchored** (`^- Rule 14 DTC:`), not bare.
+- **Rationale:** a bare grep over-counts on prose quotations.
+- **Evidence:** this week bare `grep -c 'Rule 14 DTC:'` returns **15** against a true row-anchored count of **10**.
+
+- **(9) Rule 18 — add `weekly-review` to the cadence sweep (carried from W27–W29, unchanged):** nothing detects a missed `weekly-review`.
+- **Rationale:** the routine that audits cadence is the one routine outside the sweep.
+- **Evidence:** `routines_expected: 4` in every `METRICS.jsonl` row; Friday has five slots.
+
+- **(10) `cadence` and `rule14_tokens` must audit against a trading calendar, not the file (carried from W27–W29, unchanged):** both criteria enumerate expectations from rows that exist, so a session with **no row at all** is invisible.
+- **Rationale:** the detector cannot see a day it has no record of.
+- **Evidence:** the trial window still contains **2026-10-22, 2026-10-23 and 2026-11-05** as trading days with no row; `286/292` is therefore an undercount of the true slot deficit.
+
+- **(11) Order-fill reconciliation and limit placement (carried from W28/W29, re-scoped):** HAS filled on the first attempt this week, so the W28 non-fill is not reproduced — but Wednesday's `market-open` read a **stale quote timestamped 2026-11-17T21:00:00Z** because the cron fired 56 minutes before the bell, and the stale-quote fallback is what saved the entry.
+- **Rationale:** the limit-pricing path is only as good as the quote it reads, and the schedule is feeding it pre-open quotes.
+- **Evidence:** TRADE-LOG 2026-11-18 BUY row, operational note.
+
+- **(12) Publish/read race between `pre-market` and `market-open` (carried from W28/W29, NOT exercised):** no race observed this week; Monday's failure was an absent entry, not a stale one.
+- **Rationale:** retained as a latent risk.
+- **Evidence:** 2026-11-16 `market-open` halted at STEP 1 on a genuinely missing RESEARCH-LOG entry.
+
+- **(13) Re-anchor every routine schedule to America/Chicago local time (carried from W29 — ESCALATED to the top of the list):** set the cron slots in local CT so the DST shift cannot move them.
+- **Rationale:** **eight consecutive sessions of drift and eight missed slots in eleven sessions.** `market-open` at 07:34 CST reads pre-open quotes; `midday` at 14:14 CST makes every logged close a late-session mark; Wednesday's Rule 13 placement cleared the close by **46 seconds** only because the run waited rather than because it was scheduled to. This is the binding constraint on the whole system and the cheapest fix available.
+- **Evidence:** operational notes in every TRADE-LOG run row 2026-11-16 → 2026-11-20; `cadence` gap `2026-11-16:pre-market`.
+
+- **(14) Rule 5 restore clamp must permit the nearest whole share ABOVE the floor (carried from W29, unchanged, NOT exercised):** `restore_dollars` rounds down, so an integral clip can land just below the floor.
+- **Rationale:** the W29 0.23pp miss came from this arithmetic.
+- **Evidence:** W29 entry; not exercised this week (Nov 18's restore was incidental to a satellite buy).
+
+- **(15) Rule 18 — a bounded catch-up for a missed `market-open` (carried from W29, SHARPENED to `pre-market`):** W29 proposed recovering a missed `market-open`. **This week's loss was a missed `pre-market`, which Rule 18 declares unrecoverable** — but a `market-open` that halts at STEP 1 could, bounded and logged, run the research step itself rather than forfeit the session.
+- **Rationale:** Monday cost the first day of a fresh 5-trade budget outright, with deployment at 74.70% and the Rule 5 arming unreachable because the routine that computes it never passed STEP 1.
+- **Evidence:** TRADE-LOG 2026-11-16 market-open (`HALTED at STEP 1`); `METRICS.jsonl` 2026-11-16 (`missing: ["pre-market"]`, `rule5.triggered: false` at 74.70% deployment).
+
+- **(16) `deployment` diagnostics must distinguish "not armed" from "armed and unused" from "armed, unused, but band restored anyway" (proposed change — NEW):** `rule5_acted` records only whether the *relaxation* was used. When the band is restored by a buy that qualified at the unrelaxed floor, the diagnostic reads `triggers > 0, acted == 0` — the documented signature of the melt-up RS hole — while the actual outcome was a success.
+- **Rationale:** the prompt requires quoting these two side by side when `deployment` FAILs, and this week they point at the wrong diagnosis. Add a third field (`band_restored`) or scope `acted` to "a buy occurred while armed".
+- **Evidence:** this week `rule5_triggers: 2, rule5_acted: 0`, yet deployment went 74.45% → 83.82% on Nov 18 and stayed in band for three sessions; the restoring trade was `tier: satellite` at 2:1.
+
+- **(17) `rule14_accuracy` must validate the recorded `source`, not only the recorded count (proposed change — NEW, the week's most important process finding):** a `METRICS.jsonl` row with `"source": "none"` must **FAIL** `rule14_accuracy` (and should have raised a Telegram URGENT when written), regardless of whether the recorded `dtc` value happens to be correct.
+- **Rationale:** Rule 14 defines `source=none` and `source=error` as **sell-blocking, URGENT-worthy** states — "nothing is known". A criterion that passes such a row reports the day-trade gate as healthy on a session where it was unresolvable. This is the same missing-detector shape that let the original Rule 14 fail open for fourteen weeks, reproduced one layer up in the audit built to catch it. Additionally: reconcile the source across files — the Nov 16 `METRICS.jsonl` row says `none` while that session's midday TRADE-LOG token says `source=local`, and only one of them can be right.
+- **Evidence:** `METRICS.jsonl` 2026-11-16 (`"rule14": {"dtc": 0, "source": "none", "accurate": true}`) vs TRADE-LOG 2026-11-16 midday (`- Rule 14 DTC: 0 (source=local) (sell attempted: no)`); trial `rule14_accuracy` detail names only `['2026-08-07']`.
+
+- **(18) Rule 8 / Rule 6 — the sizing stop width and the placed trail must not disagree silently (proposed change — NEW):** when `sizing.py size` is run with a `--stop-frac` other than 0.10, either `daily-summary` must place that trail or the routine must log the substitution as a reconciliation row.
+- **Rationale:** `pm-2026-11-18-HAS` was sized on a **12%** stop and protected with the canonical **10%** trail. The direction is conservative, but the risk-parity figure the clip was built from is not the risk the position carries, so the "~2% of equity at risk" target is not actually what was taken.
+- **Evidence:** TRADE-LOG 2026-11-18 BUY row (`sizing.py size --stop-frac 0.12` → 8sh) vs `2026-11-18 — STOP PLACED: HAS trail %10` ("**The trail is 10%, not the 12% the BUY row planned**").
+
+- **(19) Rule 3.2 macro-binary gate must include T+0 for satellites (proposed change — NEW):** extend the Tier-1 macro proximity window from T+1/T+2 to **T+0/T+1/T+2** for `tier: satellite` entries, or require an explicit documented override when a Tier-1 binary lands on the entry day.
+- **Rationale:** `pm-2026-11-18-HAS` entered at 08:37 CST with **FOMC minutes at 14:00 ET the same day**. The gate tagged the entry `clear` because it screens T+1/T+2 only, while the rule's own stated rationale — "a fresh satellite needs >2 sessions to build trailing-stop cushion before a full-day macro tape reversal" — argues *more* strongly for T+0 than for T+2. The entry was flagged honestly in the BUY row, which is correct behaviour and also the tell: a gate overridden in prose on its first live use is mis-specified.
+- **Evidence:** TRADE-LOG 2026-11-18 BUY row, `Catalyst:` line ("**Accepted knowingly: FOMC minutes land today at 14:00 ET — T+0**"); HAS **−5.38%** after three sessions and the sole contributor to the week's only negative-alpha session (2026-11-18, −0.3338pp).
